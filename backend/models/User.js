@@ -34,8 +34,19 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["user", "organizer", "admin"],
+      enum: ["user", "event_manager", "admin"],
       default: "user",
+    },
+    
+    // Events this user manages (if they are event_manager)
+    managedEvents: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Event"
+    }],
+    
+    // Track when user became event manager
+    becameManagerAt: {
+      type: Date
     },
     status: {
       type: String,

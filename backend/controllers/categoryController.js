@@ -46,16 +46,19 @@ export const updateCategory = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
-// ❌ Delete Category
+// Soft Delete Category
 export const deleteCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const category = await Category.findByIdAndDelete(id);
+    const category = await Category.findByIdAndUpdate(
+      id,
+      { status: "inactive" },
+      { new: true }
+    );
 
     if (!category) return res.status(404).json({ message: "Category not found" });
 
-    res.json({ message: "Category deleted" });
+    res.json({ message: "Category soft deleted", category });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
