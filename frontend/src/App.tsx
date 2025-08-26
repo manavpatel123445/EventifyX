@@ -13,6 +13,7 @@ import { PageNotFound } from './pages/PageNotFound';
 import ForgotPassword from './pages/ForgotPage';
 import ContectPage from './pages/ContectPage';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import Eventdetail from './pages/Eventdetail';
 
 
 
@@ -33,6 +34,7 @@ function App() {
           <Route path="/ForgotPassword" element={<ForgotPassword />} />
           <Route path="/contact" element={<ContectPage/>} />
           <Route path="*" element={<PageNotFound/>} />
+          <Route path="/eventdetail" element={<Eventdetail/>} />
         </Routes>
       </Router>
     </QueryClientProvider>

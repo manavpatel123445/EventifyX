@@ -25,7 +25,7 @@ const Navbar: React.FC = () => {
             Create Events
           </Link>
           <Link to="/contact" className="hover:text-red-500 transition">
-            Contact asp
+            Contact Us
           </Link>
         </div>
 

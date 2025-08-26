@@ -1,16 +1,36 @@
 import React, { useState } from "react";
 import Navbar from "../components/Navbar";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
+
 
 const Loginpage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+
+  const validate = () => {
+    const newErrors: { email?: string; password?: string } = {};
+    if (!email) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Invalid email address";
+    }
+    if (!password) {
+      newErrors.password = "Password is required";
+    } else if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+    }
+    return newErrors;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log({ email, password, remember });
+    const validationErrors = validate();
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
     // 🔗 Call your backend API here
+    console.log({ email, password, remember });
   };
 
   return (
@@ -22,7 +42,7 @@ const Loginpage: React.FC = () => {
     <div className=" h-140 flex items-center justify-center bg-gray-50">
       <div className=" grid grid-cols-1 md:grid-cols-2 bg-white shadow-lg rounded-2xl overflow-hidden">
         
-        {/* Left Banner Image */}
+       
         <div className="hidden md:block">
           <img
             src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d"
@@ -39,6 +59,7 @@ const Loginpage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             
             {/* Email */}
+
             <div>
               <label className="block text-gray-600 mb-1">Email</label>
               <input
@@ -46,12 +67,16 @@ const Loginpage: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none ${errors.email ? 'border-red-500' : ''}`}
                 required
               />
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+              )}
             </div>
 
             {/* Password */}
+
             <div>
               <label className="block text-gray-600 mb-1">Password</label>
               <input
@@ -59,9 +84,12 @@ const Loginpage: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none ${errors.password ? 'border-red-500' : ''}`}
                 required
               />
+              {errors.password && (
+                <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+              )}
             </div>
 
             {/* Remember Me */}
@@ -81,12 +109,14 @@ const Loginpage: React.FC = () => {
             </div>
 
             {/* Submit */}
+            <Link to="/">
             <button
               type="submit"
               className="w-full py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition"
             >
               Sign In
             </button>
+            </Link>
           </form>
 
           {/* Divider */}
