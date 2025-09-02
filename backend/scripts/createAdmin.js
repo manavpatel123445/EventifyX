@@ -1,0 +1,61 @@
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import User from '../models/User.js';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
+
+const createAdmin = async () => {
+  try {
+    // Connect to MongoDB
+    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/eventifyx');
+    console.log('Connected to MongoDB');
+
+    // Admin user details
+    const adminData = {
+      name: 'Admin User',
+      email: 'admin@eventifyx.com',
+      password: 'admin123456', // You can change this
+      role: 'admin',
+      status: 'active'
+    };
+
+    // Check if admin already exists
+    const existingAdmin = await User.findOne({ 
+      $or: [
+        { email: adminData.email },
+        { role: 'admin' }
+      ]
+    });
+
+    if (existingAdmin) {
+      console.log('Admin user already exists:', existingAdmin.email);
+      return;
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    adminData.password = await bcrypt.hash(adminData.password, salt);
+
+    // Create admin user
+    const admin = new User(adminData);
+    await admin.save();
+
+    console.log('✅ Admin user created successfully!');
+    console.log('📧 Email:', adminData.email);
+    console.log('🔑 Password: admin123456'); // Temporary password
+    console.log('👑 Role: admin');
+    console.log('\n⚠️  Please change the password after first login!');
+
+  } catch (error) {
+    console.error('❌ Error creating admin user:', error.message);
+  } finally {
+    // Close database connection
+    await mongoose.connection.close();
+    console.log('\nDatabase connection closed.');
+  }
+};
+
+// Run the script
+createAdmin();

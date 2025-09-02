@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema(
       required: [true, "Name is required"],
       trim: true,
       minlength: [3, "Name must be at least 3 characters long"],
-      unique: true, // ensure unique names
+      unique: true, 
     },
     email: {
       type: String,
@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters long"],
-      select: false, // prevent password from being returned in queries
+      select: false, 
     },
     phone: {
       type: String,
@@ -30,24 +30,18 @@ const userSchema = new mongoose.Schema(
     },
     profileImage: {
       type: String,
-      default: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+       default: "https://res.cloudinary.com/dutfzuuq5/image/upload/v1690846488/default-profile_qxqv2r.png"  
     },
     role: {
       type: String,
       enum: ["user", "event_manager", "admin"],
       default: "user",
     },
-    
-    // Events this user manages (if they are event_manager)
     managedEvents: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "Event"
     }],
-    
-    // Track when user became event manager
-    becameManagerAt: {
-      type: Date
-    },
+    // Events this user manages (if they are event_manager)
     status: {
       type: String,
       enum: ["active", "blocked"],

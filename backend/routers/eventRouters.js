@@ -15,24 +15,16 @@ import {
   
   // Event Manager Operations
   getMyManagedEvents,
-  getEventStats
+  getEventStats,
+  getRequestsForManagedEvents
 } from "../controllers/eventController.js";
 
 import { protect, authorize } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-// =============================================================================
-// PUBLIC ROUTES (No authentication required)
-// =============================================================================
 
-// Get all public events with filtering, search, pagination
-// GET /api/events?category=123&city=NYC&date=2024-01-01&search=music&page=1
 router.get("/", getAllEvents);
-
-// Get single event by ID or slug
-// GET /api/events/6743ab123456789 or GET /api/events/music-concert-2024
-router.get("/:identifier", getEventById);
 
 // =============================================================================
 // PROTECTED ROUTES (Authentication required)
@@ -53,6 +45,9 @@ router.get("/my-requests", protect, getMyEventRequests);
 // Get events managed by current user
 // GET /api/events/managed?status=upcoming&page=1&limit=10
 router.get("/managed", protect, authorize("event_manager", "admin"), getMyManagedEvents);
+
+// Get event requests for events managed by current user (event_manager)
+router.get("/managed/requests", protect, authorize("event_manager", "admin"), getRequestsForManagedEvents);
 
 // Update event (only event manager of that event)
 // PUT /api/events/:eventId
@@ -81,5 +76,11 @@ router.post("/admin/requests/:requestId/approve", protect, authorize("admin"), a
 // Reject event request
 // POST /api/events/admin/requests/:requestId/reject
 router.post("/admin/requests/:requestId/reject", protect, authorize("admin"), rejectEventRequest);
+
+// =============================================================================
+// PUBLIC: Get single event by ID or slug (keep LAST so it doesn't shadow others)
+// =============================================================================
+// GET /api/events/6743ab123456789 or GET /api/events/music-concert-2024
+router.get("/:identifier", getEventById);
 
 export default router;

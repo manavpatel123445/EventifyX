@@ -1,7 +1,7 @@
 import Event from "../models/Event.js";
 import EventRequest from "../models/EventRequest.js";
-import User from "../models/User.js";
-import Category from "../models/Category.js";
+import User from "../models/User.js"; 
+import Category from "../models/Category.js"; 
 import mongoose from "mongoose";
 
 // 📝 Create Event Request (User submits request to admin)
@@ -11,13 +11,13 @@ export const createEventRequest = async (req, res) => {
       title,
       description,
       category,
-      date,
+      startDate,
+      endDate,
       startTime,
       endTime,
       venue,
       ticketPricing,
       images,
-      registrationDeadline,
       tags
     } = req.body;
 
@@ -35,14 +35,14 @@ export const createEventRequest = async (req, res) => {
       title,
       description,
       category,
-      date: new Date(date),
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
       startTime,
       endTime,
       venue,
       ticketPricing,
       images: images || [],
       requestedBy: req.user._id,
-      registrationDeadline: registrationDeadline ? new Date(registrationDeadline) : null,
       tags: tags || []
     });
 
@@ -108,18 +108,14 @@ export const getAllEventRequests = async (req, res) => {
 
 // ✅ Approve Event Request (Admin only)
 export const approveEventRequest = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  
   try {
     const { requestId } = req.params;
     const { adminNotes } = req.body;
 
     // Find the event request
-    const eventRequest = await EventRequest.findById(requestId).session(session);
+    const eventRequest = await EventRequest.findById(requestId);
     
     if (!eventRequest) {
-      await session.abortTransaction();
       return res.status(404).json({
         success: false,
         message: "Event request not found"
@@ -127,7 +123,6 @@ export const approveEventRequest = async (req, res) => {
     }
 
     if (eventRequest.status !== "pending") {
-      await session.abortTransaction();
       return res.status(400).json({
         success: false,
         message: "Event request has already been reviewed"
@@ -139,7 +134,8 @@ export const approveEventRequest = async (req, res) => {
       title: eventRequest.title,
       description: eventRequest.description,
       category: eventRequest.category,
-      date: eventRequest.date,
+      startDate: eventRequest.startDate,
+      endDate: eventRequest.endDate,
       startTime: eventRequest.startTime,
       endTime: eventRequest.endTime,
       venue: eventRequest.venue,
@@ -148,14 +144,13 @@ export const approveEventRequest = async (req, res) => {
       eventManager: eventRequest.requestedBy,
       originalRequest: eventRequest._id,
       approvedBy: req.user._id,
-      registrationDeadline: eventRequest.registrationDeadline,
       tags: eventRequest.tags
     });
 
-    await approvedEvent.save({ session });
+    await approvedEvent.save();
 
     // Update the user role to event_manager and add managed event
-    const user = await User.findById(eventRequest.requestedBy).session(session);
+    const user = await User.findById(eventRequest.requestedBy);
     
     // If user is not already an event manager, update their role
     if (user.role === "user") {
@@ -168,7 +163,7 @@ export const approveEventRequest = async (req, res) => {
       user.managedEvents.push(approvedEvent._id);
     }
     
-    await user.save({ session });
+    await user.save();
 
     // Update event request status
     eventRequest.status = "approved";
@@ -177,9 +172,7 @@ export const approveEventRequest = async (req, res) => {
     eventRequest.reviewedAt = new Date();
     eventRequest.approvedEvent = approvedEvent._id;
     
-    await eventRequest.save({ session });
-
-    await session.commitTransaction();
+    await eventRequest.save();
 
     // Populate response data
     await approvedEvent.populate([
@@ -204,14 +197,11 @@ export const approveEventRequest = async (req, res) => {
     });
 
   } catch (error) {
-    await session.abortTransaction();
     console.error("Approve event request error:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Failed to approve event request"
     });
-  } finally {
-    session.endSession();
   }
 };
 
@@ -499,7 +489,9 @@ export const updateEvent = async (req, res) => {
     // Update allowed fields
     const allowedUpdates = [
       "title", "description", "venue", "images", 
-      "registrationDeadline", "tags", "isPublic"
+      "registrationDeadline", "tags", "isPublic",
+      // allow scheduling and pricing updates
+      "startDate", "endDate", "startTime", "endTime", "ticketPricing"
     ];
     
     const updates = {};
@@ -631,6 +623,36 @@ export const getEventStats = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch event statistics"
+    });
+  }
+};
+
+// 📋 Get Event Requests For Events Managed By Current User (Event Manager)
+export const getRequestsForManagedEvents = async (req, res) => {
+  try {
+    // Find events managed by the current user
+    const managedEvents = await Event.find({ eventManager: req.user._id }, '_id');
+    const managedEventIds = managedEvents.map(e => e._id);
+
+    // Find event requests that have been approved and linked to these events
+    const requests = await EventRequest.find({ approvedEvent: { $in: managedEventIds } })
+      .populate('requestedBy', 'name email')
+      .populate('category', 'name')
+      .populate('reviewedBy', 'name')
+      .populate('approvedEvent', 'title slug')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        requests
+      }
+    });
+  } catch (error) {
+    console.error('Get requests for managed events error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch requests for managed events'
     });
   }
 };

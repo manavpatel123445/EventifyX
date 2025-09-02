@@ -68,7 +68,7 @@ const Home = () => {
           </div>
         )} */}
       </section>        
-      
+      <div></div>
     </div>
     <Footer/>
       </>

@@ -1,150 +1,316 @@
-// src/pages/Register.tsx
-import React from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState } from "react";
 import Navbar from "../components/Navbar";
-
+import { NavLink, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { registerUser } from "../services/authService";
+import { loginSuccess, setError, setStatus } from "../app/slices/authslice";
+import { FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
+import toast from "react-hot-toast";
+import { cn } from "../lib/utils";
 
 const RegisterPage: React.FC = () => {
-  const [name, setName] = React.useState("");
-  const [email, setEmail] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  const [terms, setTerms] = React.useState(false);
-  const [errors, setErrors] = React.useState<{ name?: string; email?: string; password?: string; terms?: string }>({});
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [terms, setTerms] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+    terms?: string;
+    api?: string;
+  }>({});
 
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // ✅ Validation
   const validate = () => {
-    const newErrors: { name?: string; email?: string; password?: string; terms?: string } = {};
+    const newErrors: {
+      name?: string;
+      email?: string;
+      password?: string;
+      confirmPassword?: string;
+      terms?: string;
+    } = {};
+
     if (!name) newErrors.name = "Full name is required";
+
     if (!email) {
       newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = "Invalid email address";
     }
-    if (!password) {
+
+    if (!password) { 
       newErrors.password = "Password is required";
     } else if (password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
     }
-    if (!terms) {
-      newErrors.terms = "You must agree to the terms";
+
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
     }
+
+    if (!terms) {
+      newErrors.terms = "You must accept terms & conditions";
+    }
+
     return newErrors;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  interface InputProps
+    extends React.InputHTMLAttributes<HTMLInputElement> {
+    error?: boolean;
+    leftIcon?: React.ReactNode;
+    rightIcon?: React.ReactNode;
+  }
+
+  const Input = React.forwardRef<HTMLInputElement, InputProps>(
+    ({ className, type, error, leftIcon, rightIcon, ...props }, ref) => {
+      return (
+        <div className="relative">
+          {leftIcon && (
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+              {leftIcon}
+            </div>
+          )}
+          <input
+            type={type}
+            className={cn(
+              "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+              leftIcon && "pl-10",
+              rightIcon && "pr-10",
+              error && "border-destructive focus-visible:ring-destructive",
+              className
+            )}
+            ref={ref}
+            {...props}
+          />
+          {rightIcon && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+              {rightIcon}
+            </div>
+          )}
+        </div>
+      );
+    }
+  );
+  Input.displayName = "Input";
+
+  // ✅ Handle Submit
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+
     const validationErrors = validate();
     setErrors(validationErrors);
-    if (Object.keys(validationErrors).length > 0) return;
-    // 🔗 Call your backend API here
-    console.log({ name, email, password, terms });
+    if (Object.keys(validationErrors).length > 0) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      dispatch(setStatus("loading"));
+      const data = await registerUser({ name, email, password });
+
+      // ✅ Save tokens
+      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      dispatch(loginSuccess(data));
+      dispatch(setStatus("succeeded"));
+
+      toast.success(`Welcome to EventifyX, ${data.user?.name || 'User'}!`);
+      
+      // Dispatch custom event to update navbar
+      window.dispatchEvent(new CustomEvent("userLogin"));
+      
+      navigate("/");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Registration failed";
+      setErrors((prev) => ({ ...prev, api: msg }));
+      dispatch(setError(msg));
+      dispatch(setStatus("failed"));
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <>
-      <Navbar />
-      <div className="flex h-160 items-center justify-center bg-gray-50 px-4">
-        <div className="flex w-full max-w-5xl rounded-2xl bg-white shadow-lg overflow-hidden">
-          {/* Left Side Image */}
-          <div className="hidden md:block w-1/2">
+      <Navbar/>
+      <div className="h-170 flex items-center justify-center bg-gray-50">
+        <div className="grid grid-cols-1 md:grid-cols-2 bg-white shadow-lg rounded-2xl overflow-hidden">
+          {/* Left side image */}
+          <div className="hidden md:block">
             <img
-              src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d"
-              alt="Register EventifyX"
-              className="h-full w-full object-cover"
+              src="https://images.unsplash.com/photo-1519389950473-47ba0277781c"
+              alt="Register banner"
+              className="w-full h-9/12  object-cover"
             />
           </div>
 
-          {/* Right Side Form */}
-          <div className="w-full md:w-1/2 p-8">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Sign Up for <span className="text-red-500">EventifyX</span>
+          {/* Register Form */}
+          <div className="p-10 flex flex-col justify-center">
+            <h2 className="text-3xl font-bold text-gray-800 mb-6">
+              Create an <span className="text-red-500">EventifyX</span> Account
             </h2>
-            <p className="mt-2 text-sm text-gray-500">
-              Create your account to start planning amazing events.
-            </p>
 
-            {/* Form */}
-            <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="space-y-5">
               {/* Full Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Full Name
-                </label>
-                <input
+                <label className="block text-gray-600 mb-1">Full Name</label>
+                <Input
                   type="text"
                   value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder="Enter your name"
-                  className={`mt-1 w-full rounded-lg border px-3 py-2 text-gray-700 focus:border-red-500 focus:ring focus:ring-red-300 ${errors.name ? 'border-red-500' : ''}`}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your full name"
+                  leftIcon={<FaUser className="h-4 w-4" />}
+                  error={!!errors.name}
+                  required
                 />
-                {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                {errors.name && (
+                  <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                )}
               </div>
 
               {/* Email */}
               <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Email
-                </label>
-                <input
+                <label className="block text-gray-600 mb-1">Email</label>
+                <Input
                   type="email"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
-                  className={`mt-1 w-full rounded-lg border px-3 py-2 text-gray-700 focus:border-red-500 focus:ring focus:ring-red-300 ${errors.email ? 'border-red-500' : ''}`}
+                  leftIcon={<FaEnvelope className="h-4 w-4" />}
+                  error={!!errors.email}
+                  required
                 />
-                {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                {errors.email && (
+                  <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                )}
               </div>
 
               {/* Password */}
               <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Password
-                </label>
-                <input
-                  type="password"
+                <label className="block text-gray-600 mb-1">Password</label>
+                <Input
+                  type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className={`mt-1 w-full rounded-lg border px-3 py-2 text-gray-700 focus:border-red-500 focus:ring focus:ring-red-300 ${errors.password ? 'border-red-500' : ''}`}
+                  leftIcon={<FaLock className="h-4 w-4" />}
+                  rightIcon={
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      className="focus:outline-none"
+                      onClick={() => setShowPassword((v) => !v)}
+                    >
+                      {showPassword ? <FaEyeSlash className="h-4 w-4 text-gray-400" /> : <FaEye className="h-4 w-4 text-gray-400" />}
+                    </button>
+                  }
+                  error={!!errors.password}
+                  required
                 />
-                {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+                {errors.password && (
+                  <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                )}
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label className="block text-gray-600 mb-1">
+                  Confirm Password
+                </label>
+                <Input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter your password"
+                  leftIcon={<FaLock className="h-4 w-4" />}
+                  rightIcon={
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      className="focus:outline-none"
+                      onClick={() => setShowConfirmPassword((v) => !v)}
+                    >
+                      {showConfirmPassword ? <FaEyeSlash className="h-4 w-4 text-gray-400" /> : <FaEye className="h-4 w-4 text-gray-400" />}
+                    </button>
+                  }
+                  error={!!errors.confirmPassword}
+                  required
+                />
+                {errors.confirmPassword && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.confirmPassword}
+                  </p>
+                )}
               </div>
 
               {/* Terms Checkbox */}
-              <div className="flex items-center">
+              <div className="flex items-center space-x-2">
                 <input
-                  id="terms"
                   type="checkbox"
                   checked={terms}
-                  onChange={e => setTerms(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-red-500 focus:ring-red-400"
+                  onChange={(e) => setTerms(e.target.checked)}
+                  className="w-4 h-4 text-red-500"
                 />
-                <label htmlFor="terms" className="ml-2 text-sm text-gray-600">
+                <span className="text-gray-600 text-sm">
                   I agree to the{" "}
-                  <a href="#" className="text-red-500 hover:underline">
+                  <a href="/terms" className="text-red-500 hover:underline">
                     Terms of Service
                   </a>{" "}
                   and{" "}
-                  <a href="#" className="text-red-500 hover:underline">
+                  <a href="/privacy" className="text-red-500 hover:underline">
                     Privacy Policy
                   </a>
-                </label>
+                </span>
               </div>
-              {errors.terms && <p className="text-red-500 text-xs mt-1">{errors.terms}</p>}
+              {errors.terms && (
+                <p className="text-red-500 text-xs mt-1">{errors.terms}</p>
+              )}
 
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full rounded-lg bg-red-500 py-2 font-medium text-white shadow-md hover:bg-red-600 transition"
+                className="w-full py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading}
               >
-                Sign Up
+                {loading ? "Registering..." : "Sign Up"}
               </button>
+
+              {errors.api && (
+                <p className="text-red-500 text-xs mt-2">{errors.api}</p>
+              )}
             </form>
 
-            {/* Redirect to login */}
-            <p className="mt-6 text-center text-sm text-gray-600">
+            {/* Divider */}
+            <div className="my-6 flex items-center">
+              <hr className="flex-1 border-gray-300" />
+              <span className="px-2 text-gray-400 text-sm">OR</span>
+              <hr className="flex-1 border-gray-300" />
+            </div>
+
+            {/* Login Redirect */}
+            <p className="text-center text-gray-600">
               Already have an account?{" "}
-              <a href="/login" className="text-red-500 font-medium hover:underline">
-                Sign In
-              </a>
+              <NavLink
+                to="/login"
+                className="text-red-500 font-semibold hover:underline"
+              >
+                Login
+              </NavLink>
             </p>
           </div>
         </div>

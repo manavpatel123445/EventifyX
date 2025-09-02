@@ -27,9 +27,8 @@ const router = express.Router();
 // All admin routes require admin authorization
 router.use(protect, authorize("admin"));
 
-// =============================================================================
+
 // DASHBOARD ROUTES
-// =============================================================================
 
 // Get dashboard statistics
 // GET /api/admin/dashboard
@@ -39,9 +38,8 @@ router.get("/dashboard", getDashboardStats);
 // GET /api/admin/analytics?startDate=2024-01-01&endDate=2024-12-31
 router.get("/analytics", getAdvancedAnalytics);
 
-// =============================================================================
 // USER MANAGEMENT ROUTES
-// =============================================================================
+
 
 // Get all users with filters
 // GET /api/admin/users?role=user&status=active&search=john&page=1&limit=20

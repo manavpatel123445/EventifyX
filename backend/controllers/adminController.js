@@ -169,8 +169,10 @@ export const getAllUsers = async (req, res) => {
     }
 
     // Sorting
+    const allowedSortFields = ['createdAt', 'name', 'email', 'role', 'status', 'lastLogin'];
+    const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
     const sortOptions = {};
-    sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    sortOptions[sortField] = sortOrder === 'desc' ? -1 : 1;
 
     const users = await User.find(filter)
       .select('-password')

@@ -21,9 +21,19 @@ const eventSchema = new mongoose.Schema(
       ref: "Category",
       required: [true, "Category is required"]
     },
-    date: {
+    startDate: {
       type: Date,
-      required: [true, "Event date is required"],
+      required: [true, "Event start date is required"],
+      validate: {
+        validator: function(v) {
+          return v > new Date();
+        },
+        message: "Event date must be in the future"
+      }
+    },
+     endDate: {
+      type: Date,
+      required: [true, "Event End date is required"],
       validate: {
         validator: function(v) {
           return v > new Date();
@@ -54,17 +64,16 @@ const eventSchema = new mongoose.Schema(
         type: String,
         required: [true, "City is required"]
       },
-      capacity: {
-        type: Number,
-        required: [true, "Venue capacity is required"],
-        min: [1, "Capacity must be at least 1"]
-      }
+      state: {
+        type: String,
+        required: [true, "State is required"]
     },
+  },
     ticketPricing: [{
       type: {
         type: String,
         required: true,
-        enum: ["early_bird", "regular", "vip", "premium"]
+        enum: ["regular", "vip", "premium"]
       },
       price: {
         type: Number,
@@ -112,15 +121,7 @@ const eventSchema = new mongoose.Schema(
       default: true
     },
     
-    registrationDeadline: {
-      type: Date,
-      validate: {
-        validator: function(v) {
-          return !v || v <= this.date;
-        },
-        message: "Registration deadline must be before event date"
-      }
-    },
+    
     
     // Statistics
     totalBookings: {
@@ -210,6 +211,7 @@ eventSchema.methods.getAvailableTickets = function(ticketType) {
 
 // Method to get total available tickets
 eventSchema.methods.getTotalAvailableTickets = function() {
+  if (!Array.isArray(this.ticketPricing)) return 0;
   return this.ticketPricing.reduce((total, ticket) => {
     return total + (ticket.quantity - ticket.sold);
   }, 0);

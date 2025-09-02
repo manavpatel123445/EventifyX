@@ -21,14 +21,24 @@ const eventRequestSchema = new mongoose.Schema(
       ref: "Category",
       required: [true, "Category is required"]
     },
-    date: {
+    startDate: {
       type: Date,
-      required: [true, "Event date is required"],
+      required: [true, "Event start date is required"],
       validate: {
         validator: function(v) {
           return v > new Date();
         },
-        message: "Event date must be in the future"
+        message: "Start date must be in the future"
+      }
+    },
+    endDate: {
+      type: Date,
+      required: [true, "Event end date is required"],
+      validate: {
+        validator: function(v) {
+          return v > new Date();
+        },
+        message: "End date must be in the future"
       }
     },
     startTime: {
@@ -54,10 +64,10 @@ const eventRequestSchema = new mongoose.Schema(
         type: String,
         required: [true, "City is required"]
       },
-      capacity: {
-        type: Number,
-        required: [true, "Venue capacity is required"],
-        min: [1, "Capacity must be at least 1"]
+      state: {
+        type: String,
+        required: [true, "State is required"],
+        trim: true
       }
     },
     ticketPricing: [{

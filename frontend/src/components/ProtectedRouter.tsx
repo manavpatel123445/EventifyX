@@ -4,8 +4,8 @@ import { Navigate, Outlet } from "react-router-dom";
 
 
 const useAuth = () => {
-	
-	return Boolean(localStorage.getItem("token"));
+	const accessToken = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+	return Boolean(accessToken);
 };
 
 const ProtectedRouter: React.FC = () => {
