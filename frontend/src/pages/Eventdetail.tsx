@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { getEventById } from "../services/eventService";
@@ -119,7 +119,15 @@ const Eventdetail: React.FC = () => {
                   {typeof event.category === "object" && event.category !== null ? (event.category as any).name : "General"}
                 </span>
                 <span className="px-3 py-1 bg-gray-200 text-sm rounded-full">
-                  {event.status}
+                  {(() => {
+                    const now = new Date();
+                    const startDate = new Date(event.startDate);
+                    const endDate = new Date(event.endDate);
+                    if (event.status === 'cancelled') return 'cancelled';
+                    if (endDate < now) return 'completed';
+                    if (startDate <= now && endDate >= now) return 'ongoing';
+                    return 'upcoming';
+                  })()}
                 </span>
               </div>
             </div>
@@ -158,17 +166,33 @@ const Eventdetail: React.FC = () => {
               </ul>
 
               <div className="mt-4 text-red-600 font-medium">
-                {event.status === 'upcoming' ? 'Bookings open' : event.status === 'completed' ? 'Event completed' : 'Event not open for booking'}
+                {(() => {
+                  const now = new Date();
+                  const startDate = new Date(event.startDate);
+                  const endDate = new Date(event.endDate);
+                  if (event.status === 'cancelled') return 'Event cancelled';
+                  if (endDate < now) return 'Event completed';
+                  if (startDate <= now && endDate >= now) return 'Event ongoing';
+                  return 'Bookings open';
+                })()}
               </div>
 
               <div className="mt-4">
                 <p className="text-lg font-bold">{ticketMinPrice > 0 ? `₹${ticketMinPrice} onwards` : 'Free'}</p>
-                <button
-                  disabled={event.status !== 'upcoming'}
+              <Link to={`/checkout?eventId=${event._id}`}> <button
+                  disabled={(() => {
+                    const now = new Date();
+                    const startDate = new Date(event.startDate);
+                    const endDate = new Date(event.endDate);
+                    if (event.status === 'cancelled') return true;
+                    if (endDate < now) return true;
+                    if (startDate <= now && endDate >= now) return false; // Allow booking for ongoing events
+                    return event.status !== 'upcoming';
+                  })()}
                   className="mt-3 w-full py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition disabled:opacity-50"
                 >
                   Book Now
-                </button>
+                </button></Link>
               </div>
 
               {Array.isArray(event.ticketPricing) && event.ticketPricing.length > 0 && (

@@ -1,16 +1,19 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+
 import toast from 'react-hot-toast'
 
 import CreateEventModal from '../../components/CreateEventModal'
 import UpdateEventModal from '../../components/UpdateEventModal'
+import { EventViewModal } from '../../components'
 import ManagerSideBar from '../components/ManagerSidebar'
 import { cancelEvent, getMyManagedEvents, getRequestsForManagedEvents, type Event } from '../../services/eventService'
 
 const ManagerEventList = () => {
   const [isCreateOpen, setCreateOpen] = useState(false)
   const [editEvent, setEditEvent] = useState<Event | null>(null)
+  const [viewEvent, setViewEvent] = useState<Event | null>(null)
 
   const queryClient = useQueryClient()
 
@@ -77,6 +80,22 @@ const ManagerEventList = () => {
                 {events.map((ev, i) => {
                   const sold = typeof ev.totalBookings === 'number' ? ev.totalBookings : ev.ticketPricing?.reduce((a, t) => a + (t.sold ?? 0), 0) ?? 0
                   const revenue = typeof ev.totalRevenue === 'number' ? ev.totalRevenue : ev.ticketPricing?.reduce((a, t) => a + t.price * (t.sold ?? 0), 0) ?? 0
+                  
+                  const now = new Date();
+                  const endDate = new Date(ev.endDate);
+                  let currentStatus = ev.status;
+
+                  if (ev.status !== 'cancelled' && endDate < now) {
+                    currentStatus = 'completed';
+                  }
+
+                  const statusColorClass = {
+                    upcoming: 'bg-green-100 text-green-700',
+                    ongoing: 'bg-blue-100 text-blue-700',
+                    completed: 'bg-gray-100 text-gray-700',
+                    cancelled: 'bg-red-100 text-red-700',
+                  }[currentStatus] || 'bg-gray-100 text-gray-700';
+
                   return (
                     <tr key={ev._id} className={`text-sm ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                       <td className="px-4 py-3 font-medium">{ev.title}</td>
@@ -86,11 +105,16 @@ const ManagerEventList = () => {
                       <td className="px-4 py-3">{sold}</td>
                       <td className="px-4 py-3">${revenue.toLocaleString()}</td>
                       <td className="px-4 py-3">
-                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">{ev.status}</span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColorClass}`}>{currentStatus}</span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2 justify-end">
-                          <Link to={`/event/${ev.slug || ev._id}`} className="px-3 py-1 rounded border text-gray-700 hover:bg-gray-50">View</Link>
+                          <button 
+                            onClick={() => setViewEvent(ev)} 
+                            className="px-3 py-1 rounded border text-gray-700 hover:bg-gray-50"
+                          >
+                            View
+                          </button>
                           <button onClick={() => setEditEvent(ev)} className="px-3 py-1 rounded border text-blue-600 hover:bg-blue-50">Update</button>
                           <button
                             disabled={cancelMutation.isPending || ev.status !== 'upcoming'}
@@ -161,6 +185,13 @@ const ManagerEventList = () => {
           isOpen={!!editEvent}
           onClose={() => setEditEvent(null)}
           event={editEvent}
+        />
+      )}
+      {viewEvent && (
+        <EventViewModal
+          isOpen={!!viewEvent}
+          onClose={() => setViewEvent(null)}
+          event={viewEvent}
         />
       )}
     </div>

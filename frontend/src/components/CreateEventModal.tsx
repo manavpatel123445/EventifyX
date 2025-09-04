@@ -330,11 +330,10 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose }) 
                 ))}
             </div>
           </div>
-
           <button
             type="submit"
             disabled={mutation.isPending || uploading}
-            className="w-full bg-red-500 text-white py-2 rounded-md hover:bg-red-600 transition disabled:opacity-50"
+            className="w-60 bg-red-500 text-white  rounded-md hover:bg-red-600 transition disabled:opacity-50"
           >
             {uploading
               ? "Uploading images..."

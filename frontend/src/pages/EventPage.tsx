@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
@@ -32,14 +33,13 @@ const EventPage = () => {
         category: selectedCategory || undefined,
         city: selectedCity || undefined,
         page: currentPage,
-        limit: 12,
-        status: "upcoming"
+        limit: 12
       };
 
       const response = await getAllEvents(params);
       if (response.success) {
         const data: EventsData = response.data;
-        setEvents(data.events);
+        setEvents(data.events.filter(event => event.status !== 'completed'));
         setTotalPages(data.pagination.pages);
       } else {
         toast.error("Failed to load events");

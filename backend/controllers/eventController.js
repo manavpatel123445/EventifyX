@@ -368,7 +368,7 @@ export const getEventById = async (req, res) => {
   try {
     const { identifier } = req.params; // Can be ID or slug
     
-    const query = mongoose.isValidObjectId(identifier) 
+    let query = mongoose.isValidObjectId(identifier) 
       ? { _id: identifier }
       : { slug: identifier };
 
@@ -653,6 +653,45 @@ export const getRequestsForManagedEvents = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch requests for managed events'
+    });
+  }
+};
+
+// SOFT DELETE EVENT (Admin only, only if cancelled)
+export const softDeleteEvent = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found',
+      });
+    }
+    if (event.status !== 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only cancelled events can be deleted',
+      });
+    }
+    if (event.isDeleted) {
+      return res.status(400).json({
+        success: false,
+        message: 'Event is already deleted',
+      });
+    }
+    event.isDeleted = true;
+    await event.save();
+    res.status(200).json({
+      success: true,
+      message: 'Event soft deleted successfully',
+      data: event,
+    });
+  } catch (error) {
+    console.error('Soft delete event error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to soft delete event',
     });
   }
 };

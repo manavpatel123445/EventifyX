@@ -13,8 +13,8 @@ const ManagerSideBar: React.FC = () => {
   const menuItems = [
     { name: "Dashboard", path: "/manager/dashboard", icon: <LayoutDashboard size={20} /> },
     { name: "Events", path: "/manager/eventlist", icon: <Calendar size={20} /> },
-    { name: "Sales & Revenue", path: "/manager/managers", icon: <UserCog size={20} /> },
-    { name: "Profile", path: "/manager/profile", icon: <User size={20} /> },
+    { name: "Sales & Revenue", path: "/manager/managersale", icon: <UserCog size={20} /> },
+    { name: "Profile", path: "/manager/mprofile", icon: <User size={20} /> },
   ];
 
   return (

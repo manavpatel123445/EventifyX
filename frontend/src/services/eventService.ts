@@ -277,3 +277,8 @@ export interface GetRequestsResponse {
     totalRequests: number;
   };
 }
+
+export const getTicketsBySessionId = async (sessionId: string) => {
+  const { data } = await eventAPI.get(`/tickets/session/${sessionId}`);
+  return data;
+};

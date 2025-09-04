@@ -203,4 +203,108 @@ export const createAdmin = async (req, res) => {
 		res.status(500).json({ success: false, message: "Server error" });
 	}
 };
+
+// @route   POST /api/auth/forgot-password
+// @desc    Send password reset email
+// @access  Public
+export const forgotPassword = async (req, res) => {
+	try {
+		const { email } = req.body;
+		
+		if (!email) {
+			return res.status(400).json({ 
+				success: false, 
+				message: "Email is required" 
+			});
+		}
+		
+		const user = await User.findOne({ email });
+		
+		if (!user) {
+			// Don't reveal that user doesn't exist for security reasons
+			return res.json({
+				success: true,
+				message: "If an account with that email exists, we have sent a password reset link"
+			});
+		}
+		
+		// Get reset token
+		const resetToken = user.getResetPasswordToken();
+		
+		await user.save({ validateBeforeSave: false });
+		
+		// For development purposes, we'll return the reset token in response
+		// In production, you would send this via email
+		res.json({
+			success: true,
+			message: "Password reset link sent to email",
+			// TODO: Remove this in production - only for development
+			resetToken: resetToken
+		});
+		
+	} catch (error) {
+		console.error('Forgot password error:', error);
+		res.status(500).json({ success: false, message: "Server error" });
+	}
+};
+
+// @route   PUT /api/auth/reset-password/:resettoken
+// @desc    Reset password
+// @access  Public
+export const resetPassword = async (req, res) => {
+	try {
+		const { resettoken } = req.params;
+		const { password } = req.body;
+		
+		if (!password) {
+			return res.status(400).json({ 
+				success: false, 
+				message: "Password is required" 
+			});
+		}
+		
+		if (password.length < 6) {
+			return res.status(400).json({ 
+				success: false, 
+				message: "Password must be at least 6 characters long" 
+			});
+		}
+		
+		// Find all users and check which one has the matching reset token
+		const users = await User.find({
+			resetPasswordExpire: { $gt: Date.now() }
+		});
+		
+		let user = null;
+		for (let u of users) {
+			if (u.resetPasswordToken && bcrypt.compareSync(resettoken, u.resetPasswordToken)) {
+				user = u;
+				break;
+			}
+		}
+		
+		if (!user) {
+			return res.status(400).json({ 
+				success: false, 
+				message: "Invalid or expired password reset token" 
+			});
+		}
+		
+		// Set new password
+		user.password = password;
+		user.resetPasswordToken = undefined;
+		user.resetPasswordExpire = undefined;
+		
+		await user.save();
+		
+		res.json({
+			success: true,
+			message: "Password reset successful"
+		});
+		
+	} catch (error) {
+		console.error('Reset password error:', error);
+		res.status(500).json({ success: false, message: "Server error" });
+	}
+};
  

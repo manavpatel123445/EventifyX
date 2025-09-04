@@ -6,7 +6,6 @@ import {
   Users,
   LogOut,
   User,
-  UserCheck,
 } from "lucide-react";
 
 const SideBar: React.FC = () => {

@@ -8,13 +8,15 @@ import {
   getAllEventRequests, 
   approveEventRequest, 
   rejectEventRequest
-  } from "../../services/eventService";
+} from "../../services/eventService";
 import CreateEventModal from '../../components/CreateEventModal';
 import CreateCategoryModal from '../../components/CreateCategoryModal';
+import { EventViewModal } from '../../components';
 
 const EventListPage: React.FC = () => {
   const [isEventModalOpen, setEventModalOpen] = useState(false);
   const [isCategoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [viewEvent, setViewEvent] = useState<any>(null);
 
   // Pagination state (separate for requests and events)
   const [reqPage, setReqPage] = useState(1);
@@ -177,9 +179,16 @@ const EventListPage: React.FC = () => {
                       <td className="px-4 py-2">{event.startDate ? new Date(event.startDate).toLocaleString() : "-"} - {event.endDate ? new Date(event.endDate).toLocaleString() : "-"}</td>
                       <td className="px-4 py-2">{typeof event.venue === "object" ? event.venue.name || JSON.stringify(event.venue) : event.venue}</td>
                       <td className="px-4 py-2">
-                        <span className="px-3 py-1 rounded-full text-sm bg-green-100 text-green-700">approved</span>
+                        <span className="px-3 py-1 rounded-full text-sm bg-green-100 text-green-700">appropved</span>
                       </td>
-                      <td className="px-4 py-2 text-blue-500 hover:underline cursor-pointer">View</td>
+                      <td className="px-4 py-2">
+                        <button 
+                          onClick={() => setViewEvent(event)}
+                          className="text-blue-500 hover:underline cursor-pointer"
+                        >
+                          View
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -198,6 +207,13 @@ const EventListPage: React.FC = () => {
       </div>
       <CreateEventModal isOpen={isEventModalOpen} onClose={() => setEventModalOpen(false)} />
       <CreateCategoryModal isOpen={isCategoryModalOpen} onClose={() => setCategoryModalOpen(false)} />
+      {viewEvent && (
+        <EventViewModal
+          isOpen={!!viewEvent}
+          onClose={() => setViewEvent(null)}
+          event={viewEvent}
+        />
+      )}
     </div>
   );
 };

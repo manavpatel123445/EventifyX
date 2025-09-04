@@ -1,16 +1,31 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
-//import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
+import { getAllEvents, type Event } from "../services/eventService";
 
 const Home = () => {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch events (simulate API call)
-  
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const data = await getAllEvents({ status: "upcoming", limit: 6 });
+        setEvents(data.events || []);
+      } catch (error) {
+        setEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEvents();
+  }, []);
+
   return (
     <>
-      <Navbar/>
+      <Navbar />
       {/* Hero Section with Background Image */}
       <section
         className="relative flex items-center justify-center h-[350px] md:h-[450px] w-full bg-cover bg-center"
@@ -32,46 +47,90 @@ const Home = () => {
         </div>
       </section>
       <div className="min-h-screen bg-gray-50">
-    
-      
-      {/* Events Section */}
-      <section className="py-12 px-6 md:px-16">
-        <h2 className="text-2xl font-semibold mb-6 text-center">Upcoming Events</h2>
-        {/* {loading ? (
-          <p className="text-center">Loading events...</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {events.map((event) => (
-              <div
-                key={event.id}
-                className="bg-white shadow-lg rounded-xl overflow-hidden hover:shadow-xl transition"
-              >
-                <img
-                  src={event.image}
-                  alt={event.title}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-4">
-                  <h3 className="text-lg font-bold mb-2">{event.title}</h3>
-                  <p className="text-sm text-gray-600 mb-1">Category: {event.category}</p>
-                  <p className="text-sm text-gray-600 mb-1">Date: {new Date(event.date).toLocaleDateString()}</p>
-                  <p className="text-sm text-gray-800 font-semibold">Price: ${event.price.toFixed(2)}</p>
-                  <Link
-                    to={`/events/${event.id}`}
-                    className="mt-4 inline-block w-full text-center bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition"
-                  >
-                    View Details
-                  </Link>
+        {/* Events Section */}
+        <section className="py-12 px-6 md:px-16">
+          <h2 className="text-2xl font-semibold mb-6 text-center">Upcoming Events</h2>
+          {loading ? (
+            <p className="text-center">Loading events...</p>
+          ) : events.filter(event => new Date(event.startDate) > new Date() && event.status !== 'completed').length === 0 ? (
+            <p className="text-center text-gray-500">No upcoming events found.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {events.filter(event => new Date(event.startDate) > new Date() && event.status !== 'completed').map((event) => (
+                <div key={event._id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                  <img
+                    src={event.images[0] || "https://via.placeholder.com/400x250"}
+                    alt={event.title}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="p-4">
+                    <h3 className="font-semibold text-lg mb-1">{event.title}</h3>
+                    <p className="text-sm text-gray-600 mb-2">{event.category.name}</p>
+                    <p className="text-sm text-gray-500 mb-1">
+                      <span className="font-medium">Date:</span> {new Date(event.startDate).toLocaleDateString()} - {new Date(event.endDate).toLocaleDateString()}
+                    </p>
+                    <p className="text-sm text-gray-500 mb-1">
+                      <span className="font-medium">Venue:</span> {event.venue.name}, {event.venue.city}
+                    </p>
+                    <p className="text-sm text-gray-500 mb-4">
+                      <span className="font-medium">Price:</span> From ${event.ticketPricing[0]?.price || 0}
+                    </p>
+                    <Link
+                      to={`/events/${event._id}`}
+                      className="block w-full text-center bg-red-500 text-white py-2 rounded-md hover:bg-red-600 transition"
+                    >
+                      View Details
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )} */}
-      </section>        
-      <div></div>
-    </div>
-    <Footer/>
-      </>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="py-12 px-6 md:px-16">
+          <h2 className="text-2xl font-semibold mb-6 text-center">Ongoing Events</h2>
+          {loading ? (
+            <p className="text-center">Loading events...</p>
+          ) : events.filter(event => new Date(event.startDate) <= new Date() && new Date(event.endDate) >= new Date() && event.status !== 'completed').length === 0 ? (
+            <p className="text-center text-gray-500">No ongoing events found.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {events.filter(event => new Date(event.startDate) <= new Date() && new Date(event.endDate) >= new Date() && event.status !== 'completed').map((event) => (
+                <div key={event._id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                  <img
+                    src={event.images[0] || "https://via.placeholder.com/400x250"}
+                    alt={event.title}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="p-4">
+                    <h3 className="font-semibold text-lg mb-1">{event.title}</h3>
+                    <p className="text-sm text-gray-600 mb-2">{event.category.name}</p>
+                    <p className="text-sm text-gray-500 mb-1">
+                      <span className="font-medium">Date:</span> {new Date(event.startDate).toLocaleDateString()} - {new Date(event.endDate).toLocaleDateString()}
+                    </p>
+                    <p className="text-sm text-gray-500 mb-1">
+                      <span className="font-medium">Venue:</span> {event.venue.name}, {event.venue.city}
+                    </p>
+                    <p className="text-sm text-gray-500 mb-4">
+                      <span className="font-medium">Price:</span> From ${event.ticketPricing[0]?.price || 0}
+                    </p>
+                    <Link
+                      to={`/events/${event._id}`}
+                      className="block w-full text-center bg-red-500 text-white py-2 rounded-md hover:bg-red-600 transition"
+                    >
+                      View Details
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+        <div></div>
+      </div>
+      <Footer />
+    </>
   );
 };
 

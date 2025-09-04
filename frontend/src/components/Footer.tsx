@@ -24,7 +24,7 @@ const Footer: React.FC = () => {
             <li><NavLink to="/events" className="hover:text-red-500">Events</NavLink></li>
             <li><NavLink to="/create-event" className="hover:text-red-500">Create Event</NavLink></li>
             <li><NavLink to="/Contect" className="hover:text-red-500">Contect Us</NavLink></li>
-            <li><NavLink to="/login" className="hover:text-red-500">Home</NavLink></li>
+            <li><NavLink to="/login" className="hover:text-red-500">Login</NavLink></li>
           </ul>
         </div>
 

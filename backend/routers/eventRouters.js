@@ -16,7 +16,8 @@ import {
   // Event Manager Operations
   getMyManagedEvents,
   getEventStats,
-  getRequestsForManagedEvents
+  getRequestsForManagedEvents,
+  softDeleteEvent
 } from "../controllers/eventController.js";
 
 import { protect, authorize } from "../middlewares/authMiddleware.js";

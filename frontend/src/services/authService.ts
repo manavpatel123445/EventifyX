@@ -32,3 +32,13 @@ export const refreshToken = async (refreshToken: string) => {
   const { data } = await API.post("/refresh", { refreshToken });
   return data;
 };
+
+export const forgotPassword = async (email: string) => {
+  const { data } = await API.post("/forgot-password", { email });
+  return data;
+};
+
+export const resetPassword = async (resetToken: string, password: string) => {
+  const { data } = await API.put(`/reset-password/${resetToken}`, { password });
+  return data;
+};

@@ -159,18 +159,6 @@ const Navbar: React.FC = () => {
                   </Link>
                   
                   {/* Event Manager Request - Only for regular users */}
-                  {currentUser.role === 'user' && (
-                    <Link
-                      to="/request-manager-role"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
-                      onClick={() => setShowDropdown(false)}
-                    >
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Become Event Manager
-                    </Link>
-                  )}
-                  
-                  
                   
                   <div className="border-t border-gray-100 mt-2 pt-2">
                     <button
