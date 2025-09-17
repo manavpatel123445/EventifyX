@@ -168,19 +168,20 @@ const MyEventRequests: React.FC = () => {
                       <div className="flex items-center text-gray-600">
                         <Calendar className="h-4 w-4 mr-2" />
                         <span className="text-sm">
-                          {new Date(request.startDate).toLocaleDateString()} at {request.startTime}
+                          {request.startDate ? new Date(request.startDate).toLocaleDateString() : "TBD"}
+                          {request.startTime ? ` at ${request.startTime}` : ""}
                         </span>
                       </div>
                       <div className="flex items-center text-gray-600">
                         <MapPin className="h-4 w-4 mr-2" />
                         <span className="text-sm">
-                          {request.venue.name}, {request.venue.city}
+                          {request.venue?.name || "Venue"}, {request.venue?.city || "City"}
                         </span>
                       </div>
                       <div className="flex items-center text-gray-600">
                         <DollarSign className="h-4 w-4 mr-2" />
                         <span className="text-sm">
-                          ${request.ticketPricing[0]?.price || 0} - {request.venue.state}
+                          ${request.ticketPricing?.[0]?.price ?? 0} - {request.venue?.state || ""}
                         </span>
                       </div>
                     </div>
@@ -189,7 +190,7 @@ const MyEventRequests: React.FC = () => {
                     <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
                       <div className="flex items-center gap-4">
                         <span className="bg-gray-100 px-2 py-1 rounded">
-                          {request.category.name}
+                          {request.category?.name || "General"}
                         </span>
                         <span>
                           Submitted {new Date(request.createdAt).toLocaleDateString()}
@@ -244,7 +245,7 @@ const MyEventRequests: React.FC = () => {
                         )}
                         {request.status === 'approved' && request.approvedEvent && (
                           <Link
-                            to={`/events/${request.approvedEvent}`}
+                            to={`/events/${(typeof request.approvedEvent === 'string' ? request.approvedEvent : (request as any).approvedEvent?._id) || ''}`}
                             className="flex items-center text-green-600 hover:text-green-700"
                           >
                             <Eye className="h-4 w-4 mr-1" />
@@ -261,7 +262,7 @@ const MyEventRequests: React.FC = () => {
 
                       {request.status === 'approved' && request.approvedEvent && (
                         <Link
-                          to={`/manager/events/${request.approvedEvent}`}
+                          to={`/manager/events/${(typeof request.approvedEvent === 'string' ? request.approvedEvent : (request as any).approvedEvent?._id) || ''}`}
                           className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition text-sm font-medium"
                         >
                           Manage Event

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMemo, useState } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import toast from 'react-hot-toast'
@@ -14,15 +15,20 @@ const ManagerEventList = () => {
   const [isCreateOpen, setCreateOpen] = useState(false)
   const [editEvent, setEditEvent] = useState<Event | null>(null)
   const [viewEvent, setViewEvent] = useState<Event | null>(null)
+  const [page, setPage] = useState(1)
+  const limit = 10
 
   const queryClient = useQueryClient()
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['manager-managed-events', 'list'],
+  const { data: eventsData, isLoading } = useQuery({
+    queryKey: ['manager-managed-events', 'list', { page, limit }],
     queryFn: async () => {
-      const res = await getMyManagedEvents({ page: 1, limit: 50 })
+      const res = await getMyManagedEvents({ page, limit })
       const payload = (res as any)?.data ?? res
-      return Array.isArray(payload?.events) ? payload.events as Event[] : []
+      return {
+        events: Array.isArray(payload?.events) ? payload.events as Event[] : [],
+        pagination: payload?.pagination ?? { total: 0, pages: 1 }
+      }
     },
   })
 
@@ -35,7 +41,8 @@ const ManagerEventList = () => {
     },
   })
 
-  const events: Event[] = useMemo(() => Array.isArray(data) ? data : [], [data])
+  const events: Event[] = useMemo(() => Array.isArray(eventsData?.events) ? eventsData.events : [], [eventsData])
+  const totalPages = eventsData?.pagination?.pages ?? 1
   const requests: any[] = useMemo(() => Array.isArray(requestsData) ? requestsData : [], [requestsData])
 
   const cancelMutation = useMutation({
@@ -72,8 +79,8 @@ const ManagerEventList = () => {
                   <th className="px-4 py-3">Location</th>
                   <th className="px-4 py-3">Tickets</th>
                   <th className="px-4 py-3">Revenue</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-6 py-3">Status</th>
+                  <th className="px-4 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -103,9 +110,11 @@ const ManagerEventList = () => {
                       <td className="px-4 py-3">{new Date(ev.startDate).toLocaleDateString()} {ev.startTime}</td>
                       <td className="px-4 py-3">{ev.venue?.city ?? ''}</td>
                       <td className="px-4 py-3">{sold}</td>
-                      <td className="px-4 py-3">${revenue.toLocaleString()}</td>
+                      <td className="px-4 py-3">₹{revenue.toLocaleString()}</td>
                       <td className="px-4 py-3">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColorClass}`}>{currentStatus}</span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColorClass}`}>
+                          {currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2 justify-end">
@@ -137,6 +146,31 @@ const ManagerEventList = () => {
                 )}
               </tbody>
             </table>
+            
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 px-2">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="flex items-center px-3 py-1 rounded border disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+                </button>
+                
+                <div className="text-sm text-gray-600">
+                  Page {page} of {totalPages}
+                </div>
+                
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className="flex items-center px-3 py-1 rounded border disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next <ChevronRight className="w-4 h-4 ml-1" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

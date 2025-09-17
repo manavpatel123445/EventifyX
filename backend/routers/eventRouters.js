@@ -17,7 +17,8 @@ import {
   getMyManagedEvents,
   getEventStats,
   getRequestsForManagedEvents,
-  softDeleteEvent
+  softDeleteEvent,
+  autoSoftDeleteCompletedEvents
 } from "../controllers/eventController.js";
 
 import { protect, authorize } from "../middlewares/authMiddleware.js";
@@ -77,6 +78,10 @@ router.post("/admin/requests/:requestId/approve", protect, authorize("admin"), a
 // Reject event request
 // POST /api/events/admin/requests/:requestId/reject
 router.post("/admin/requests/:requestId/reject", protect, authorize("admin"), rejectEventRequest);
+
+// Auto soft delete completed events (Admin only)
+// POST /api/events/admin/cleanup-completed
+router.post("/admin/cleanup-completed", protect, authorize("admin"), autoSoftDeleteCompletedEvents);
 
 // =============================================================================
 // PUBLIC: Get single event by ID or slug (keep LAST so it doesn't shadow others)

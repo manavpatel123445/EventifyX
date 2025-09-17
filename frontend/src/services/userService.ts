@@ -55,6 +55,7 @@ export interface UserProfile {
   name: string;
   email: string;
   phone?: string;
+  dateOfBirth?: string;
   profileImage?: string;
   role: string;
   status: string;
@@ -67,6 +68,7 @@ export interface UpdateProfileData {
   name?: string;
   email?: string;
   phone?: string;
+  dateOfBirth?: string;
   profileImage?: string;
 }
 

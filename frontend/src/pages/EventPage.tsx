@@ -1,9 +1,10 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { getAllEvents } from "../services/eventService";
+import { getAllCategories } from "../services/categoryService";
 import type { Event } from "../services/eventService";
 import toast from "react-hot-toast";
 
@@ -24,6 +25,9 @@ const EventPage = () => {
   const [selectedCity, setSelectedCity] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [categories, setCategories] = useState<Array<{ _id: string; name: string; status?: string }>>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const location = useLocation();
 
   const fetchEvents = async () => {
     try {
@@ -51,6 +55,40 @@ const EventPage = () => {
       setLoading(false);
     }
   };
+
+  // Load categories for the filter
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const res = await getAllCategories();
+        const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+        // keep only active if status exists
+        const active = list.filter((c: any) => !c.status || c.status === 'active');
+        setCategories(active);
+      } catch (e) {
+        // silent fail for categories filter; page can still function
+        setCategories([]);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+    loadCategories();
+  }, []);
+
+  // Initialize filters from URL query params
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const s = params.get('search') || "";
+    const c = params.get('city') || "";
+    const cat = params.get('category') || ""; // expecting category ID
+    const pageParam = parseInt(params.get('page') || "1", 10);
+
+    setSearchTerm(s);
+    setSelectedCity(c);
+    setSelectedCategory(cat);
+    setCurrentPage(Number.isNaN(pageParam) ? 1 : pageParam);
+  }, [location.search]);
 
   useEffect(() => {
     fetchEvents();
@@ -80,6 +118,7 @@ const EventPage = () => {
   };
 
   const formatTime = (timeString: string) => {
+    if (!timeString) return 'TBD';
     const [hours, minutes] = timeString.split(':');
     const hour = parseInt(hours);
     const ampm = hour >= 12 ? 'PM' : 'AM';
@@ -131,11 +170,15 @@ const EventPage = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   <option value="">All Categories</option>
-                  <option value="music">Music</option>
-                  <option value="technology">Technology</option>
-                  <option value="business">Business</option>
-                  <option value="sports">Sports</option>
-                  <option value="entertainment">Entertainment</option>
+                  {categoriesLoading ? (
+                    <option disabled>Loading...</option>
+                  ) : (
+                    categories.map((cat) => (
+                      <option key={cat._id} value={cat._id}>
+                        {cat.name}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
               
@@ -200,7 +243,7 @@ const EventPage = () => {
                     <div className="p-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm text-red-500 font-medium">
-                          {event.category.name}
+                          {event.category?.name || 'General'}
                         </span>
                         <span className="text-sm text-gray-500">
                           {formatDate(event.startDate)}
@@ -214,7 +257,7 @@ const EventPage = () => {
                       </p>
                       <div className="flex items-center text-sm text-gray-500 mb-2">
                         <span className="mr-1">📍</span>
-                        <span>{event.venue.city}, {event.venue.state}</span>
+                        <span>{`${event.venue?.city || 'TBD'}${event.venue?.state ? `, ${event.venue.state}` : ''}`}</span>
                       </div>
                       <div className="flex items-center text-sm text-gray-500 mb-3">
                         <span className="mr-1">⏰</span>
@@ -222,10 +265,12 @@ const EventPage = () => {
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="text-sm font-medium text-green-600">
-                          From ₹{Math.min(...event.ticketPricing.map(t => t.price))}
+                          {event.ticketPricing?.length
+                            ? `From ₹${Math.min(...event.ticketPricing.map(t => t.price))}`
+                            : 'Free'}
                         </div>
                         <div className="text-xs text-gray-500">
-                          {event.eventManager.name}
+                          {event.eventManager?.name || 'Organizer'}
                         </div>
                       </div>
                     </div>
@@ -305,4 +350,4 @@ const EventPage = () => {
   );
 };
 
-export default EventPage
+export default EventPage;

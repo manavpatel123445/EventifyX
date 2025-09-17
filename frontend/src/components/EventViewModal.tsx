@@ -205,7 +205,7 @@ const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event 
               <p className="text-sm text-blue-800">Total Bookings</p>
             </div>
             <div className="bg-green-50 p-4 rounded-lg text-center">
-              <p className="text-2xl font-bold text-green-600">${event.totalRevenue}</p>
+              <p className="text-2xl font-bold text-green-600">₹{event.totalRevenue}</p>
               <p className="text-sm text-green-800">Total Revenue</p>
             </div>
             <div className="bg-purple-50 p-4 rounded-lg text-center">

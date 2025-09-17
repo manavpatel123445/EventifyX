@@ -12,9 +12,16 @@ import {
   User,
   Heart,
   Ticket,
-  Star
+  Star,
+  UserCog,
+  Shield,
+  BarChart3
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { ROLES, ROLE_DISPLAY_NAMES, ROLE_COLORS, hasRole } from "../utils/roles";
+
+ 
+
 
 interface UserStats {
   eventsCreated: number;
@@ -50,7 +57,7 @@ const ProfilePage = () => {
     try {
       // Mock user stats - replace with actual API calls
       const mockStats: UserStats = {
-        eventsCreated: user?.role === 'event_manager' ? 5 : 0,
+        eventsCreated: hasRole(user?.role, ROLES.EVENT_MANAGER) ? 5 : 0,
         eventsAttended: 12,
         upcomingEvents: 3,
         totalSpent: 450,
@@ -260,17 +267,62 @@ const ProfilePage = () => {
                     <User className="h-5 w-5 text-blue-600" />
                     <h3 className="text-sm font-semibold text-blue-800">Account Status</h3>
                   </div>
-                  <div className="text-sm text-blue-700">
-                    <p><strong>Role:</strong> {user?.role?.replace('_', ' ').toUpperCase()}</p>
-                    <p><strong>Status:</strong> {user?.status?.toUpperCase()}</p>
-                    {user?.role === 'event_manager' && (
-                      <div className="mt-3">
-                        <p className="font-medium">Event Manager Benefits:</p>
-                        <ul className="mt-1 space-y-1 text-xs">
-                          <li>• Create and manage events</li>
-                          <li>• Access event analytics</li>
-                          <li>• Manage attendee lists</li>
-                          <li>• Generate revenue reports</li>
+                  <div className="text-sm">
+                    <div className="flex items-center mb-2">
+                      <span className="font-medium mr-2">Role:</span>
+                      <span 
+                        className={`px-2 py-1 rounded-full text-xs font-medium 
+                        ${user?.role ? ROLE_COLORS[user.role]?.bg : 'bg-gray-100'} 
+                        ${user?.role ? ROLE_COLORS[user.role]?.text : 'text-gray-800'}`}
+                      >
+                        {user?.role ? ROLE_DISPLAY_NAMES[user.role] : 'User'}
+                      </span>
+                    </div>
+                    <p className="mb-2"><strong>Status:</strong> {user?.status?.toUpperCase()}</p>
+                    
+                    {/* Role-specific benefits */}
+                    {hasRole(user?.role, ROLES.EVENT_MANAGER) && (
+                      <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                        <p className="font-medium text-blue-800 flex items-center">
+                          <BarChart3 className="w-4 h-4 mr-2" />
+                          Event Manager Benefits
+                        </p>
+                        <ul className="mt-1 space-y-1 text-xs text-blue-700">
+                          <li className="flex items-start">
+                            <span className="mr-1">•</span>
+                            <span>Create and manage events</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="mr-1">•</span>
+                            <span>Access event analytics</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="mr-1">•</span>
+                            <span>Manage event registrations</span>
+                          </li>
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {hasRole(user?.role, ROLES.ADMIN) && (
+                      <div className="mt-3 p-3 bg-red-50 rounded-lg">
+                        <p className="font-medium text-red-800 flex items-center">
+                          <Shield className="w-4 h-4 mr-2" />
+                          Administrator Benefits
+                        </p>
+                        <ul className="mt-1 space-y-1 text-xs text-red-700">
+                          <li className="flex items-start">
+                            <span className="mr-1">•</span>
+                            <span>Full system access</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="mr-1">•</span>
+                            <span>User management</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="mr-1">•</span>
+                            <span>System configuration</span>
+                          </li>
                         </ul>
                       </div>
                     )}

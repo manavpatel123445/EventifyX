@@ -71,7 +71,7 @@ function App() {
             <Route
               path="/my-events"
               element={
-                <RoleProtectedRoute requiredRole="user" allowedRoles={["user", "event_manager", "admin"]}>
+                <RoleProtectedRoute requiredRole="user" allowedRoles={["user", "event_manager"]}>
                   <MyEventRequests />
                 </RoleProtectedRoute>
               }
@@ -137,7 +137,7 @@ function App() {
               element={
                 <RoleProtectedRoute requiredRole="event_manager">
                   <SaleRevanue />
-                </RoleProtectedRoute>
+                </RoleProtectedRoute>   
               }
             />
 

@@ -9,6 +9,10 @@ export const getProfile = async (req, res) => {
 		if (!user) {
 			return res.status(404).json({ success: false, message: "User not found" });
 		}
+		// Sanitize legacy broken default image URL
+		if (user.profileImage && typeof user.profileImage === 'string' && user.profileImage.includes('default-profile_qxqv2r.png')) {
+			user.profileImage = '';
+		}
 		res.json({ success: true, user });
 	} catch (error) {
 		res.status(500).json({ success: false, message: "Server error" });
@@ -22,6 +26,11 @@ export const updateProfile = async (req, res) => {
 		delete updates.role; // Prevent role change
 		delete updates.status; // Prevent status change
 		delete updates.password; // Password change handled elsewhere
+
+		// Sanitize legacy broken default image URL in incoming updates
+		if (typeof updates.profileImage === 'string' && updates.profileImage.includes('default-profile_qxqv2r.png')) {
+			updates.profileImage = '';
+		}
 		const user = await User.findByIdAndUpdate(
 			req.user._id,
 			{ $set: updates },
@@ -29,6 +38,9 @@ export const updateProfile = async (req, res) => {
 		);
 		if (!user) {
 			return res.status(404).json({ success: false, message: "User not found" });
+		}
+		if (user.profileImage && typeof user.profileImage === 'string' && user.profileImage.includes('default-profile_qxqv2r.png')) {
+			user.profileImage = '';
 		}
 		res.json({ success: true, user });
 	} catch (error) {
@@ -90,3 +102,6 @@ export const deleteAccount = async (req, res) => {
 		res.status(500).json({ success: false, message: "Server error" });
 	}
 };
+
+// Upload and set current user's profile image (avatar)
+// Removed avatar upload handler to revert to client-side uploads

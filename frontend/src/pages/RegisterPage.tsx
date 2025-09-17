@@ -5,11 +5,53 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { registerUser } from "../services/authService";
 import { loginSuccess, setError, setStatus } from "../app/slices/authslice";
-import { FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { cn } from "../lib/utils";
 
+// ✅ Reusable Input Component
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  error?: boolean;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
+}
+
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, error, leftIcon, rightIcon, ...props }, ref) => {
+    return (
+      <div className="relative w-full">
+        {leftIcon && (
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            {leftIcon}
+          </div>
+        )}
+        <input
+          ref={ref}
+          type={type}
+          {...props} // ✅ ensures value & onChange work
+          className={cn(
+            "flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm",
+            "placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2",
+            "focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+            leftIcon && "pl-10",
+            rightIcon && "pr-10",
+            error && "border-red-500 focus-visible:ring-red-500",
+            className
+          )}
+        />
+        {rightIcon && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+            {rightIcon}
+          </div>
+        )}
+      </div>
+    );
+  }
+);
+Input.displayName = "Input";
+
 const RegisterPage: React.FC = () => {
+  // ✅ State
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,68 +83,24 @@ const RegisterPage: React.FC = () => {
     } = {};
 
     if (!name) newErrors.name = "Full name is required";
-
     if (!email) {
       newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = "Invalid email address";
     }
-
-    if (!password) { 
+    if (!password) {
       newErrors.password = "Password is required";
     } else if (password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
     }
-
     if (password !== confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
     }
-
     if (!terms) {
       newErrors.terms = "You must accept terms & conditions";
     }
-
     return newErrors;
   };
-
-  interface InputProps
-    extends React.InputHTMLAttributes<HTMLInputElement> {
-    error?: boolean;
-    leftIcon?: React.ReactNode;
-    rightIcon?: React.ReactNode;
-  }
-
-  const Input = React.forwardRef<HTMLInputElement, InputProps>(
-    ({ className, type, error, leftIcon, rightIcon, ...props }, ref) => {
-      return (
-        <div className="relative">
-          {leftIcon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-              {leftIcon}
-            </div>
-          )}
-          <input
-            type={type}
-            className={cn(
-              "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-              leftIcon && "pl-10",
-              rightIcon && "pr-10",
-              error && "border-destructive focus-visible:ring-destructive",
-              className
-            )}
-            ref={ref}
-            {...props}
-          />
-          {rightIcon && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-              {rightIcon}
-            </div>
-          )}
-        </div>
-      );
-    }
-  );
-  Input.displayName = "Input";
 
   // ✅ Handle Submit
   const handleSubmit = async (e: React.FormEvent) => {
@@ -120,7 +118,7 @@ const RegisterPage: React.FC = () => {
       dispatch(setStatus("loading"));
       const data = await registerUser({ name, email, password });
 
-      // ✅ Save tokens
+      // Save tokens
       localStorage.setItem("accessToken", data.accessToken);
       localStorage.setItem("refreshToken", data.refreshToken);
       localStorage.setItem("user", JSON.stringify(data.user));
@@ -128,11 +126,9 @@ const RegisterPage: React.FC = () => {
       dispatch(loginSuccess(data));
       dispatch(setStatus("succeeded"));
 
-      toast.success(`Welcome to EventifyX, ${data.user?.name || 'User'}!`);
-      
-      // Dispatch custom event to update navbar
+      toast.success(`Welcome to EventifyX, ${data.user?.name || "User"}!`);
+
       window.dispatchEvent(new CustomEvent("userLogin"));
-      
       navigate("/");
     } catch (err: any) {
       const msg = err?.response?.data?.message || "Registration failed";
@@ -147,15 +143,15 @@ const RegisterPage: React.FC = () => {
 
   return (
     <>
-      <Navbar/>
-      <div className="h-170 flex items-center justify-center bg-gray-50">
-        <div className="grid grid-cols-1 md:grid-cols-2 bg-white shadow-lg rounded-2xl overflow-hidden">
+      <Navbar />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="grid grid-cols-1 md:grid-cols-2 bg-white shadow-lg rounded-2xl overflow-hidden max-w-5xl w-full">
           {/* Left side image */}
           <div className="hidden md:block">
             <img
               src="https://images.unsplash.com/photo-1519389950473-47ba0277781c"
               alt="Register banner"
-              className="w-full h-9/12  object-cover"
+              className="w-full h-full object-cover"
             />
           </div>
 
@@ -213,10 +209,14 @@ const RegisterPage: React.FC = () => {
                     <button
                       type="button"
                       tabIndex={-1}
-                      className="focus:outline-none"
                       onClick={() => setShowPassword((v) => !v)}
+                      className="focus:outline-none"
                     >
-                      {showPassword ? <FaEyeSlash className="h-4 w-4 text-gray-400" /> : <FaEye className="h-4 w-4 text-gray-400" />}
+                      {showPassword ? (
+                        <FaEyeSlash className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <FaEye className="h-4 w-4 text-gray-400" />
+                      )}
                     </button>
                   }
                   error={!!errors.password}
@@ -242,10 +242,14 @@ const RegisterPage: React.FC = () => {
                     <button
                       type="button"
                       tabIndex={-1}
-                      className="focus:outline-none"
                       onClick={() => setShowConfirmPassword((v) => !v)}
+                      className="focus:outline-none"
                     >
-                      {showConfirmPassword ? <FaEyeSlash className="h-4 w-4 text-gray-400" /> : <FaEye className="h-4 w-4 text-gray-400" />}
+                      {showConfirmPassword ? (
+                        <FaEyeSlash className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <FaEye className="h-4 w-4 text-gray-400" />
+                      )}
                     </button>
                   }
                   error={!!errors.confirmPassword}
@@ -258,7 +262,7 @@ const RegisterPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Terms Checkbox */}
+              {/* Terms */}
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -281,7 +285,7 @@ const RegisterPage: React.FC = () => {
                 <p className="text-red-500 text-xs mt-1">{errors.terms}</p>
               )}
 
-              {/* Submit Button */}
+              {/* Submit */}
               <button
                 type="submit"
                 className="w-full py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
@@ -302,7 +306,7 @@ const RegisterPage: React.FC = () => {
               <hr className="flex-1 border-gray-300" />
             </div>
 
-            {/* Login Redirect */}
+            {/* Redirect to Login */}
             <p className="text-center text-gray-600">
               Already have an account?{" "}
               <NavLink

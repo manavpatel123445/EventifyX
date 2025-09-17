@@ -118,3 +118,12 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Utility: hide scrollbars (used for horizontal carousels) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;    /* Firefox */
+}

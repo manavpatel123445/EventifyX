@@ -155,7 +155,7 @@ const EventQuickView: React.FC<EventQuickViewProps> = ({
               <span className="font-medium text-blue-600">{event.totalBookings}</span> bookings
             </span>
             <span className="text-gray-600">
-              <span className="font-medium text-green-600">${event.totalRevenue}</span> revenue
+              <span className="font-medium text-green-600">{event.totalRevenue}</span> revenue
             </span>
           </div>
           <div className="text-xs text-gray-500">

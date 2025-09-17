@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { type RootState } from "../app/store";
 import { setUser } from "../app/slices/authslice";
 import { getProfile, updateProfile, changePassword,type UserProfile,type UpdateProfileData,type ChangePasswordData } from "../services/userService";
+import { uploadAvatar } from "../services/eventService";
 import ImageUpload from "./ImageUpload";
 import { Button } from "./ui/button";
 import { Input } from "./ui/Input";
@@ -23,6 +24,7 @@ const ProfileForm = ({ showTitle = true, className = "" }: ProfileFormProps) => 
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
   // Profile form state
   const [formData, setFormData] = useState({
@@ -40,15 +42,16 @@ const ProfileForm = ({ showTitle = true, className = "" }: ProfileFormProps) => 
   });
   
   const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [avatarInputKey, setAvatarInputKey] = useState(0);
 
   // Load profile data
   useEffect(() => {
     loadProfile();
   }, []);
 
-  const loadProfile = async () => {
+  const loadProfile = async (): Promise<void> => {
     try {
-      const response = await getProfile();
+      const  response: { success: boolean; user: UserProfile } = await getProfile();
       if (response.success) {
         setProfile(response.user);
         setFormData({
@@ -129,6 +132,32 @@ const ProfileForm = ({ showTitle = true, className = "" }: ProfileFormProps) => 
     setFormData(prev => ({ ...prev, profileImage: imageUrl }));
   };
 
+  const onSelectAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.match(/image\/(jpeg|jpg|png|gif|webp)/)) {
+      toast.error("Please select a valid image (JPG, PNG, GIF, WebP)");
+      setAvatarInputKey(prev => prev + 1);
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image is too large. Max size is 10MB");
+      setAvatarInputKey(prev => prev + 1);
+      return;
+    }
+    setUploadingAvatar(true);
+    try {
+      const url = await uploadAvatar(file);
+      handleImageUpload(url);
+      toast.success("Profile image uploaded");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to upload image");
+    } finally {
+      setUploadingAvatar(false);
+      setAvatarInputKey(prev => prev + 1);
+    }
+  };
+
   if (loading) {
     return (
       <div className={`flex justify-center items-center p-8 ${className}`}>
@@ -153,16 +182,26 @@ const ProfileForm = ({ showTitle = true, className = "" }: ProfileFormProps) => 
             <div className="shrink-0">
               <img
                 className="h-20 w-20 object-cover rounded-full ring-4 ring-gray-300"
-                src={formData.profileImage || "/default-avatar.png"}
+                src={!formData.profileImage || formData.profileImage.includes("default-profile_qxqv2r.png") ? "/default-avatar.svg" : formData.profileImage}
                 alt="Profile"
-                onError={(e: any) => { e.currentTarget.src = "/default-avatar.png"; }}
+                onError={(e: any) => { e.currentTarget.src = "/default-avatar.svg"; }}
               />
             </div>
-            <ImageUpload
-              onImagesChange={(urls) => handleImageUpload(urls[0] || "")}
-              maxImages={1}
-              existingImages={formData.profileImage ? [formData.profileImage] : []}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Profile Image</label>
+              <div className="flex items-center gap-3">
+                <input
+                  key={avatarInputKey}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                  onChange={onSelectAvatar}
+                />
+                {uploadingAvatar && (
+                  <span className="text-sm text-gray-600">Uploading...</span>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Max 10MB. JPG, PNG, GIF, WebP.</p>
+            </div>
           </div>  
 
           {/* Name */}

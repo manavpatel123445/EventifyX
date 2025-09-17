@@ -26,7 +26,11 @@ const eventSchema = new mongoose.Schema(
       required: [true, "Event start date is required"],
       validate: {
         validator: function(v) {
-          return v > new Date();
+          // Only validate future dates for new events, not when updating existing ones
+          if (this.isNew) {
+            return v > new Date();
+          }
+          return true;
         },
         message: "Event date must be in the future"
       }
@@ -36,7 +40,11 @@ const eventSchema = new mongoose.Schema(
       required: [true, "Event End date is required"],
       validate: {
         validator: function(v) {
-          return v > new Date();
+          // Only validate future dates for new events, not when updating existing ones
+          if (this.isNew) {
+            return v > new Date();
+          }
+          return true;
         },
         message: "Event date must be in the future"
       }
@@ -121,6 +129,12 @@ const eventSchema = new mongoose.Schema(
       default: true
     },
     
+    // Soft delete flag
+    isDeleted: {
+      type: Boolean,
+      default: false
+    },
+    
     
     
     // Statistics
@@ -196,11 +210,12 @@ eventSchema.pre('save', function(next) {
 });
 
 // Indexes for better query performance
-eventSchema.index({ date: 1, status: 1 });
+eventSchema.index({ startDate: 1, status: 1 });
+eventSchema.index({ endDate: 1, status: 1 });
 eventSchema.index({ eventManager: 1 });
 eventSchema.index({ category: 1 });
 eventSchema.index({ slug: 1 });
-eventSchema.index({ 'venue.city': 1, date: 1 });
+eventSchema.index({ 'venue.city': 1, startDate: 1 });
 eventSchema.index({ tags: 1 });
 
 // Method to calculate available tickets for a specific type

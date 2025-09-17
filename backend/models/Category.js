@@ -12,6 +12,14 @@ const categorySchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    icon: {
+      type: String,
+      default: "📁"
+    },
+    color: {
+      type: String,
+      default: "#6B7280"
+    },
     status: {
       type: String,
       enum: ["active", "inactive"],

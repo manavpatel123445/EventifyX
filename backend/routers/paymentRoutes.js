@@ -4,7 +4,6 @@ import {
   getUserTickets, 
   getTicketsByPayment,
   getTicketsBySession,
-  stripeWebhook,
 } from "../controllers/paymentController.js";
 import { optionalAuth, protect } from "../middlewares/authMiddleware.js";
 
@@ -21,7 +20,5 @@ router.get("/tickets/payment/:paymentId", getTicketsByPayment);
 
 // Get tickets by session ID (for success page)
 router.get("/tickets/session/:sessionId", getTicketsBySession);
-
-router.post("/webhook", express.raw({ type: "application/json" }), stripeWebhook);
 
 export default router;

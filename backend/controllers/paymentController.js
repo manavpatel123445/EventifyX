@@ -1,7 +1,9 @@
+import dotenv from "dotenv";
+dotenv.config();
 import Stripe from "stripe";
 import QRCode from "qrcode";
 import Payment from "../models/payment.js";
-import Ticket from "../models/ticket.js";
+import Ticket from "../models/Ticket.js";
 import Event from "../models/Event.js";
 
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -26,7 +28,7 @@ export const createCheckoutSession = async (req, res) => {
     // Build line items
     const line_items = tickets.map((ticket) => ({
       price_data: {
-        currency: "usd",
+        currency: "inr",
         product_data: {
           name: `${(ticket.type || 'regular').toString().toUpperCase()} Ticket - ${event.title}`,
         },
@@ -61,7 +63,7 @@ export const createCheckoutSession = async (req, res) => {
       tickets: [],
       stripeSessionId: session.id,
       amount: amountTotal,
-      currency: "usd",
+      currency: "ind",
         status: "pending",
       metadata: { buyerDetails },
     });
@@ -94,7 +96,15 @@ export const stripeWebhook = async (req, res) => {
       if (payment && payment.status !== "succeeded") {
         payment.status = "succeeded";
         payment.stripePaymentIntentId = session.payment_intent;
-        payment.receiptUrl = session?.payment_intent?.charges?.data?.[0]?.receipt_url;
+        try {
+          // Retrieve PaymentIntent to access charges and receipt URL
+          const pi = await stripe.paymentIntents.retrieve(session.payment_intent, {
+            expand: ["charges"],
+          });
+          payment.receiptUrl = pi?.charges?.data?.[0]?.receipt_url || payment.receiptUrl;
+        } catch (piErr) {
+          console.warn("Could not retrieve PaymentIntent charges:", piErr?.message || piErr);
+        }
 
         // Parse tickets metadata
         const ticketsMeta = JSON.parse(session.metadata?.tickets || "[]");
@@ -170,7 +180,7 @@ export const getUserTickets = async (req, res) => {
     }
 
     const tickets = await Ticket.find({ user: userId })
-      .populate('event', 'title date location image')
+      .populate('event', 'title startDate endDate venue images')
       .populate('payment', 'amount currency status')
       .sort({ createdAt: -1 });
 
@@ -187,7 +197,7 @@ export const getTicketsByPayment = async (req, res) => {
     const { paymentId } = req.params;
     
     const tickets = await Ticket.find({ payment: paymentId })
-      .populate('event', 'title date location image')
+      .populate('event', 'title startDate endDate venue images')
       .populate('payment', 'amount currency status')
       .populate('user', 'name email');
 
@@ -223,7 +233,7 @@ export const getTicketsBySession = async (req, res) => {
           tickets: [],
           stripeSessionId: session.id,
           amount: (session.amount_total || 0) / 100,
-          currency: session.currency || "usd",
+          currency: session.currency || "ind",
           status: session.payment_status === 'paid' ? 'succeeded' : 'pending',
           metadata: { buyerDetails: { name: session.metadata?.buyerName, email: session.metadata?.buyerEmail } },
         });
@@ -235,36 +245,42 @@ export const getTicketsBySession = async (req, res) => {
 
     // Get tickets for this payment
     const tickets = await Ticket.find({ payment: payment._id })
-      .populate('event', 'title date location image')
+      .populate('event', 'title startDate endDate venue images')
       .populate('payment', 'amount currency status')
       .populate('user', 'name email');
 
-    if (tickets.length === 0 && payment.status === 'succeeded') {
-      // If webhook hasn't run yet but session is paid, attempt to build tickets now
+    if (tickets.length === 0) {
+      // If no tickets yet, check Stripe session status and generate if paid
       try {
         const session = await stripe.checkout.sessions.retrieve(sessionId);
-        const ticketsMeta = JSON.parse(session.metadata?.tickets || "[]");
-        const createdTickets = [];
-        for (const t of ticketsMeta) {
-          for (let i = 0; i < (Number(t.quantity) || 1); i++) {
-            const ticketId = `${payment._id}_${t.type || "regular"}_${i + 1}`;
-            const qrData = { ticketId, eventId: payment.event?.toString(), userId: payment.user?.toString(), type: t.type || 'regular', price: Number(t.price) || 0, timestamp: new Date().toISOString() };
-            const qrCodeDataURL = await QRCode.toDataURL(JSON.stringify(qrData), { width: 200, margin: 2, color: { dark: '#000000', light: '#FFFFFF' } });
-            const ticketDoc = await Ticket.create({ user: payment.user, event: payment.event, payment: payment._id, type: t.type || 'regular', price: Number(t.price) || 0, status: 'active', qrCode: qrCodeDataURL, seatNumber: `${t.type || 'regular'}-${i + 1}`, metadata: { ticketId, qrData } });
-            createdTickets.push(ticketDoc);
+        if (session?.payment_status === 'paid') {
+          const ticketsMeta = JSON.parse(session.metadata?.tickets || "[]");
+          const createdTickets = [];
+          for (const t of ticketsMeta) {
+            for (let i = 0; i < (Number(t.quantity) || 1); i++) {
+              const ticketId = `${payment._id}_${t.type || "regular"}_${i + 1}`;
+              const qrData = { ticketId, eventId: payment.event?.toString(), userId: payment.user?.toString(), type: t.type || 'regular', price: Number(t.price) || 0, timestamp: new Date().toISOString() };
+              const qrCodeDataURL = await QRCode.toDataURL(JSON.stringify(qrData), { width: 200, margin: 2, color: { dark: '#000000', light: '#FFFFFF' } });
+              const ticketDoc = await Ticket.create({ user: payment.user, event: payment.event, payment: payment._id, type: t.type || 'regular', price: Number(t.price) || 0, status: 'active', qrCode: qrCodeDataURL, seatNumber: `${t.type || 'regular'}-${i + 1}`, metadata: { ticketId, qrData } });
+              createdTickets.push(ticketDoc);
+            }
+            // Update Event sold counters and revenue
+            await Event.updateOne(
+              { _id: payment.event, "ticketPricing.type": t.type || "regular" },
+              { $inc: { "ticketPricing.$.sold": Number(t.quantity) || 1, totalBookings: Number(t.quantity) || 1, totalRevenue: (Number(t.price) || 0) * (Number(t.quantity) || 1) } }
+            );
           }
-          
-          // Update Event sold counters and revenue
-          await Event.updateOne(
-            { _id: payment.event, "ticketPricing.type": t.type || "regular" },
-            { $inc: { "ticketPricing.$.sold": Number(t.quantity) || 1, totalBookings: Number(t.quantity) || 1, totalRevenue: (Number(t.price) || 0) * (Number(t.quantity) || 1) } }
-          );
+          // Mark payment succeeded if not already
+          if (payment.status !== 'succeeded') {
+            payment.status = 'succeeded';
+          }
+          payment.tickets = createdTickets.map(t => t._id);
+          await payment.save();
+          return res.json(createdTickets);
         }
-        payment.tickets = createdTickets.map(t => t._id);
-        await payment.save();
-        return res.json(createdTickets);
+        // Not paid yet
+        return res.status(404).json({ message: "No tickets found" });
       } catch (e) {
-        // Fall through to 404 until webhook creates them
         return res.status(404).json({ message: "No tickets found" });
       }
     }

@@ -1,7 +1,8 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { ChevronDown, User,  LogOut, Shield, BarChart3, UserPlus } from "lucide-react";
+import { ChevronDown, User, LogOut, Shield, BarChart3, UserPlus, Calendar, Ticket } from "lucide-react";
+import { ROLES, ROLE_DISPLAY_NAMES, ROLE_COLORS, hasRole } from "../utils/roles";
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
@@ -14,18 +15,24 @@ const Navbar: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = React.useState(checkAuthStatus());
   const [showDropdown, setShowDropdown] = React.useState(false);
   
-  // Get current user info
-  const getCurrentUser = () => {
+  // Get current user info with proper typing
+  const getCurrentUser = (): { name: string; email: string; role: string; _id: string } | null => {
     const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
     if (!userStr) return null;
     try {
-      return JSON.parse(userStr);
+      const user = JSON.parse(userStr);
+      // Ensure required fields exist
+      if (user && user.name && user.email && user.role) {
+        return user;
+      }
+      return null;
     } catch {
       return null;
     }
   };
   
   const currentUser = getCurrentUser();
+  const userRole = currentUser?.role as keyof typeof ROLE_DISPLAY_NAMES | undefined;
 
   React.useEffect(() => {
     const onStorage = () => setIsLoggedIn(checkAuthStatus());
@@ -115,18 +122,19 @@ const Navbar: React.FC = () => {
                   <div className="px-4 py-2 border-b border-gray-100">
                     <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
                     <p className="text-xs text-gray-500">{currentUser.email}</p>
-                    <span className={`inline-block mt-1 px-2 py-1 rounded-full text-xs font-medium ${
-                      currentUser.role === 'admin' ? 'bg-red-100 text-red-800' :
-                      currentUser.role === 'event_manager' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {currentUser.role === 'event_manager' ? 'Event Manager' : 
-                       currentUser.role === 'admin' ? 'Admin' : 'User'}
-                    </span>
+                    {userRole && (
+                      <span 
+                        className={`inline-block mt-1 px-2 py-1 rounded-full text-xs font-medium 
+                        ${ROLE_COLORS[userRole]?.bg || 'bg-gray-100'} 
+                        ${ROLE_COLORS[userRole]?.text || 'text-gray-800'}`}
+                      >
+                        {ROLE_DISPLAY_NAMES[userRole] || 'User'}
+                      </span>
+                    )}
                   </div>
                   
                   {/* Admin Dashboard Link */}
-                  {currentUser.role === 'admin' && (
+                  {hasRole(userRole, ROLES.ADMIN) && (
                     <Link
                       to="/admin/dashboard"
                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
@@ -138,14 +146,36 @@ const Navbar: React.FC = () => {
                   )}
                   
                   {/* Event Manager Dashboard */}
-                  {(currentUser.role === 'event_manager' ) && (
+                  {hasRole(userRole, ROLES.EVENT_MANAGER) && (
                     <Link
                       to="/manager/dashboard"
                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
                       onClick={() => setShowDropdown(false)}
                     >
                       <BarChart3 className="w-4 h-4 mr-2" />
-                      Manager Dashboard
+                      Event Manager Dashboard
+                    </Link>
+                  )}
+                  
+                  {/* User Dashboard */}
+                  <Link
+                    to="/my-tickets"
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+                    onClick={() => setShowDropdown(false)}
+                  >
+                    <Ticket className="w-4 h-4 mr-2" />
+                    My Tickets
+                  </Link>
+                  
+                  {/* Create Event (for event managers and admins) */}
+                  {hasRole(userRole, ROLES.EVENT_MANAGER) && (
+                    <Link
+                      to="/create-event"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+                      onClick={() => setShowDropdown(false)}
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Create Event
                     </Link>
                   )}
                   

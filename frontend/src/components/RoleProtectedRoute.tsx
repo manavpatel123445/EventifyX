@@ -39,12 +39,44 @@ const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
     return <Navigate to="/login" replace />;
   }
 
-  // Check if user has required role
-  const userRole = user.role;
-  const hasRequiredRole = userRole === requiredRole;
-  const hasAllowedRole = allowedRoles ? allowedRoles.includes(userRole) : false;
+  // Resolve role: prefer stored user.role, but fall back to role from JWT payload if storage is stale
+  const getTokenRole = () => {
+    try {
+      const raw = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+      if (!raw) return null;
+      const parts = raw.split(".");
+      if (parts.length < 2) return null;
+      const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+      const json = atob(base64);
+      const payload = JSON.parse(json);
+      return payload?.role ?? null;
+    } catch {
+      return null;
+    }
+  };
 
-  if (!hasRequiredRole && !hasAllowedRole) {
+  const tokenRole = getTokenRole();
+  const userRole = (user.role || tokenRole) as "user" | "event_manager" | "admin";
+
+  // Role hierarchy: admin > event_manager > user
+  const roleRank: Record<"user" | "event_manager" | "admin", number> = {
+    user: 0,
+    event_manager: 1,
+    admin: 2,
+  };
+
+  const hasRequiredRole = (() => {
+    // If a specific list of allowedRoles was provided, honor it first
+    if (allowedRoles && allowedRoles.length > 0) {
+      return allowedRoles.includes(userRole);
+    }
+    // Otherwise, enforce hierarchy: requiring "user" allows managers/admins too
+    if (requiredRole === "user") return roleRank[userRole] >= roleRank.user;
+    if (requiredRole === "event_manager") return roleRank[userRole] >= roleRank.event_manager;
+    return userRole === "admin";
+  })();
+
+  if (!hasRequiredRole) {
     toast.error(`Access denied. Required role: ${requiredRole}`);
     return <Navigate to="/" replace />;
   }
@@ -52,7 +84,7 @@ const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
   // Check if user account is active
   if (user.status === "blocked") {
     toast.error("Your account has been blocked. Please contact support.");
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace />;  
   }
 
   return <>{children}</>;

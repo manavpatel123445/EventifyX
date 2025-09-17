@@ -10,6 +10,7 @@ import adminRouter from "../routers/adminRoutes.js";
 import userRouter from "../routers/userRouters.js";
 import eventManagerRequestRouter from "../routers/eventManagerRequestRoutes.js";
 import paymentRouter from "../routers/paymentRoutes.js";
+import uploadRouter from "../routers/uploadRoutes.js";
 import { stripeWebhook } from "../controllers/paymentController.js";
 // Load environment variables
 dotenv.config();
@@ -29,7 +30,7 @@ app.use(
 );
 
 // Stripe webhook must use raw body AND be registered before express.json()
-app.post("/api/payments", express.raw({ type: "application/json" }), stripeWebhook);
+app.post("/api/payments/webhook", express.raw({ type: "application/json" }), stripeWebhook);
 
 app.use(express.json());
 
@@ -52,5 +53,6 @@ app.use("/api/categories", categoryRouter);
 app.use("/api/users", userRouter);
 app.use("/api/manager-requests", eventManagerRequestRouter);
 app.use("/api/payments", paymentRouter);
+app.use("/api/uploads", uploadRouter);
 
 export default app;

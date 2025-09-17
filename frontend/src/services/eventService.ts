@@ -58,6 +58,24 @@ export const uploadImage = async (file: File): Promise<string> => {
   }
 };
 
+export const uploadAvatar = async (file: File): Promise<string> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", "eventifyx_preset"); // Use your actual preset
+  formData.append("folder", "eventifyx/avatars");
+
+  try {
+    const response = await axios.post(
+      "https://api.cloudinary.com/v1_1/dutfzuuq5/image/upload", 
+      formData
+    );
+    return response.data.secure_url;
+  } catch (error) {
+    console.error("Avatar upload error:", error);
+    throw new Error("Failed to upload avatar");
+  }
+};
+
 // Event Request Services
 export const createEventRequest = async (eventData: EventRequestData) => {
   const { data } = await eventAPI.post("/request", eventData);

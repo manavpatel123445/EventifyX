@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -118,15 +118,24 @@ const Eventdetail: React.FC = () => {
                 <span className="px-3 py-1 bg-gray-200 text-sm rounded-full">
                   {typeof event.category === "object" && event.category !== null ? (event.category as any).name : "General"}
                 </span>
-                <span className="px-3 py-1 bg-gray-200 text-sm rounded-full">
+                <span className={`px-3 py-1 text-sm rounded-full ${
+                  (() => {
+                    const now = new Date();
+                    const endDate = new Date(event.endDate);
+                    if (event.status === 'cancelled') return 'bg-yellow-100 text-yellow-800';
+                    if (endDate < now) return 'bg-gray-200 text-gray-800';
+                    if (new Date(event.startDate) <= now && endDate >= now) return 'bg-green-100 text-green-800';
+                    return 'bg-blue-100 text-blue-800';
+                  })()
+                }`}>
                   {(() => {
                     const now = new Date();
                     const startDate = new Date(event.startDate);
                     const endDate = new Date(event.endDate);
-                    if (event.status === 'cancelled') return 'cancelled';
-                    if (endDate < now) return 'completed';
-                    if (startDate <= now && endDate >= now) return 'ongoing';
-                    return 'upcoming';
+                    if (event.status === 'cancelled') return 'Cancelled';
+                    if (endDate < now) return 'Completed';
+                    if (startDate <= now && endDate >= now) return 'Happening Now';
+                    return 'Upcoming';
                   })()}
                 </span>
               </div>
@@ -134,10 +143,23 @@ const Eventdetail: React.FC = () => {
 
             {/* About the Event */}
             <div>
-              <h2 className="text-xl font-semibold mb-2">About The Event</h2>
-              <p className="text-gray-700 leading-relaxed">
-                {event.description || "No description available."}
-              </p>
+              <h2 className="text-xl font-semibold mb-3">About The Event</h2>
+              <div className="relative">
+                <p className={`text-gray-700 leading-relaxed ${event.description && event.description.length > 200 ? 'line-clamp-4' : ''}`}>
+                  {event.description || "No description available."}
+                </p>
+                {event.description && event.description.length > 200 && (
+                  <button 
+                    onClick={(e) => {
+                      e.currentTarget.previousElementSibling?.classList.toggle('line-clamp-4');
+                      e.currentTarget.textContent = e.currentTarget.textContent === 'Read More' ? 'Show Less' : 'Read More';
+                    }}
+                    className="text-red-500 hover:text-red-600 font-medium mt-1 text-sm focus:outline-none"
+                  >
+                    Read More
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Gallery */}
@@ -165,21 +187,39 @@ const Eventdetail: React.FC = () => {
                 {event.venue?.state && (<li>🏙️ {event.venue.state}</li>)}
               </ul>
 
-              <div className="mt-4 text-red-600 font-medium">
+              <div className={`mt-4 font-medium ${
+                (() => {
+                  const now = new Date();
+                  const endDate = new Date(event.endDate);
+                  if (event.status === 'cancelled') return 'text-yellow-600';
+                  if (endDate < now) return 'text-gray-600';
+                  if (new Date(event.startDate) <= now && endDate >= now) return 'text-green-600';
+                  return 'text-blue-600';
+                })()
+              }`}>
                 {(() => {
                   const now = new Date();
                   const startDate = new Date(event.startDate);
                   const endDate = new Date(event.endDate);
-                  if (event.status === 'cancelled') return 'Event cancelled';
-                  if (endDate < now) return 'Event completed';
-                  if (startDate <= now && endDate >= now) return 'Event ongoing';
-                  return 'Bookings open';
+                  if (event.status === 'cancelled') return 'Event Cancelled';
+                  if (endDate < now) return 'Event Completed';
+                  if (startDate <= now && endDate >= now) return 'Event in Progress';
+                  return 'Bookings Open';
                 })()}
               </div>
 
               <div className="mt-4">
                 <p className="text-lg font-bold">{ticketMinPrice > 0 ? `₹${ticketMinPrice} onwards` : 'Free'}</p>
-              <Link to={`/checkout?eventId=${event._id}`}> <button
+              <button
+                  onClick={() => {
+                    const isAuthenticated = Boolean(localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken"));
+                    if (!isAuthenticated) {
+                      toast.error("Please login to book tickets");
+                      navigate("/login", { state: { from: `/event/${id}` } });
+                      return;
+                    }
+                    navigate(`/checkout?eventId=${event._id}`);
+                  }}
                   disabled={(() => {
                     const now = new Date();
                     const startDate = new Date(event.startDate);
@@ -192,7 +232,7 @@ const Eventdetail: React.FC = () => {
                   className="mt-3 w-full py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition disabled:opacity-50"
                 >
                   Book Now
-                </button></Link>
+                </button>
               </div>
 
               {Array.isArray(event.ticketPricing) && event.ticketPricing.length > 0 && (

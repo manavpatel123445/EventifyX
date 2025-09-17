@@ -24,7 +24,7 @@ const CheckoutPage: React.FC = () => {
     email: "",
   });
 
-  const [selectedState, setSelectedState] = useState<string>("");
+ 
   const [consentChecked, setConsentChecked] = useState<boolean>(false);
 
   const query = useQuery();
@@ -69,14 +69,16 @@ const CheckoutPage: React.FC = () => {
     setTickets(updated);
   };
 
+  const GST_RATE = 0.18; // 12% GST
   const subtotal = tickets.reduce(
     (sum, t) => sum + t.price * t.quantity,
     0
   );
-  const bookingFee = Math.round(subtotal * 0.12); // 12% booking fee example
-  const totalAmount = subtotal + bookingFee;
+  const bookingFee = Math.round(subtotal * 0.05); // 12% booking fee example
+  const gstAmount = Math.round(subtotal * GST_RATE);
+  const totalAmount = subtotal + bookingFee + gstAmount;
 
-  // Check if there are no ticket types available
+// Check if there are no ticket types availabl
   if (!tickets || tickets.length === 0) {
     return (
       <div className="max-w-3xl mx-auto p-6 bg-white shadow-lg rounded-lg mt-10">
@@ -163,8 +165,12 @@ const CheckoutPage: React.FC = () => {
               <span>Booking Fee (est.)</span>
               <span className="font-medium">₹{bookingFee}</span>
             </div>
-            <div className="flex justify-between font-semibold border-t pt-2">
-              <span>Estimated Total</span>
+            <div className="flex justify-between text-gray-700 mb-1">
+              <span>GST (18%)</span>
+              <span className="font-medium">₹{gstAmount}</span>
+            </div>
+            <div className="flex justify-between font-semibold border-t border-gray-200 pt-2 mt-2">
+              <span>Total Amount</span>
               <span>₹{totalAmount}</span>
             </div>
           </div>

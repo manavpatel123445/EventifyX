@@ -1,5 +1,5 @@
 import store from "./store";
-import { setTokens, setUser, setRole } from "./slices/authslice";
+import { setTokens, setUser, updateRole } from "./slices/authslice";
 
 export function bootstrapAuth(): void {
   try {
@@ -13,7 +13,7 @@ export function bootstrapAuth(): void {
     if (userStr) {
       const user = JSON.parse(userStr);
       store.dispatch(setUser(user));
-      if (user?.role) store.dispatch(setRole(user.role));
+      if (user?.role) store.dispatch(updateRole(user.role));
     }
   } catch {
     // no-op

@@ -405,7 +405,6 @@ const CreateEventPage: React.FC = () => {
                       className="w-full rounded-lg border px-4 py-3 text-gray-700 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition"
                     >
                       <option value="regular">Regular</option>
-                      <option value="early_bird">Early Bird</option>
                       <option value="vip">VIP</option>
                       <option value="premium">Premium</option>
                     </select>
@@ -455,7 +454,7 @@ const CreateEventPage: React.FC = () => {
                 
                 <ImageUpload
                   onImagesChange={setImages}
-                  maxImages={1}
+                  maxImages={3}
                   existingImages={images}
                 />
               </div>

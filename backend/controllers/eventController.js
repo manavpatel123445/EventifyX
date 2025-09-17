@@ -304,11 +304,14 @@ export const getAllEvents = async (req, res) => {
       search,
       page = 1, 
       limit = 12,
-      sortBy = "date",
+      sortBy = "startDate",
       sortOrder = "asc"
     } = req.query;
     
-    const filter = { status, isPublic: true };
+    const filter = { isPublic: true, isDeleted: false };
+    
+    // Add status filter if provided
+    if (status) filter.status = status;
     
     // Add filters
     if (category) filter.category = category;
@@ -317,7 +320,7 @@ export const getAllEvents = async (req, res) => {
       const searchDate = new Date(date);
       const nextDay = new Date(searchDate);
       nextDay.setDate(nextDay.getDate() + 1);
-      filter.date = { $gte: searchDate, $lt: nextDay };
+      filter.startDate = { $gte: searchDate, $lt: nextDay };
     }
     
     // Search functionality
@@ -329,9 +332,14 @@ export const getAllEvents = async (req, res) => {
       ];
     }
 
-    // Sorting
+    // Sorting - use valid field names
     const sortOptions = {};
-    sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
+    const validSortFields = ['startDate', 'endDate', 'title', 'createdAt', 'updatedAt'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'startDate';
+    sortOptions[sortField] = sortOrder === "desc" ? -1 : 1;
+
+    console.log('Events filter:', filter);
+    console.log('Sort options:', sortOptions);
 
     const events = await Event.find(filter)
       .populate("eventManager", "name")
@@ -341,13 +349,15 @@ export const getAllEvents = async (req, res) => {
       .skip((page - 1) * limit);
 
     const total = await Event.countDocuments(filter);
+    
+    console.log(`Found ${events.length} events out of ${total} total`);
 
     res.status(200).json({
       success: true,
       data: {
         events,
         pagination: {
-          current: page,
+          current: parseInt(page),
           pages: Math.ceil(total / limit),
           total
         }
@@ -657,7 +667,7 @@ export const getRequestsForManagedEvents = async (req, res) => {
   }
 };
 
-// SOFT DELETE EVENT (Admin only, only if cancelled)
+// SOFT DELETE EVENT (Admin only, for completed or cancelled events)
 export const softDeleteEvent = async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -668,10 +678,10 @@ export const softDeleteEvent = async (req, res) => {
         message: 'Event not found',
       });
     }
-    if (event.status !== 'cancelled') {
+    if (event.status !== 'cancelled' && event.status !== 'completed') {
       return res.status(400).json({
         success: false,
-        message: 'Only cancelled events can be deleted',
+        message: 'Only completed or cancelled events can be deleted',
       });
     }
     if (event.isDeleted) {
@@ -692,6 +702,41 @@ export const softDeleteEvent = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to soft delete event',
+    });
+  }
+};
+
+// AUTO SOFT DELETE COMPLETED EVENTS (Scheduled job or manual trigger)
+export const autoSoftDeleteCompletedEvents = async (req, res) => {
+  try {
+    // Find all completed events that are older than 30 days and not already deleted
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const eventsToDelete = await Event.find({
+      status: 'completed',
+      endDate: { $lt: thirtyDaysAgo },
+      isDeleted: false
+    });
+    
+    let deletedCount = 0;
+    for (const event of eventsToDelete) {
+      event.isDeleted = true;
+      await event.save();
+      deletedCount++;
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: `${deletedCount} completed events have been soft deleted`,
+      deletedCount,
+      eventsDeleted: eventsToDelete.map(e => ({ id: e._id, title: e.title, endDate: e.endDate }))
+    });
+  } catch (error) {
+    console.error('Auto soft delete completed events error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to auto soft delete completed events',
     });
   }
 };

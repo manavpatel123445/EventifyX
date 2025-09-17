@@ -28,9 +28,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       match: [/^\+?[1-9]\d{1,14}$/, "Invalid phone number"],
     },
+    dateOfBirth: {
+      type: Date,
+    },
     profileImage: {
       type: String,
-       default: "https://res.cloudinary.com/dutfzuuq5/image/upload/v1690846488/default-profile_qxqv2r.png"  
+      default: ""
     },
     role: {
       type: String,

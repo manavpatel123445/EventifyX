@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Calendar,
@@ -7,6 +7,7 @@ import {
   LogOut,
   User,
 } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 const SideBar: React.FC = () => {
   const menuItems = [
@@ -43,12 +44,26 @@ const SideBar: React.FC = () => {
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="p-4 border-t text-center text-sm text-gray-500">
-         <Link to="/" className="hover:underline">
-        <LogOut className="w-4 h-4 mr-2" />
-                          
-        </Link>
+      {/* Footer with Logout */}
+      <div className="mt-auto p-4 border-t">
+        <button
+          onClick={() => {
+            // Clear authentication tokens
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            sessionStorage.removeItem('accessToken');
+            
+            // Show success message
+            toast.success('Successfully logged out');
+            
+            // Redirect to login page
+            window.location.href = '/login';
+          }}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <LogOut size={18} />
+          <span>Logout</span>
+        </button>
       </div>
     </aside>
   );

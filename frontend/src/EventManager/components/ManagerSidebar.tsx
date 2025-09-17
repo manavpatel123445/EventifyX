@@ -14,11 +14,11 @@ const ManagerSideBar: React.FC = () => {
     { name: "Dashboard", path: "/manager/dashboard", icon: <LayoutDashboard size={20} /> },
     { name: "Events", path: "/manager/eventlist", icon: <Calendar size={20} /> },
     { name: "Sales & Revenue", path: "/manager/managersale", icon: <UserCog size={20} /> },
-    { name: "Profile", path: "/manager/mprofile", icon: <User size={20} /> },
+    { name: "Profile", path: "/manager/profile", icon: <User size={20} /> },
   ];
 
   return (
-    <aside className="h-screen w-64 bg-white border-r shadow-md flex flex-col">
+    <aside className="h-screen sticky top-0 w-64 p-6 bg-white border-r shadow-md flex flex-col">
       {/* Logo */}
       <div className="p-6 text-2xl font-bold text-red-500">
         EventifyX

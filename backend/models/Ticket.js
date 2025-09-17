@@ -5,7 +5,7 @@ const ticketSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      required: false,
     },
     event: {
       type: mongoose.Schema.Types.ObjectId,
@@ -20,7 +20,7 @@ const ticketSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: ["regular", "vip", "premium", "early_bird"],
+      enum: ["regular", "vip", "premium"],
     },
     price: {
       type: Number,

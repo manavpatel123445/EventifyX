@@ -104,6 +104,21 @@ export const deleteCategory = async (categoryId: string) => {
   return data;
 };
 
+// Events Management Services
+export const cleanupCompletedEvents = async () => {
+  // Create events API instance for this specific call
+  const eventsAPI = axios.create({ baseURL: "/api/events" });
+  
+  // Add auth token
+  const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+  if (token) {
+    eventsAPI.defaults.headers.Authorization = `Bearer ${token}`;
+  }
+  
+  const { data } = await eventsAPI.post("/admin/cleanup-completed");
+  return data;
+};
+
 // Types for TypeScript
 export interface DashboardStats {
   users: {

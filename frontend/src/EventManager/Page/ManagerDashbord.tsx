@@ -1,6 +1,6 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, Ticket, DollarSign, TrendingUp } from "lucide-react";
+import { Calendar, Ticket, DollarSign, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -16,20 +16,25 @@ import ManagerSideBar from "../components/ManagerSidebar";
 import { getMyManagedEvents, type Event } from "../../services/eventService";
 
 const ManagerDashboard: React.FC = () => {
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
   const { data: response, isLoading } = useQuery({
-    queryKey: ["manager-managed-events"],
+    queryKey: ["manager-managed-events", { page, limit }],
     queryFn: async () => {
-      const res = await getMyManagedEvents({ limit: 50, page: 1 });
+      const res = await getMyManagedEvents({ limit, page });
       const payload = res?.data ?? res; // support either axios {data} or raw
       return {
         events: Array.isArray(payload?.events) ? payload.events : Array.isArray(payload) ? payload : [],
         stats: payload?.stats ?? null,
-      } as { events: Event[]; stats: any };
+        pagination: payload?.pagination ?? { total: 0, pages: 1 },
+      } as { events: Event[]; stats: any; pagination: { total: number; pages: number } };
     },
   });
 
   const events: Event[] = Array.isArray(response?.events) ? response!.events : [];
   const statsFromApi = response?.stats;
+  const totalPages = response?.pagination?.pages ?? 1;
 
   const { totalEvents, ticketsSold, revenue, upcomingEvents } = useMemo(() => {
     if (statsFromApi) {
@@ -185,7 +190,7 @@ const ManagerDashboard: React.FC = () => {
                         <td className="px-4 py-3">${rev.toLocaleString()}</td>
                         <td className="px-4 py-3">
                           <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                            {event.status}
+                            {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
                           </span>
                         </td>
                       </tr>
@@ -200,6 +205,31 @@ const ManagerDashboard: React.FC = () => {
                   )}
                 </tbody>
               </table>
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 px-2">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="flex items-center px-3 py-1 rounded border disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+                  </button>
+                  
+                  <div className="text-sm text-gray-600">
+                    Page {page} of {totalPages}
+                  </div>
+                  
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    className="flex items-center px-3 py-1 rounded border disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next <ChevronRight className="w-4 h-4 ml-1" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

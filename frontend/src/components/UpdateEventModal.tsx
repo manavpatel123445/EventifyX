@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { updateEvent, uploadImage } from "../services/eventService"; // ✅ adjust path
+import { updateEvent, uploadImage } from "../services/eventService";
+import { getAllCategories } from "../services/categoryService";
 import type { EventRequestData, Event } from "../services/eventService";
 
 interface UpdateEventModalProps {
@@ -36,6 +37,12 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
   const [uploading, setUploading] = useState(false);
 
   const queryClient = useQueryClient();
+  
+  // Fetch categories
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: getAllCategories,
+  });
 
   // Prefill form when event loads
   useEffect(() => {
@@ -78,7 +85,7 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
   if (!isOpen || !event) return null;
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -172,6 +179,25 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
               rows={3}
               className="w-full border px-3 py-2 rounded-md"
             />
+          </div>
+
+          {/* Category */}
+          <div>
+            <label className="block text-sm font-medium">Category</label>
+            <select
+              name="category"
+              value={form.category}
+              onChange={handleChange}
+              className="w-full border px-3 py-2 rounded-md"
+              required
+            >
+              <option value="">Select a category</option>
+              {Array.isArray(categories) && categories.map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Dates */}
