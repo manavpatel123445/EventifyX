@@ -13,6 +13,12 @@ import toast from "react-hot-toast";
 interface ProfileFormProps {
   showTitle?: boolean;
   className?: string;
+  user: UserProfile | null;
+  onUpdate: (data: UpdateProfileData) => Promise<void>;
+  onChangePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  isEditing: boolean;
+  onEditToggle: () => void;
+  onAvatarUpdate?: (imageUrl: string) => void;
 }
 
 const ProfileForm = ({ showTitle = true, className = "" }: ProfileFormProps) => {
@@ -87,7 +93,7 @@ const ProfileForm = ({ showTitle = true, className = "" }: ProfileFormProps) => 
       const response = await updateProfile(updateData);
       if (response.success) {
         setProfile(response.user);
-        dispatch(setUser(response.user));
+        dispatch(setUser(response.user as any));
         toast.success("Profile updated successfully");
       }
     } catch (error: any) {

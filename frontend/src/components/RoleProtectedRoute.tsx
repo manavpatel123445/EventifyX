@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 
 interface RoleProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole: "user" | "event_manager" | "admin";
+  requiredRole?: "user" | "event_manager" | "admin";
   allowedRoles?: ("user" | "event_manager" | "admin")[];
 }
 
@@ -58,26 +58,22 @@ const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
   const tokenRole = getTokenRole();
   const userRole = (user.role || tokenRole) as "user" | "event_manager" | "admin";
 
-  // Role hierarchy: admin > event_manager > user
-  const roleRank: Record<"user" | "event_manager" | "admin", number> = {
-    user: 0,
-    event_manager: 1,
-    admin: 2,
+  // Define role hierarchy and additional access
+  const roleAccess: Record<string, string[]> = {
+    admin: ['admin', 'event_manager', 'user'],
+    event_manager: ['event_manager', 'user'],
+    user: ['user']
   };
 
-  const hasRequiredRole = (() => {
-    // If a specific list of allowedRoles was provided, honor it first
-    if (allowedRoles && allowedRoles.length > 0) {
-      return allowedRoles.includes(userRole);
-    }
-    // Otherwise, enforce hierarchy: requiring "user" allows managers/admins too
-    if (requiredRole === "user") return roleRank[userRole] >= roleRank.user;
-    if (requiredRole === "event_manager") return roleRank[userRole] >= roleRank.event_manager;
-    return userRole === "admin";
-  })();
+  // Get all roles the user has access to
+  const userAccessRoles = roleAccess[userRole] || [];
+
+  const hasRequiredRole = 
+    (requiredRole && userAccessRoles.includes(requiredRole)) ||
+    (allowedRoles && allowedRoles.some(role => userAccessRoles.includes(role)));
 
   if (!hasRequiredRole) {
-    toast.error(`Access denied. Required role: ${requiredRole}`);
+    toast.error(`Access denied. You don't have permission to access this page.`);
     return <Navigate to="/" replace />;
   }
 

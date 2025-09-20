@@ -34,9 +34,21 @@ app.post("/api/payments/webhook", express.raw({ type: "application/json" }), str
 
 app.use(express.json());
 
-// Remove any Permissions-Policy header entirely to avoid browser warnings
+// Middleware to remove Permissions-Policy header from response
 app.use((req, res, next) => {
-  res.removeHeader("Permissions-Policy");
+  // Create a reference to the original send function
+  const originalSend = res.send;
+  
+  // Override the send function
+  res.send = function(body) {
+    // Remove the headers right before sending the response
+    res.removeHeader('Permissions-Policy');
+    res.removeHeader('permissions-policy');
+    
+    // Call the original send function
+    return originalSend.call(this, body);
+  };
+  
   next();
 });
 

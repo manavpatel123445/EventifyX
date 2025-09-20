@@ -39,7 +39,11 @@ eventAPI.interceptors.response.use(
   }
 );
 
-// Image upload service using Cloudinary
+/**
+ * Uploads an event image to Cloudinary
+ * @param file The image file to upload
+ * @returns A promise that resolves to the Cloudinary URL of the uploaded image
+ */
 export const uploadImage = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append("file", file);
@@ -58,21 +62,85 @@ export const uploadImage = async (file: File): Promise<string> => {
   }
 };
 
-export const uploadAvatar = async (file: File): Promise<string> => {
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("upload_preset", "eventifyx_preset"); // Use your actual preset
-  formData.append("folder", "eventifyx/avatars");
+/**
+ * Uploads a profile image to local storage and returns a data URL
+ * @param file The image file to upload
+ * @returns A promise that resolves to the data URL of the uploaded image
+ */
+export const uploadAvatar = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        const dataUrl = event.target.result as string;
+        // Create a unique key for the avatar
+        const userId = localStorage.getItem('userId') || 'anonymous';
+        const imageKey = `avatar_${userId}`;
+        
+        try {
+          // Store the image in localStorage with the user-specific key
+          localStorage.setItem(imageKey, dataUrl);
+          
+          // Also store the key in user's profile for easy retrieval
+          const userData = JSON.parse(localStorage.getItem('user') || '{}');
+          userData.profileImage = imageKey;
+          localStorage.setItem('user', JSON.stringify(userData));
+          
+          resolve(dataUrl);
+        } catch (error) {
+          console.error("Failed to store avatar in local storage:", error);
+          reject(new Error("Failed to store avatar"));
+        }
+      } else {
+        reject(new Error("Failed to read file"));
+      }
+    };
+    
+    reader.onerror = () => {
+      reject(new Error("Error reading file"));
+    };
+    
+    reader.readAsDataURL(file);
+  });
+};
 
+/**
+ * Retrieves a profile image from local storage
+ * @param dataUrl The data URL or storage key of the image to retrieve
+ * @returns The image data URL or null if not found
+ */
+export const getLocalAvatar = (dataUrl: string | undefined): string | null => {
+  if (!dataUrl) return null;
+  
+  // If it's already a data URL, return it directly
+  if (dataUrl.startsWith('data:image')) {
+    return dataUrl;
+  }
+  
+  // If it's a localStorage key, try to get the image
+  if (dataUrl.startsWith('avatar_')) {
+    return localStorage.getItem(dataUrl);
+  }
+  
+  // For backward compatibility, try to get it directly from localStorage
+  return localStorage.getItem(dataUrl) || null;
+};
+
+/**
+ * Gets the current user's profile image URL
+ * @returns The profile image URL or null if not found
+ */
+export const getCurrentUserAvatar = (): string | null => {
   try {
-    const response = await axios.post(
-      "https://api.cloudinary.com/v1_1/dutfzuuq5/image/upload", 
-      formData
-    );
-    return response.data.secure_url;
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    if (userData?.profileImage) {
+      return getLocalAvatar(userData.profileImage);
+    }
+    return null;
   } catch (error) {
-    console.error("Avatar upload error:", error);
-    throw new Error("Failed to upload avatar");
+    console.error("Error getting user avatar:", error);
+    return null;
   }
 };
 
@@ -134,6 +202,17 @@ export const updateEvent = async (eventId: string, updates: Partial<EventRequest
 
 export const cancelEvent = async (eventId: string, reason?: string) => {
   const { data } = await eventAPI.patch(`/${eventId}/cancel`, { reason });
+  return data;
+};
+
+/**
+ * Requests cancellation of an event
+ * @param eventId - ID of the event to cancel
+ * @param reason - Reason for cancellation
+ * @returns Promise with the cancellation request response
+ */
+export const requestEventCancellation = async (eventId: string, reason: string) => {
+  const { data } = await eventAPI.post(`/${eventId}/request-cancellation`, { reason });
   return data;
 };
 
@@ -214,6 +293,11 @@ export interface Event {
   }[];
   images: string[];
   eventManager: {
+    profileImage: string | undefined;
+    profileImage: string | undefined;
+    profileImage: any;
+    profileImage: any;
+    profileImage: any;
     _id: string;
     name: string;
     email: string;

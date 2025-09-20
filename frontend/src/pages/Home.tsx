@@ -389,9 +389,10 @@ const Home = () => {
                                   year: 'numeric'
                                 })}
                                 <span className="mx-2 text-gray-300">•</span>
-                                {new Date(event.startDate).toLocaleTimeString('en-US', {
-                                  hour: '2-digit',
-                                  minute: '2-digit'
+                                {new Date(`2000-01-01T${event.startTime || '00:00'}`).toLocaleTimeString('en-US', {
+                                  hour: 'numeric',
+                                  minute: '2-digit',
+                                  hour12: true
                                 })}
                               </div>
                             </div>
@@ -413,9 +414,10 @@ const Home = () => {
                                     year: 'numeric'
                                   })}
                                   <span className="mx-2 text-gray-300">•</span>
-                                  {new Date(event.endDate).toLocaleTimeString('en-US', {
-                                    hour: '2-digit',
-                                    minute: '2-digit'
+                                  {new Date(`2000-01-01T${event.endTime || '00:00'}`).toLocaleTimeString('en-US', {
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true
                                   })}
                                 </div>
                               </div>

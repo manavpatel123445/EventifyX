@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMemo, useState } from 'react'
+import type { MouseEvent } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
@@ -9,7 +10,7 @@ import CreateEventModal from '../../components/CreateEventModal'
 import UpdateEventModal from '../../components/UpdateEventModal'
 import { EventViewModal } from '../../components'
 import ManagerSideBar from '../components/ManagerSidebar'
-import { cancelEvent, getMyManagedEvents, getRequestsForManagedEvents, type Event } from '../../services/eventService'
+import { cancelEvent, getMyManagedEvents, getRequestsForManagedEvents, type Event, requestEventCancellation } from '../../services/eventService'
 
 const ManagerEventList = () => {
   const [isCreateOpen, setCreateOpen] = useState(false)
@@ -45,14 +46,53 @@ const ManagerEventList = () => {
   const totalPages = eventsData?.pagination?.pages ?? 1
   const requests: any[] = useMemo(() => Array.isArray(requestsData) ? requestsData : [], [requestsData])
 
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
+  const [cancelReason, setCancelReason] = useState('')
+
+  const handleCancelClick = (event: Event) => {
+    setSelectedEvent(event);
+    setShowCancelDialog(true);
+  };
+
   const cancelMutation = useMutation({
     mutationFn: async (eventId: string) => cancelEvent(eventId),
     onSuccess: () => {
       toast.success('Event cancelled')
       queryClient.invalidateQueries({ queryKey: ['manager-managed-events'] })
+      setShowCancelDialog(false)
+      setSelectedEvent(null)
+      setCancelReason('')
     },
     onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to cancel'),
   })
+
+  const requestCancelMutation = useMutation({
+    mutationFn: async ({ eventId, reason }: { eventId: string; reason: string }) => 
+      requestEventCancellation(eventId, reason),
+    onSuccess: () => {
+      toast.success('Cancellation request sent to admin for review')
+      queryClient.invalidateQueries({ queryKey: ['manager-managed-events'] })
+      setShowCancelDialog(false)
+      setSelectedEvent(null)
+      setCancelReason('')
+    },
+    onError: (err: any) => 
+      toast.error(err?.response?.data?.message || 'Failed to send cancellation request'),
+  })
+
+  function handleCancelRequest(event: MouseEvent<HTMLButtonElement>): void {
+    event.preventDefault();
+    if (!selectedEvent || !cancelReason.trim()) {
+      toast.error('Please provide a reason for cancellation');
+      return;
+    }
+    
+    requestCancelMutation.mutate({
+      eventId: selectedEvent._id,
+      reason: cancelReason.trim()
+    });
+  }
 
   return (
     <div className="flex bg-gray-50 min-h-screen">
@@ -126,8 +166,8 @@ const ManagerEventList = () => {
                           </button>
                           <button onClick={() => setEditEvent(ev)} className="px-3 py-1 rounded border text-blue-600 hover:bg-blue-50">Update</button>
                           <button
+                            onClick={() => handleCancelClick(ev)}
                             disabled={cancelMutation.isPending || ev.status !== 'upcoming'}
-                            onClick={() => cancelMutation.mutate(ev._id)}
                             className="px-3 py-1 rounded border text-red-600 hover:bg-red-50 disabled:opacity-50"
                           >
                             Cancel
@@ -213,13 +253,47 @@ const ManagerEventList = () => {
         </div>
       </div>
 
-      <CreateEventModal isOpen={isCreateOpen} onClose={() => setCreateOpen(false)} />
-      {editEvent && (
-        <UpdateEventModal
-          isOpen={!!editEvent}
-          onClose={() => setEditEvent(null)}
-          event={editEvent}
-        />
+      {/* Cancel Event Dialog */}
+      {showCancelDialog && selectedEvent && (
+        <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Request Event Cancellation</h2>
+            <p className="mb-4">
+              You are about to request cancellation for: <strong>{selectedEvent.title}</strong>
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Reason for cancellation (required):
+              </label>
+              <textarea
+                className="w-full border rounded p-2 min-h-[100px]"
+                placeholder="Please provide a reason for cancellation..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowCancelDialog(false)
+                  setSelectedEvent(null)
+                  setCancelReason('')
+                }}
+                className="px-4 py-2 border rounded hover:bg-gray-50"
+                disabled={cancelMutation.isPending || requestCancelMutation.isPending}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCancelRequest}
+                disabled={!cancelReason.trim() || cancelMutation.isPending || requestCancelMutation.isPending}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
+              >
+                {cancelMutation.isPending || requestCancelMutation.isPending ? 'Submitting...' : 'Submit Request'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       {viewEvent && (
         <EventViewModal
@@ -228,6 +302,27 @@ const ManagerEventList = () => {
           event={viewEvent}
         />
       )}
+      
+      <CreateEventModal 
+        isOpen={isCreateOpen} 
+        onClose={() => setCreateOpen(false)} 
+        onSuccess={() => {
+          setCreateOpen(false);
+          // Refresh the events list
+          queryClient.invalidateQueries({ queryKey: ['managedEvents'] });
+        }} 
+      />
+      
+      <UpdateEventModal
+        isOpen={!!editEvent}
+        onClose={() => setEditEvent(null)}
+        event={editEvent}
+        onSuccess={() => {
+          setEditEvent(null);
+          // Refresh the events list
+          queryClient.invalidateQueries({ queryKey: ['managedEvents'] });
+        }}
+      />
     </div>
   )
 }

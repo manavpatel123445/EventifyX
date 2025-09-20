@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, Ticket, DollarSign, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Ticket, DollarSign, TrendingUp, ChevronLeft, ChevronRight, IndianRupee } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -125,8 +125,8 @@ const ManagerDashboard: React.FC = () => {
             },
             {
               label: "Total Revenue",
-              value: isLoading ? "…" : `$${revenue.toLocaleString()}`,
-              icon: <DollarSign className="w-8 h-8 text-green-500" />,
+              value: isLoading ? "…" : `₹${revenue.toLocaleString()}`,
+              icon: <IndianRupee className="w-8 h-8 text-green-500" />,
             },
             {
               label: "Upcoming Events",
@@ -187,7 +187,7 @@ const ManagerDashboard: React.FC = () => {
                         <td className="px-4 py-3">{new Date(event.startDate).toLocaleDateString()} {event.startTime}</td>
                         <td className="px-4 py-3">{event.venue?.city ?? ""}</td>
                         <td className="px-4 py-3">{sold}</td>
-                        <td className="px-4 py-3">${rev.toLocaleString()}</td>
+                        <td className="px-4 py-3">₹{rev.toLocaleString()}</td>
                         <td className="px-4 py-3">
                           <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
                             {event.status.charAt(0).toUpperCase() + event.status.slice(1)}

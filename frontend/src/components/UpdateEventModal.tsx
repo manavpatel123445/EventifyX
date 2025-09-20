@@ -2,14 +2,14 @@
 import React, { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { updateEvent, uploadImage } from "../services/eventService";
+import { updateEvent, uploadImage, getLocalAvatar, getCurrentUserAvatar, type EventRequestData, type Event, uploadAvatar } from "../services/eventService";
 import { getAllCategories } from "../services/categoryService";
-import type { EventRequestData, Event } from "../services/eventService";
 
 interface UpdateEventModalProps {
   isOpen: boolean;
   onClose: () => void;
   event: Event | null;
+  onSuccess: () => void;
 }
 
 const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, event }) => {
@@ -35,6 +35,8 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
   });
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
   
@@ -47,6 +49,12 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
   // Prefill form when event loads
   useEffect(() => {
     if (event) {
+      // Get current user's profile image
+      const currentUserAvatar = getCurrentUserAvatar();
+      if (currentUserAvatar) {
+        setProfileImagePreview(currentUserAvatar);
+      }
+
       setForm({
         title: event.title,
         description: event.description,
@@ -109,9 +117,23 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
     setForm({ ...form, ticketPricing: updatedTickets });
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
       setNewImageFiles(Array.from(e.target.files));
+    }
+  };
+
+  const handleProfileImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setProfileImage(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -125,15 +147,42 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
     e.preventDefault();
     try {
       setUploading(true);
+      
+      // Handle profile image (local storage)
+      let profileImageUrl = '';
+      if (profileImage) {
+        try {
+          // Use the uploadAvatar function which handles local storage
+          profileImageUrl = await uploadAvatar(profileImage);
+          // Update the preview with the new image
+          setProfileImagePreview(profileImageUrl);
+        } catch (error) {
+          console.error('Error uploading profile image:', error);
+          toast.error('Failed to upload profile image');
+          return;
+        }
+      }
+      
+      // Handle event images (Cloudinary)
       let uploadedUrls: string[] = [];
       if (newImageFiles.length > 0) {
-        uploadedUrls = await Promise.all(newImageFiles.map(f => uploadImage(f)));
+        try {
+          uploadedUrls = await Promise.all(newImageFiles.map(f => uploadImage(f)));
+        } catch (error) {
+          console.error('Error uploading event images:', error);
+          toast.error('Failed to upload one or more event images');
+          return;
+        }
       }
-      const images = [ ...(form.images || []), ...uploadedUrls ];
+      
+      const images = [...(form.images || []), ...uploadedUrls];
       const payload: Partial<EventRequestData> = {
         ...form,
         images,
+        // If we have a new profile image, include it in the payload
+        ...(profileImageUrl && { profileImage: profileImageUrl })
       };
+      
       await mutation.mutateAsync({ id: event._id, data: payload });
     } catch (err) {
       console.error(err);
@@ -325,23 +374,87 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
             ))}
           </div>
 
-          {/* Images */}
+          {/* Profile Image */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">Profile Image</label>
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                {profileImagePreview ? (
+                  <img 
+                    src={profileImagePreview} 
+                    alt="Profile Preview" 
+                    className="w-full h-full object-cover" 
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = '/default-avatar.svg';
+                    }}
+                  />
+                ) : event?.eventManager?.profileImage ? (
+                  <img 
+                    src={getLocalAvatar(event.eventManager.profileImage) || '/default-avatar.svg'} 
+                    alt="Current Profile" 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = '/default-avatar.svg';
+                    }}
+                  />
+                ) : (
+                  <img 
+                    src="/default-avatar.svg" 
+                    alt="Default Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                )}
+              </div>
+              <div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfileImageSelect}
+                  className="text-sm text-gray-600"
+                />
+                <p className="text-xs text-gray-500 mt-1">PNG, JPG, JPEG up to 5MB</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Event Images */}
           <div>
-            <label className="block text-sm font-medium mb-2">Images</label>
+            <label className="block text-sm font-medium mb-2">Event Images</label>
             {Array.isArray(form.images) && form.images.length > 0 && (
               <div className="flex gap-2 flex-wrap mb-2">
-                {form.images.map((url, idx) => (
-                  <div key={idx} className="relative">
-                    <img src={url} className="h-16 w-24 object-cover rounded" />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveExistingImage(idx)}
-                      className="absolute -top-2 -right-2 bg-white border rounded-full h-6 w-6 text-xs"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
+                {form.images.map((url, idx) => {
+                  // Check if the URL is a Cloudinary URL or a data URL
+                  const isCloudinaryUrl = url.startsWith('http');
+                  const imageUrl = isCloudinaryUrl ? url : getLocalAvatar(url) || url;
+                  
+                  return (
+                    <div key={idx} className="relative">
+                      <img 
+                        src={imageUrl} 
+                        alt={`Event ${idx + 1}`} 
+                        className="h-16 w-24 object-cover rounded" 
+                        onError={(e) => {
+                          // Fallback in case the image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null;
+                          target.src = '/default-event.jpg';
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveExistingImage(idx)}
+                        className="absolute -top-2 -right-2 bg-white border rounded-full h-6 w-6 text-xs flex items-center justify-center shadow-sm hover:bg-gray-100"
+                        aria-label="Remove image"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
             <input
@@ -349,7 +462,7 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
               accept="image/*"
               multiple
               onChange={handleImageSelect}
-              className="w-full border px-3 py-2 rounded-md"
+              className="w-full border px-3 py-2 rounded-md text-sm"
             />
             {newImageFiles.length > 0 && (
               <p className="text-xs text-gray-500 mt-1">{newImageFiles.length} new image(s) selected</p>

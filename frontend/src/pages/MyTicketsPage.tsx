@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Calendar, MapPin, Download, QrCode, User, CreditCard, Search, Filter, ArrowDown, ArrowUp, LogIn } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Download, Calendar, MapPin } from 'lucide-react';
+import  Footer  from '../components/Footer';
+import  Navbar  from '../components/Navbar';
 
 interface Ticket {
   _id: string;
@@ -24,257 +24,379 @@ interface Ticket {
     currency: string;
     status: string;
   };
+  user: {
+    name: string;
+    email: string;
+  };
   createdAt: string;
 }
 
 const MyTicketsPage: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Ticket; direction: 'asc' | 'desc' } | null>(null);
-  const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string>('all');
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(6);
 
-  // Get token from both localStorage and sessionStorage
-  const getAuthToken = (): string | null => {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('token') || sessionStorage.getItem('token');
-  };
+  const sessionId = searchParams.get('session_id');
 
-  const { data: tickets = [], isLoading, error, refetch } = useQuery<Ticket[]>({
-    queryKey: ['userTickets'],
-    queryFn: async () => {
-      const token = getAuthToken();
-      
-      if (!token) {
-        console.warn('No authentication token found. Redirecting to login...');
-        // Redirect to login page if not in a protected route
-        if (!window.location.pathname.includes('login')) {
-          window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
-        }
-        throw new Error('Not authenticated. Please log in again.');
+  // Unique event options from tickets
+  const eventOptions = useMemo(() => {
+    const map = new Map<string, { id: string; title: string }>();
+    for (const t of tickets) {
+      const id = t.event?._id;
+      if (id && !map.has(id)) {
+        map.set(id, { id, title: t.event?.title || 'Event' });
       }
-      
-      console.log('Auth token being sent:', token ? `${token.substring(0, 10)}...` : 'No token');
-      
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/tickets`, {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        });
-        
-        console.log('Response status:', response.status);
-        
-        if (response.status === 401) {
-          const errorData = await response.json().catch(() => ({}));
-          console.warn('Authentication error, clearing tokens:', errorData);
-          // Clear all auth tokens
-          localStorage.removeItem('token');
-          sessionStorage.removeItem('token');
-          // Redirect to login with current path
-          window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
-          throw new Error('Session expired. Please log in again.');
-        }
-        
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error('API Error:', {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorData
-          });
-          throw new Error(errorData.message || `Failed to fetch tickets (${response.status})`);
-        }
-        
-        const data = await response.json();
-        return data.map((ticket: Ticket) => ({
-          ...ticket,
-          event: {
-            ...ticket.event,
-            date: format(new Date(ticket.event.date), 'MMM d, yyyy h:mm a')
-          }
-        }));
-      } catch (error) {
-        console.error('Fetch error:', error);
-        throw error;
-      }
+    }
+    return Array.from(map.values());
+  }, [tickets]);
+
+  // Filtered tickets by event
+  const filteredTickets = useMemo(() => {
+    if (selectedEventId === 'all') return tickets;
+    return tickets.filter(t => t.event?._id === selectedEventId);
+  }, [tickets, selectedEventId]);
+
+  // Pagination derived values
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(filteredTickets.length / pageSize)), [filteredTickets.length, pageSize]);
+  useEffect(() => {
+    // Reset to first page when filter changes
+    setPage(1);
+  }, [selectedEventId, pageSize]);
+  useEffect(() => {
+    // Clamp page if data shrinks
+    if (page > totalPages) setPage(totalPages);
+  }, [totalPages, page]);
+  const pagedTickets = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredTickets.slice(start, start + pageSize);
+  }, [filteredTickets, page, pageSize]);
+
+  const buildDefaultTicket = (): Ticket => ({
+    _id: `placeholder-${Date.now()}`,
+    type: 'general',
+    price: 0,
+    status: 'processing',
+    qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=Processing',
+    seatNumber: 'TBD',
+    event: {
+      _id: 'unknown',
+      title: 'Ticket processing...',
+      date: new Date().toLocaleString(),
+      location: 'TBD',
+      image: ''
     },
+    payment: {
+      _id: sessionId || 'unknown',
+      amount: 0,
+      currency: 'IND',
+      status: 'processing'
+    },
+    user: {
+      name: 'You',
+      email: ''
+    },
+    createdAt: new Date().toISOString()
   });
 
-  const filteredTickets = tickets
-    .filter(ticket => {
-      const matchesSearch = ticket.event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         ticket.type.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesFilter = activeFilter === 'all' || ticket.status === activeFilter;
-      return matchesSearch && matchesFilter;
-    })
-    .sort((a, b) => {
-      if (!sortConfig) return 0;
-      
-      const aValue = a[sortConfig.key];
-      const bValue = b[sortConfig.key];
-      
-      if (aValue < bValue) {
-        return sortConfig.direction === 'asc' ? -1 : 1;
-      }
-      if (aValue > bValue) {
-        return sortConfig.direction === 'asc' ? 1 : -1;
-      }
-      return 0;
-    });
-
-  const requestSort = (key: keyof Ticket) => {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
+  // Normalize backend ticket shape to UI expectation
+  const normalizeTicket = (t: any): Ticket => {
+    const ev = t?.event || {};
+    const payment = t?.payment || {};
+    return {
+      _id: String(t?._id || ''),
+      type: String(t?.type || 'regular'),
+      price: Number(t?.price || 0),
+      status: String(t?.status || 'active'),
+      qrCode: String(t?.qrCode || ''),
+      seatNumber: String(t?.seatNumber || ''),
+      event: {
+        _id: String(ev?._id || ''),
+        title: String(ev?.title || 'Event'),
+        date: String(ev?.date || ev?.startDate || ev?.endDate || new Date().toISOString()),
+        location: String(ev?.location || ev?.venue || ''),
+        image: String(ev?.image || (Array.isArray(ev?.images) ? ev.images[0] : '') || ''),
+      },
+      payment: {
+        _id: String(payment?._id || payment || ''),
+        amount: Number(payment?.amount || 0),
+        currency: String(payment?.currency || 'IND'),
+        status: String(payment?.status || 'succeeded'),
+      },
+      user: {
+        name: String(t?.user?.name || 'You'),
+        email: String(t?.user?.email || ''),
+      },
+      createdAt: String(t?.createdAt || new Date().toISOString()),
+    };
   };
 
-  const getSortIcon = (key: keyof Ticket) => {
-    if (!sortConfig || sortConfig.key !== key) return null;
-    return sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />;
-  };
+  useEffect(() => {
+    const fetchTickets = async () => {
+      const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
+      // Helper: try multiple possible backend endpoints for "my tickets"
+      const fetchMyTicketsWithFallbacks = async (): Promise<Ticket[]> => {
+        const bases = [import.meta.env.VITE_API_URL].filter(Boolean) as string[];
+        const paths = [
+          '/api/payments/tickets'
+        ];
+        const errors: string[] = [];
+        for (const base of bases) {
+          for (const path of paths) {
+            try {
+              const res = await fetch(`${base}${path}`, { headers });
+              if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data)) return data as Ticket[];
+                errors.push(`${path}: non-array response`);
+              } else {
+                const txt = await res.text();
+                errors.push(`${path}: ${res.status} ${txt?.slice(0, 120)}`);
+              }
+            } catch (e: any) {
+              errors.push(`${path}: ${e?.message || 'network error'}`);
+            }
+          }
+        }
+        console.warn('All my-tickets endpoints failed', errors);
+        return [];
+      };
+
+      if (!sessionId) {
+        // No session id; try to fetch all tickets for the logged-in user
+        try {
+          const data = await fetchMyTicketsWithFallbacks();
+          setTickets(Array.isArray(data) ? data.map(normalizeTicket) : []);
+          if (!Array.isArray(data) || data.length === 0) {
+            setError('You have no tickets yet.');
+          } else {
+            setError(null);
+          }
+        } catch (err) {
+          console.error('Error fetching my tickets:', err);
+          setTickets([]);
+          setError('Failed to load your tickets. Please try again.');
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
+      try {
+        // Try to fetch tickets by session; if not yet created, poll briefly
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/tickets/session/${sessionId}`, { headers });
+        
+        if (!response.ok) {
+          // Poll up to ~10s while webhook processes
+          const start = Date.now();
+          while (Date.now() - start < 10000) {
+            await new Promise(r => setTimeout(r, 1500));
+            const r2 = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/tickets/session/${sessionId}`, { headers });
+            if (r2.ok) {
+              const d2 = await r2.json();
+              setTickets(Array.isArray(d2) ? d2.map(normalizeTicket) : []);
+              setLoading(false);
+              return;
+            } else {
+              await r2.text();
+            }
+          }
+          // After polling, still not ready — use a default placeholder ticket
+          setTickets([buildDefaultTicket()]);
+          setError('Tickets are being generated. Your payment succeeded, and tickets will appear shortly.');
+          setLoading(false);
+          return;
+        }
+
+        const data = await response.json();
+        // If backend returns empty array, still show default placeholder
+        setTickets(Array.isArray(data) && data.length > 0 ? data.map(normalizeTicket) : [buildDefaultTicket()]);
+      } catch (err) {
+        console.error('Error fetching tickets:', err);
+        // Network or other error: still present a default ticket so users aren’t blocked
+        setTickets([buildDefaultTicket()]);
+        setError('Failed to load tickets from server. Showing a temporary placeholder.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTickets();
+  }, [sessionId]);
+
+  // If tickets are still processing (placeholder), keep polling periodically until real tickets arrive
+  useEffect(() => {
+    if (!sessionId) return;
+    const stillProcessing = tickets.some(t => t.status === 'processing');
+    if (!stillProcessing) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+        const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+        const r = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/tickets/session/${sessionId}`, { headers });
+        if (r.ok) {
+          const data = await r.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setTickets(data.map(normalizeTicket));
+            setError(null);
+            clearInterval(interval);
+          }
+        }
+      } catch {
+        // ignore transient errors
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [sessionId, tickets]);
 
   const downloadTicket = (ticket: Ticket) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    canvas.width = 800;
-    canvas.height = 600;
+    // Set canvas size for better quality
+    const scale = 2; // For better quality on high-DPI displays
+    const width = 800;
+    const height = 1000;
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    ctx.scale(scale, scale);
 
     // Background
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, width, height);
 
     // Border
     ctx.strokeStyle = '#e5e7eb';
     ctx.lineWidth = 2;
-    ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+    ctx.strokeRect(10, 10, width - 20, height - 20);
 
-    // Title
+    // Event Header
     ctx.fillStyle = '#1f2937';
-    ctx.font = 'bold 32px Arial';
+    ctx.font = 'bold 28px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('EVENT TICKET', canvas.width / 2, 60);
+    ctx.fillText('YOUR TICKET', 400, 50);
 
     // Event details
     ctx.font = '24px Arial';
-    ctx.fillText(ticket.event.title, canvas.width / 2, 100);
+    ctx.fillStyle = '#111827';
+    ctx.fillText(ticket.event?.title || 'Event', 400, 90);
     
-    ctx.font = '18px Arial';
-    ctx.fillText(ticket.event.date, canvas.width / 2, 130);
-    ctx.fillText(ticket.event.location, canvas.width / 2, 155);
+    // Date and location
+    ctx.font = '16px Arial';
+    ctx.fillStyle = '#4b5563';
+    ctx.textAlign = 'center';
+    ctx.fillText(ticket.event?.date ? new Date(ticket.event.date).toLocaleDateString() : 'Date not specified', 400, 120);
+    ctx.fillText(ticket.event?.location || 'Venue not specified', 400, 145);
+
+    // Divider
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.setLineDash([5, 3]);
+    ctx.beginPath();
+    ctx.moveTo(50, 170);
+    ctx.lineTo(750, 170);
+    ctx.stroke();
+    ctx.setLineDash([]);
 
     // QR Code
     const qrImg = new Image();
+    qrImg.crossOrigin = 'Anonymous';
     qrImg.onload = () => {
-      ctx.drawImage(qrImg, canvas.width / 2 - 100, 200, 200, 200);
+      // Draw QR code with white background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(300, 200, 200, 200);
+      ctx.drawImage(qrImg, 300, 200, 200, 200);
       
       // Ticket details
-      ctx.font = '16px Arial';
+      ctx.font = 'bold 18px Arial';
       ctx.textAlign = 'left';
-      ctx.fillText(`Ticket Type: ${ticket.type.toUpperCase()}`, 50, 450);
-      ctx.fillText(`Seat: ${ticket.seatNumber}`, 50, 475);
-      ctx.fillText(`Price: $${ticket.price}`, 50, 500);
-      ctx.fillText(`Status: ${ticket.status.toUpperCase()}`, 50, 525);
+      ctx.fillStyle = '#111827';
+      
+      // Ticket info section
+      ctx.fillText('TICKET INFORMATION', 50, 250);
+      
+      ctx.font = '14px Arial';
+      ctx.fillStyle = '#4b5563';
+      
+      const details = [
+        { label: 'Type', value: ticket.type?.toUpperCase() || 'GENERAL' },
+        { label: 'Seat', value: ticket.seatNumber || 'GENERAL ADMISSION' },
+        { label: 'Price', value: `$${ticket.price?.toFixed(2) || '0.00'}` },
+        { label: 'Status', value: ticket.status?.toUpperCase() || 'ACTIVE' },
+        { label: 'Ticket ID', value: `#${ticket._id.slice(-8).toUpperCase()}` }
+      ];
+      
+      // Draw ticket details
+      details.forEach((detail, index) => {
+        const y = 290 + (index * 25);
+        ctx.fillStyle = '#6b7280';
+        ctx.fillText(`${detail.label}:`, 50, y);
+        ctx.fillStyle = '#111827';
+        ctx.fillText(detail.value, 200, y);
+      });
+
+      // Draw footer
+      ctx.font = '12px Arial';
+      ctx.fillStyle = '#9ca3af';
+      ctx.textAlign = 'center';
+      ctx.fillText('Present this ticket at the event entrance', 400, 950);
+      ctx.fillText(`Generated on ${new Date().toLocaleDateString()}`, 400, 970);
 
       // Download
       const link = document.createElement('a');
-      link.download = `ticket-${ticket._id}.png`;
-      link.href = canvas.toDataURL();
+      link.download = `${ticket.event?.title?.replace(/\s+/g, '-').toLowerCase() || 'ticket'}-${ticket._id.slice(-6)}.png`;
+      link.href = canvas.toDataURL('image/png');
       link.click();
     };
+    
+    // Handle QR code loading errors
+    qrImg.onerror = () => {
+      // If QR code fails to load, use a generated one with the ticket ID
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(ticket._id)}`;
+    };
+    
     qrImg.src = ticket.qrCode;
   };
 
-  // Handle unauthenticated users
-  if (error?.message?.includes('No authentication token') || error?.message?.includes('Not authenticated')) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="text-center max-w-md">
-          <div className="bg-red-50 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-            <LogIn className="w-8 h-8 text-blue-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Sign In Required</h2>
-          <p className="text-gray-600 mb-6">Please sign in to view your tickets</p>
-          <Link
-            to="/login"
-            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Go to Login
-          </Link>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading your tickets...</p>
         </div>
       </div>
     );
   }
 
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Loading your tickets...</h1>
-            <p className="text-gray-600">Please wait while we fetch your tickets.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Show error state
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">Error loading tickets</h3>
-                <div className="mt-2 text-sm text-red-700">
-                  <p>{error.message || 'An unknown error occurred'}</p>
-                </div>
-                <div className="mt-4">
-                  <button
-                    onClick={() => window.location.reload()}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                  >
-                    Try Again
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!tickets || tickets.length === 0) {
+  if (error && tickets.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-muted-foreground mb-4">
-            <QrCode className="w-16 h-16 mx-auto" />
+          <div className="text-red-500 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
           </div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">No Tickets Yet</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">No Tickets Found</h1>
           <p className="text-muted-foreground mb-6">
-            You haven't purchased any tickets yet. Browse events and book your first ticket!
+            {error || 'We couldn\'t find your tickets. Please contact support if you believe this is an error.'}
           </p>
           <button
-            onClick={() => window.location.href = '/events'}
+            onClick={() => navigate('/')}
             className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors"
           >
-            Browse Events
+            Back to Home
           </button>
         </div>
       </div>
@@ -282,177 +404,218 @@ const MyTicketsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+    <>
+    <Navbar/>
+    <div className="min-h-screen bg-gray-50 py-12">
+      <div className="container mx-auto px-4">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">My Tickets</h1>
-          <p className="text-muted-foreground">
-            You have {tickets.length} ticket{tickets.length !== 1 ? 's' : ''}
-          </p>
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Your Tickets</h1>
+          <p className="text-gray-600">Manage and view your event tickets</p>
         </div>
 
-        {/* Search and Filter */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search tickets..."
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Filter size={20} className="text-gray-500" />
-            <select 
-              className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-transparent"
-              value={activeFilter}
-              onChange={(e) => setActiveFilter(e.target.value)}
+        {/* Event Filter */}
+        <div className="max-w-4xl mx-auto mb-6 flex items-center gap-3">
+          <label className="text-sm text-gray-600">Filter by event:</label>
+          <select
+            value={selectedEventId}
+            onChange={(e) => setSelectedEventId(e.target.value)}
+            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All events</option>
+            {eventOptions.map(ev => (
+              <option key={ev.id} value={ev.id}>{ev.title}</option>
+            ))}
+          </select>
+          <div className="ml-auto flex items-center gap-2">
+            <label className="text-sm text-gray-600">Per page:</label>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="border border-gray-300 rounded-md px-2 py-1 text-sm"
             >
-              <option value="all">All Tickets</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="pending">Pending</option>
-              <option value="cancelled">Cancelled</option>
+              <option value={4}>4</option>
+              <option value={6}>6</option>
+              <option value={8}>8</option>
+              <option value={12}>12</option>
             </select>
           </div>
         </div>
 
         {/* Tickets Grid */}
-        {filteredTickets.length === 0 ? (
-          <div className="text-center py-12">
-            <QrCode className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-700">No tickets found</h3>
-            <p className="text-gray-500 mt-1">Try adjusting your search or filter criteria</p>
-          </div>
-        ) : (
-          <div className="grid gap-6">
-            {filteredTickets.map((ticket) => (
-              <div key={ticket._id} className="bg-card border border-border rounded-lg p-6">
-                <div className="flex flex-col lg:flex-row gap-6">
-                  {/* QR Code */}
-                  <div className="flex-shrink-0 text-center">
-                    <div className="bg-white p-4 rounded-lg border border-border inline-block hover:shadow-md transition-shadow">
-                      <img 
-                        src={ticket.qrCode} 
-                        alt="Ticket QR Code" 
-                        className="w-24 h-24 mx-auto"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.onerror = null;
-                          target.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(ticket._id)}`;
-                        }}
-                      />
+        <div className="grid gap-6 max-w-4xl mx-auto">
+          {pagedTickets.map((ticket) => (
+            <div key={ticket._id} className="relative overflow-hidden bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-shadow duration-300">
+              {/* Ticket Styling Elements */}
+              <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-blue-500 to-purple-600"></div>
+              <div className="absolute top-4 -right-10 w-20 h-8 bg-yellow-400 transform rotate-45 flex items-center justify-center">
+                <span className="text-xs font-bold text-gray-800">ADMIT ONE</span>
+              </div>
+              
+              <div className="flex flex-col md:flex-row">
+                {/* Left Section - Event Image */}
+                <div className="md:w-1/3 bg-gray-100 p-6 flex items-center justify-center">
+                  {ticket.event?.image ? (
+                    <img 
+                      src={ticket.event.image} 
+                      alt={ticket.event.title} 
+                      className="w-full h-48 object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-full h-48 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
+                      <span className="text-white text-lg font-semibold">{ticket.event?.title?.charAt(0) || 'E'}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">Scan at entry</p>
-                    <button 
-                      onClick={() => downloadTicket(ticket)}
-                      className="mt-2 text-sm text-primary hover:text-primary/80 flex items-center justify-center gap-1 mx-auto"
-                    >
-                      <Download size={14} />
-                      Download
-                    </button>
-                  </div>
-
-                  {/* Event Details */}
-                  <div className="flex-1">
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <h3 className="text-xl font-semibold text-foreground mb-2">
-                          {ticket.event.title}
-                        </h3>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex items-center space-x-2">
-                            <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
-                            <span className="text-muted-foreground">{ticket.event.date}</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
-                            <span className="text-muted-foreground">{ticket.event.location}</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <CreditCard className="w-4 h-4 text-primary flex-shrink-0" />
-                            <span className="text-muted-foreground">
-                              {ticket.payment.currency.toUpperCase()} {ticket.payment.amount}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="space-y-2 text-sm">
-                          <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                              <User className="w-4 h-4 text-primary flex-shrink-0" />
-                              <span className="text-muted-foreground">Type:</span>
-                              <span className="font-medium text-foreground">
-                                {ticket.type.charAt(0).toUpperCase() + ticket.type.slice(1)}
-                              </span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <span className="w-4 h-4 flex items-center justify-center">
-                                <div className={`w-2 h-2 rounded-full ${
-                                  ticket.status === 'confirmed' ? 'bg-green-500' : 
-                                  ticket.status === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
-                                }`}></div>
-                              </span>
-                              <span className="text-muted-foreground">Status:</span>
-                              <span className={`font-medium ${
-                                ticket.status === 'confirmed' ? 'text-green-600' : 
-                                ticket.status === 'pending' ? 'text-yellow-600' : 'text-red-600'
-                              }`}>
-                                {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <CreditCard className="w-4 h-4 text-primary" />
-                            <span className="text-muted-foreground">Seat:</span>
-                            <span className="font-medium text-foreground">{ticket.seatNumber}</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-muted-foreground">Price:</span>
-                            <span className="font-medium text-foreground">₹{ticket.price}</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-muted-foreground">Status:</span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              ticket.status === 'active' 
-                                ? 'bg-green-100 text-green-800' 
-                                : ticket.status === 'used'
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {ticket.status.toUpperCase()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-col justify-center space-y-2">
+                  )}
+                </div>
+                
+              {/* Middle Section - Ticket Details */}
+              <div className="flex-1 p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
                     <button
-                      onClick={() => downloadTicket(ticket)}
-                      className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2"
+                      onClick={() => ticket.event?._id && navigate(`/events/${ticket.event._id}`)}
+                      className="text-left text-xl font-bold text-gray-900 mb-1 hover:text-blue-600"
+                      title="View event details"
                     >
-                      <Download className="w-4 h-4" />
-                      <span>Download</span>
+                      {ticket.event?.title || 'Event Title'}
                     </button>
-                    
-                    <div className="text-xs text-muted-foreground text-center">
-                      Purchased {new Date(ticket.createdAt).toLocaleDateString()}
+                    <div className="flex items-center text-gray-600 text-sm mb-2">
+                      <Calendar className="w-4 h-4 mr-1" />
+                      <span>{new Date(ticket.event?.date || new Date()).toLocaleDateString()}</span>
+                      <MapPin className="w-4 h-4 ml-3 mr-1" />
+                      <span>{ticket.event?.location || 'Venue'}</span>
+                    </div>
+                  </div>
+                  <div className="bg-blue-50 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                    #{ticket._id.slice(-6).toUpperCase()}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                      <p className="text-xs text-gray-500 mb-1">Ticket Type</p>
+                      <p className="font-medium">{ticket.type || 'General Admission'}</p>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <p className="text-xs text-gray-500 mb-1">Seat</p>
+                      <p className="font-medium">{ticket.seatNumber || 'General Admission'}</p>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <p className="text-xs text-gray-500 mb-1">Price</p>
+                      <p className="font-medium">${ticket.price.toFixed(2)}</p>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <p className="text-xs text-gray-500 mb-1">Status</p>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        ticket.status === 'active' ? 'bg-green-100 text-green-800' :
+                        ticket.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {ticket.status === 'processing' ? (
+                          <svg className="animate-spin -ml-1 mr-1.5 h-2.5 w-2.5 text-yellow-500" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : null}
+                        {ticket.status ? ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1) : 'Active'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                    <div>
+                      <p className="text-xs text-gray-500">Purchased by</p>
+                      <p className="font-medium">{ticket.user?.name || 'You'}</p>
+                      <p className="text-xs text-gray-500">{ticket.user?.email || ''}</p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => downloadTicket(ticket)}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={ticket.status === 'processing'}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        {ticket.status === 'processing' ? 'Processing...' : 'Download'}
+                      </button>
+                      <button className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                        Share
+                      </button>
                     </div>
                   </div>
                 </div>
+                
+                {/* Right Section - QR Code */}
+                <div className="flex-shrink-0 text-center p-6 border-l border-gray-200 bg-gray-50 flex flex-col items-center justify-center">
+                  <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <img 
+                      src={ticket.qrCode} 
+                      alt="Ticket QR Code" 
+                      className="w-32 h-32 mx-auto"
+                      onError={(e) => { 
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null;
+                        target.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(ticket._id)}`;
+                      }}
+                    />
+                  </div>
+                  <p className="mt-3 text-sm font-medium text-gray-700">
+                    {ticket.status === 'processing' ? 'Generating...' : 'Scan this QR code at entry'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Ticket ID: {ticket._id.slice(-8).toUpperCase()}
+                  </p>
+                </div>
               </div>
-            ))}
+            </div>
+          ))}
+          
+          {tickets.length === 0 && (
+            <div className="text-center py-12">
+              <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 5v2m0 4v2m0 4v2m5-11a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">No tickets yet</h3>
+              <p className="text-gray-500">Your purchased tickets will appear here</p>
+              <button 
+                onClick={() => navigate('/events')}
+                className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Browse Events
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Pagination Controls */}
+        {filteredTickets.length > 0 && (
+          <div className="flex items-center justify-between mt-6">
+            <div className="text-sm text-gray-600">Page {page} of {totalPages}</div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="px-3 py-2 border rounded-md bg-white disabled:opacity-50"
+              >
+                Prev
+              </button>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="px-3 py-2 border rounded-md bg-white disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>
     </div>
+    <Footer/>
+    </>
   );
 };
 

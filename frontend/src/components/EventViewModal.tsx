@@ -125,13 +125,24 @@ const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event 
             )}
 
             {/* Event Manager */}
-            <div>
-              <h3 className="text-lg font-semibold mb-2 text-gray-700">Event Manager</h3>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="font-medium text-gray-800">{event.eventManager.name}</p>
-                <p className="text-sm text-gray-600">{event.eventManager.email}</p>
+            {event.eventManager ? (
+              <div>
+                <h3 className="text-lg font-semibold mb-2 text-gray-700">Event Manager</h3>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="font-medium text-gray-800">{event.eventManager?.name || 'Not specified'}</p>
+                  {event.eventManager?.email && (
+                    <p className="text-sm text-gray-600">{event.eventManager.email}</p>
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div>
+                <h3 className="text-lg font-semibold mb-2 text-gray-700">Event Manager</h3>
+                <div className="bg-gray-50 p-3 rounded-lg text-gray-500 italic">
+                  No manager assigned
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Column */}
@@ -184,7 +195,7 @@ const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event 
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-green-600">${ticket.price}</p>
+                      <p className="font-bold text-green-600">₹{ticket.price}</p>
                       <p className="text-sm text-gray-600">
                         {ticket.quantity - ticket.sold} available
                       </p>

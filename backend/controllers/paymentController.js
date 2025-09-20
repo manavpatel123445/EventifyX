@@ -96,6 +96,7 @@ export const stripeWebhook = async (req, res) => {
       if (payment && payment.status !== "succeeded") {
         payment.status = "succeeded";
         payment.stripePaymentIntentId = session.payment_intent;
+        const createdTickets = []; // Array to store created ticket IDs
         try {
           // Retrieve PaymentIntent to access charges and receipt URL
           const pi = await stripe.paymentIntents.retrieve(session.payment_intent, {
@@ -108,8 +109,7 @@ export const stripeWebhook = async (req, res) => {
 
         // Parse tickets metadata
         const ticketsMeta = JSON.parse(session.metadata?.tickets || "[]");
-
-        const createdTickets = [];
+        // createdTickets is already declared above
         for (const t of ticketsMeta) {
           for (let i = 0; i < (Number(t.quantity) || 1); i++) {
             // Generate unique ticket ID
@@ -135,32 +135,56 @@ export const stripeWebhook = async (req, res) => {
               }
             });
 
-            const ticketDoc = await Ticket.create({
+            // Ensure all required fields are present
+            const ticketData = {
               user: payment.user,
               event: payment.event,
               payment: payment._id,
-              type: t.type || "regular",
+              type: (t.type || "regular").toLowerCase(), // Ensure type is lowercase to match enum
               price: Number(t.price) || 0,
               status: "active",
               qrCode: qrCodeDataURL,
-              seatNumber: `${t.type || "regular"}-${i + 1}`,
-              metadata: {
-                ticketId,
-                qrData
+              seatNumber: `${(t.type || 'regular').toLowerCase()}-${i + 1}`,
+              metadata: { 
+                ticketId, 
+                qrData,
+                eventId: payment.event.toString(),
+                userId: payment.user?.toString(),
+                paymentId: payment._id.toString(),
+                purchaseDate: new Date().toISOString()
               }
-            });
+            };
+
+            // Validate ticket data against schema
+            const ticketDoc = await Ticket.create(ticketData);
             createdTickets.push(ticketDoc._id);
           }
 
-          // Optionally update Event sold counters
-          await Event.updateOne(
-            { _id: payment.event, "ticketPricing.type": t.type || "regular" },
-            { $inc: { "ticketPricing.$.sold": Number(t.quantity) || 1, totalBookings: Number(t.quantity) || 1, totalRevenue: (Number(t.price) || 0) * (Number(t.quantity) || 1) } }
-          );
+          // Update Event sold counters
+          try {
+            await Event.updateOne(
+              { _id: payment.event, "ticketPricing.type": t.type?.toLowerCase() || "regular" },
+              { 
+                $inc: { 
+                  "ticketPricing.$.sold": Number(t.quantity) || 1, 
+                  totalBookings: Number(t.quantity) || 1, 
+                  totalRevenue: (Number(t.price) || 0) * (Number(t.quantity) || 1) 
+                } 
+              }
+            );
+          } catch (updateErr) {
+            console.error("Error updating event ticket counters:", updateErr);
+            // Continue processing tickets even if counter update fails
+          }
         }
 
+        // Update payment with the created ticket references
         payment.tickets = createdTickets;
+        payment.updatedAt = new Date();
         await payment.save();
+        
+        // Populate the payment with ticket details before saving
+        await payment.populate('tickets');
       }
     }
 
@@ -177,6 +201,33 @@ export const getUserTickets = async (req, res) => {
     const userId = req.user?._id;
     if (!userId) {
       return res.status(401).json({ message: "Authentication required" });
+    }
+
+    // Attempt to claim orphaned tickets/payments that match the user's email
+    try {
+      if (req.user?.email) {
+        const orphanPayments = await Payment.find({
+          user: { $in: [null, undefined] },
+          $or: [
+            { "metadata.buyerDetails.email": req.user.email },
+            { "metadata.buyerEmail": req.user.email },
+          ],
+        });
+
+        for (const pay of orphanPayments) {
+          // Attach payment to user
+          pay.user = userId;
+          await pay.save();
+
+          // Attach tickets to user
+          await Ticket.updateMany(
+            { payment: pay._id, $or: [{ user: null }, { user: { $exists: false } }] },
+            { $set: { user: userId } }
+          );
+        }
+      }
+    } catch (claimErr) {
+      console.warn("Orphan ticket claim skipped:", claimErr?.message || claimErr);
     }
 
     const tickets = await Ticket.find({ user: userId })
@@ -243,6 +294,17 @@ export const getTicketsBySession = async (req, res) => {
       }
     }
 
+    // If authenticated user exists and payment has no user, claim it
+    try {
+      if (req.user?._id && (!payment.user || String(payment.user) === '')) {
+        payment.user = req.user._id;
+        await payment.save();
+        await Ticket.updateMany({ payment: payment._id }, { $set: { user: req.user._id } });
+      }
+    } catch (claimErr) {
+      console.warn("Could not claim session payment to user:", claimErr?.message || claimErr);
+    }
+
     // Get tickets for this payment
     const tickets = await Ticket.find({ payment: payment._id })
       .populate('event', 'title startDate endDate venue images')
@@ -262,7 +324,7 @@ export const getTicketsBySession = async (req, res) => {
               const qrData = { ticketId, eventId: payment.event?.toString(), userId: payment.user?.toString(), type: t.type || 'regular', price: Number(t.price) || 0, timestamp: new Date().toISOString() };
               const qrCodeDataURL = await QRCode.toDataURL(JSON.stringify(qrData), { width: 200, margin: 2, color: { dark: '#000000', light: '#FFFFFF' } });
               const ticketDoc = await Ticket.create({ user: payment.user, event: payment.event, payment: payment._id, type: t.type || 'regular', price: Number(t.price) || 0, status: 'active', qrCode: qrCodeDataURL, seatNumber: `${t.type || 'regular'}-${i + 1}`, metadata: { ticketId, qrData } });
-              createdTickets.push(ticketDoc);
+              createdTickets.push(ticketDoc._id);
             }
             // Update Event sold counters and revenue
             await Event.updateOne(

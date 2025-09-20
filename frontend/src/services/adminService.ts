@@ -119,6 +119,56 @@ export const cleanupCompletedEvents = async () => {
   return data;
 };
 
+// Get revenue analytics
+interface RevenueAnalyticsParams {
+  startDate?: string;
+  endDate?: string;
+  managerId?: string;
+}
+
+export const getRevenueAnalytics = async (params: RevenueAnalyticsParams = {}) => {
+  const { data } = await adminAPI.get("/analytics/revenue", { params });
+  return data;
+};
+
+// Get manager-specific revenue
+export const getManagerRevenue = async (managerId: string, params: { startDate?: string; endDate?: string } = {}) => {
+  const { data } = await adminAPI.get(`/analytics/manager/${managerId}/revenue`, { params });
+  return data;
+};
+
+// Import types
+import type { User } from "../types/user";
+
+// Manager-specific user access
+const managerAPI = axios.create({ 
+  baseURL: "/api/manager",
+});
+
+// Add auth token to requests
+managerAPI.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Get users with limited access for managers
+export const getManagerUsers = async (params?: {
+  search?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: string;
+}) => {
+  const { data } = await managerAPI.get("/users", { params });
+  return data;
+};
+
 // Types for TypeScript
 export interface DashboardStats {
   users: {
@@ -146,20 +196,9 @@ export interface DashboardStats {
     totalEvents: number;
   };
   recentActivity: {
-    recentRequests: any[];
+    recentRequests: User[];
     recentEvents: any[];
   };
-}
-
-export interface User {
-  _id: string;
-  name: string;
-  email: string;
-  role: "user" | "event_manager" | "admin";
-  status: "active" | "blocked";
-  createdAt: string;
-  lastLogin?: string;
-  managedEvents?: any[];
 }
 
 export interface Category {

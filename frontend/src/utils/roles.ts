@@ -1,4 +1,4 @@
-import { type UserRole } from "../app/slices/authslice";
+import type { UserRole } from "../types/user";
 
 export const ROLES = {
   ADMIN: 'admin',

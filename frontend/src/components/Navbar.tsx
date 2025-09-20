@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { ChevronDown, User, LogOut, Shield, BarChart3, UserPlus, Calendar, Ticket } from "lucide-react";
+import { ChevronDown, User, LogOut, Shield, BarChart3, Calendar, Ticket } from "lucide-react";
 import { ROLES, ROLE_DISPLAY_NAMES, ROLE_COLORS, hasRole } from "../utils/roles";
 
 const Navbar: React.FC = () => {
@@ -136,7 +136,7 @@ const Navbar: React.FC = () => {
                   {/* Admin Dashboard Link */}
                   {hasRole(userRole, ROLES.ADMIN) && (
                     <Link
-                      to="/admin/dashboard"
+                      to="/admin"
                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
                       onClick={() => setShowDropdown(false)}
                     >
@@ -148,7 +148,7 @@ const Navbar: React.FC = () => {
                   {/* Event Manager Dashboard */}
                   {hasRole(userRole, ROLES.EVENT_MANAGER) && (
                     <Link
-                      to="/manager/dashboard"
+                      to="/manager"
                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
                       onClick={() => setShowDropdown(false)}
                     >
@@ -158,14 +158,7 @@ const Navbar: React.FC = () => {
                   )}
                   
                   {/* User Dashboard */}
-                  <Link
-                    to="/my-tickets"
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
-                    onClick={() => setShowDropdown(false)}
-                  >
-                    <Ticket className="w-4 h-4 mr-2" />
-                    My Tickets
-                  </Link>
+                
                   
                   {/* Create Event (for event managers and admins) */}
                   {hasRole(userRole, ROLES.EVENT_MANAGER) && (
@@ -178,6 +171,27 @@ const Navbar: React.FC = () => {
                       Create Event
                     </Link>
                   )}
+                  {hasRole(userRole, ROLES.EVENT_MANAGER) && (
+                    <Link
+                      to="/my-events"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+                      onClick={() => setShowDropdown(false)}
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      My Events
+                    </Link>
+                  )}
+                  
+                  {hasRole(userRole, ROLES.EVENT_MANAGER) && (
+                    <Link
+                      to="/my-tickets"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+                      onClick={() => setShowDropdown(false)}
+                    >
+                      <Ticket className="w-4 h-4 mr-2" />
+                      My Tickets
+                    </Link>
+                  )}
                   
                   <Link
                     to="/profile"
@@ -186,7 +200,7 @@ const Navbar: React.FC = () => {
                   >
                     <User className="w-4 h-4 mr-2" />
                     Profile
-                  </Link>
+                </Link>
                   
                   {/* Event Manager Request - Only for regular users */}
                   

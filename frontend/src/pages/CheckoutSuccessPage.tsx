@@ -298,7 +298,7 @@ const CheckoutSuccessPage: React.FC = () => {
                         <div className="flex items-center space-x-2">
                           <User className="w-4 h-4 text-primary" />
                           <span className="text-muted-foreground">Type:</span>
-                          <span className="font-medium text-foreground">{ticket.type.toUpperCase()}</span>
+                          <span className="font-medium text-foreground">{ticket?.type?.toUpperCase() || 'GENERAL'}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <CreditCard className="w-4 h-4 text-primary" />
@@ -307,16 +307,16 @@ const CheckoutSuccessPage: React.FC = () => {
                         </div>
                         <div className="flex items-center space-x-2">
                           <span className="text-muted-foreground">Price:</span>
-                          <span className="font-medium text-foreground">${ticket.price}</span>
+                          <span className="font-medium text-foreground">₹{ticket.price}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <span className="text-muted-foreground">Status:</span>
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            ticket.status === 'active' 
+                            (ticket.status || 'active') === 'active' 
                               ? 'bg-green-100 text-green-800' 
-                              : ticket.status === 'processing' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+                              : (ticket.status || '') === 'processing' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
                           }`}>
-                            {ticket.status.toUpperCase()}
+                            {(ticket.status || 'active').toUpperCase()}
                           </span>
                         </div>
                       </div>

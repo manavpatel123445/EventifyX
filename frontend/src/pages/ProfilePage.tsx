@@ -15,13 +15,14 @@ import {
   Star,
   UserCog,
   Shield,
-  BarChart3
+  BarChart3,
+  Upload
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { ROLES, ROLE_DISPLAY_NAMES, ROLE_COLORS, hasRole } from "../utils/roles";
-
- 
-
+import { ROLES } from "../utils/roles";
+import { getProfile, updateProfile, changePassword, type UserProfile, type UpdateProfileData } from "../services/userService";
+import { uploadAvatar } from "../services/eventService";
+import { getRoleDisplayName, getRoleStyles, isEventManager } from "../utils/roleUtils";
 
 interface UserStats {
   eventsCreated: number;
@@ -31,11 +32,13 @@ interface UserStats {
   favoriteEvents: number;
 }
 
+type EventStatus = 'upcoming' | 'completed' | 'cancelled' | 'in_progress';
+
 interface UserEvent {
   _id: string;
   title: string;
   date: string;
-  status: string;
+  status: EventStatus;
   type: 'created' | 'attending';
   venue: {
     name: string;
@@ -44,59 +47,102 @@ interface UserEvent {
 }
 
 const ProfilePage = () => {
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user: authUser } = useSelector((state: RootState) => state.auth);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [recentEvents] = useState<UserEvent[]>([]);
   const [stats, setStats] = useState<UserStats | null>(null);
-  const [recentEvents, setRecentEvents] = useState<UserEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [isEditing, setIsEditing] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
+
   useEffect(() => {
-    loadUserData();
-  }, []);
+    if (authUser) {
+      loadUserData();
+    }
+  }, [authUser]);
+
+  useEffect(() => {
+    if (user?.profileImage) {
+      setAvatarPreview(user.profileImage);
+    }
+  }, [user]);
 
   const loadUserData = async () => {
     try {
-      // Mock user stats - replace with actual API calls
-      const mockStats: UserStats = {
-        eventsCreated: hasRole(user?.role, ROLES.EVENT_MANAGER) ? 5 : 0,
-        eventsAttended: 12,
-        upcomingEvents: 3,
-        totalSpent: 450,
-        favoriteEvents: 8
-      };
-
-      const mockEvents: UserEvent[] = [
-        {
-          _id: "1",
-          title: "Jazz Night",
-          date: "2024-09-15",
-          status: "upcoming",
-          type: "attending",
-          venue: { name: "Blue Note", city: "New York" }
-        },
-        {
-          _id: "2",
-          title: "Food Festival",
-          date: "2024-08-10",
-          status: "completed",
-          type: "attending",
-          venue: { name: "Central Park", city: "New York" }
-        }
-      ];
-      
-      setStats(mockStats);
-      setRecentEvents(mockEvents);
-    } catch (error: any) {
-      toast.error("Failed to load profile data");
+      const { success, user: userData } = await getProfile();
+      if (success && userData) {
+        setUser(userData);
+        
+        // Initialize stats (you can replace with actual API calls)
+        const userStats: UserStats = {
+          eventsCreated: isEventManager(userData.role) ? 5 : 0,
+          eventsAttended: 12,
+          upcomingEvents: 3,
+          totalSpent: 450,
+          favoriteEvents: 8
+        };
+        
+        setStats(userStats);
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      toast.error('Failed to load profile data');
     } finally {
       setLoading(false);
     }
   };
 
-  const StatCard = ({ icon: Icon, title, value, color = "blue" }: {
-    icon: any;
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+    
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarPreview(previewUrl);
+    
+    try {
+      const imageUrl = await uploadAvatar(file);
+      if (imageUrl && user) {
+        await updateProfile({ profileImage: imageUrl });
+        setUser({ ...user, profileImage: imageUrl });
+        toast.success('Profile picture updated successfully');
+      }
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error('Failed to update profile picture');
+      setAvatarPreview('');
+    }
+  };
+  
+  const handleProfileUpdate = async (data: UpdateProfileData) => {
+    try {
+      const { success, user: updatedUser } = await updateProfile(data);
+      if (success && updatedUser) {
+        setUser(updatedUser);
+        toast.success('Profile updated successfully');
+        setIsEditing(false);
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
+    }
+  };
+  
+
+  const StatCard = ({ 
+    icon: Icon, 
+    title, 
+    value, 
+    color = "blue" 
+  }: {
+    icon: React.ComponentType<{ className?: string }>;
     title: string;
     value: string | number;
-    color?: string; 
+    color?: string;
   }) => (
     <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
       <div className="flex items-center">
@@ -111,13 +157,14 @@ const ProfilePage = () => {
     </div>
   );
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "upcoming": return "text-blue-600 bg-blue-100";
-      case "completed": return "text-green-600 bg-green-100";
-      case "cancelled": return "text-red-600 bg-red-100";
-      default: return "text-gray-600 bg-gray-100";
-    }
+  const getStatusColor = (status: EventStatus): string => {
+    const statusStyles: Record<EventStatus, string> = {
+      'upcoming': 'text-blue-600 bg-blue-100',
+      'completed': 'text-green-600 bg-green-100',
+      'cancelled': 'text-red-600 bg-red-100',
+      'in_progress': 'text-yellow-600 bg-yellow-100'
+    };
+    return statusStyles[status] || 'text-gray-600 bg-gray-100';
   };
 
   return (
@@ -128,13 +175,46 @@ const ProfilePage = () => {
           <div className="space-y-6">
             {/* User Overview Header */}
             <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg p-6 text-white">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-white/10 rounded-full">
-                  <User className="h-8 w-8" />
+              <div className="flex items-center space-x-6">
+                <div className="relative group">
+                  <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
+                    {avatarPreview ? (
+                      <img 
+                        src={avatarPreview} 
+                        alt={user?.name || 'User'} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-10 w-10 text-white" />
+                    )}
+                  </div>
+                  <label 
+                    htmlFor="avatar-upload" 
+                    className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer"
+                    title="Change profile picture"
+                  >
+                    <Upload className="h-5 w-5 text-white" />
+                    <input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarChange}
+                    />
+                  </label>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold">My Profile</h1>
-                  <p className="text-purple-100">Manage your account and track your events</p>
+                  <h1 className="text-2xl font-bold">{user?.name || 'My Profile'}</h1>
+                  <p className="text-purple-100">{user?.email || 'Manage your account and track your events'}</p>
+                  {user?.role && (
+                    <span 
+                      className={`mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        getRoleStyles(user.role).bg
+                      } ${getRoleStyles(user.role).text}`}
+                    >
+                      {getRoleDisplayName(user.role)}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -194,7 +274,14 @@ const ProfilePage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Profile Form */}
               <div className="lg:col-span-2">
-                <ProfileForm showTitle={true} />
+                <ProfileForm 
+                  showTitle={true}
+                  user={user}
+                  onUpdate={handleProfileUpdate}
+                  isEditing={isEditing}
+                  onEditToggle={() => setIsEditing(!isEditing)} onChangePassword={function (currentPassword: string, newPassword: string): Promise<void> {
+                    throw new Error("Function not implemented.");
+                  } }                />
               </div>
 
               {/* User Dashboard */}
@@ -209,7 +296,7 @@ const ProfilePage = () => {
                         <span className="text-sm font-medium">Browse Events</span>
                       </div>
                     </button>
-                    {user?.role !== 'event_manager' && (
+                    {user?.role !== ROLES.EVENT_MANAGER && (
                       <button className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                         <div className="flex items-center space-x-3">
                           <User className="h-5 w-5 text-green-600" />
@@ -271,17 +358,17 @@ const ProfilePage = () => {
                     <div className="flex items-center mb-2">
                       <span className="font-medium mr-2">Role:</span>
                       <span 
-                        className={`px-2 py-1 rounded-full text-xs font-medium 
-                        ${user?.role ? ROLE_COLORS[user.role]?.bg : 'bg-gray-100'} 
-                        ${user?.role ? ROLE_COLORS[user.role]?.text : 'text-gray-800'}`}
-                      >
-                        {user?.role ? ROLE_DISPLAY_NAMES[user.role] : 'User'}
-                      </span>
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        user?.role ? getRoleStyles(user.role).bg : 'bg-gray-100'
+                      } ${user?.role ? getRoleStyles(user.role).text : 'text-gray-800'}`}
+                    >
+                      {user?.role ? getRoleDisplayName(user.role) : 'User'}
+                    </span>
                     </div>
                     <p className="mb-2"><strong>Status:</strong> {user?.status?.toUpperCase()}</p>
                     
                     {/* Role-specific benefits */}
-                    {hasRole(user?.role, ROLES.EVENT_MANAGER) && (
+                    {user?.role === ROLES.EVENT_MANAGER && (
                       <div className="mt-3 p-3 bg-blue-50 rounded-lg">
                         <p className="font-medium text-blue-800 flex items-center">
                           <BarChart3 className="w-4 h-4 mr-2" />
@@ -304,7 +391,7 @@ const ProfilePage = () => {
                       </div>
                     )}
                     
-                    {hasRole(user?.role, ROLES.ADMIN) && (
+                    {user?.role === ROLES.ADMIN && (
                       <div className="mt-3 p-3 bg-red-50 rounded-lg">
                         <p className="font-medium text-red-800 flex items-center">
                           <Shield className="w-4 h-4 mr-2" />

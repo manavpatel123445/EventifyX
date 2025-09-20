@@ -509,4 +509,4 @@ const CreateEventPage: React.FC = () => {
   );
 };
 
-export default CreateEventPage;
+export default CreateEventPage

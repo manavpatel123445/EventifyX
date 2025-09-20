@@ -55,9 +55,9 @@ const Loginpage: React.FC = () => {
       dispatch(setStatus("succeeded"));
       toast.success(`Welcome back, ${data.user?.name || "User"}!`);
       if (data.user?.role === "admin") {
-        navigate("/admin/dashboard");
+        navigate("/admin");
       } else if (data.user?.role === "event_manager") {
-        navigate("/manager/dashboard");
+        navigate("/manager");
       } else {
         navigate("/");
       }
@@ -83,7 +83,7 @@ const Loginpage: React.FC = () => {
   return (
     <>
       <Navbar />
-      <div className="h-150 flex items-center justify-center bg-gray-50">
+      <div className="h-150  flex items-center justify-center bg-gray-50">
         <div className="grid grid-cols-1 md:grid-cols-2 bg-white shadow-lg rounded-2xl overflow-hidden w-full max-w-4xl">
           {/* Left Banner */}
           <div className="hidden md:block">

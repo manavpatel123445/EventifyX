@@ -63,19 +63,33 @@ const CheckoutPage: React.FC = () => {
     load();
   }, [eventId]);
 
+  const MAX_TICKETS_PER_BOOKING = 12;
+
   const handleQuantityChange = (index: number, value: number) => {
     const updated = [...tickets];
-    updated[index].quantity = Math.max(0, value);
+    
+    // Calculate current total tickets
+    const currentTotal = tickets.reduce((sum, t) => sum + (t === updated[index] ? 0 : t.quantity), 0);
+    
+    // Ensure the new value doesn't exceed the limit when added to other tickets
+    const newValue = Math.min(
+      Math.max(0, value), // Can't go below 0
+      MAX_TICKETS_PER_BOOKING - currentTotal // Can't exceed remaining tickets in limit
+    );
+    
+    updated[index].quantity = newValue;
     setTickets(updated);
   };
 
-  const GST_RATE = 0.18; // 12% GST
+  const GST_RATE = 0.18; // 18% GST
+  const BOOKING_FEE_RATE = 0.05; // 5% booking fee
+  
   const subtotal = tickets.reduce(
     (sum, t) => sum + t.price * t.quantity,
     0
   );
-  const bookingFee = Math.round(subtotal * 0.05); // 12% booking fee example
-  const gstAmount = Math.round(subtotal * GST_RATE);
+  const bookingFee = Math.round(subtotal * BOOKING_FEE_RATE);
+  const gstAmount = Math.round((subtotal + bookingFee) * GST_RATE);
   const totalAmount = subtotal + bookingFee + gstAmount;
 
 // Check if there are no ticket types availabl
@@ -129,49 +143,62 @@ const CheckoutPage: React.FC = () => {
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <button
-                      type="button"
                       onClick={() => handleQuantityChange(i, ticket.quantity - 1)}
+                      className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-md hover:bg-gray-300 disabled:opacity-50"
                       disabled={ticket.quantity <= 0}
-                      className="w-8 h-8 flex items-center justify-center rounded-md border text-gray-700 disabled:opacity-50"
-                      aria-label={`Decrease ${ticket.type} quantity`}
                     >
-                      −
+                      -
                     </button>
-                    <span className="min-w-6 text-center inline-block">{ticket.quantity}</span>
+                    <span className="w-8 text-center">{ticket.quantity}</span>
                     <button
-                      type="button"
                       onClick={() => handleQuantityChange(i, ticket.quantity + 1)}
-                      className="w-8 h-8 flex items-center justify-center rounded-md border text-gray-700"
-                      aria-label={`Increase ${ticket.type} quantity`}
+                      className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-md hover:bg-gray-300 disabled:opacity-50"
+                      disabled={tickets.reduce((sum, t) => sum + t.quantity, 0) >= MAX_TICKETS_PER_BOOKING}
                     >
                       +
                     </button>
                   </div>
-                  <div className="text-sm text-gray-600 min-w-24 text-right">
-                    ₹{ticket.price * ticket.quantity}
-                  </div>
+                  {tickets.reduce((sum, t) => sum + t.quantity, 0) >= MAX_TICKETS_PER_BOOKING && (
+                    <span className="text-xs text-red-500">Max {MAX_TICKETS_PER_BOOKING} tickets per booking</span>
+                  )}
+                </div>
+                <div className="text-sm text-gray-600 min-w-24 text-right">
+                  ₹{ticket.price * ticket.quantity}
                 </div>
               </div>
             ))}
           </div>
 
           {/* Estimated Total */}
-          <div className="mt-4 bg-gray-50 p-4 rounded-md">
-            <div className="flex justify-between text-gray-700 mb-1">
-              <span>Sub-total</span>
-              <span className="font-medium">₹{subtotal}</span>
+          <div className="mt-6 border-t pt-4 space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Subtotal:</span>
+              <span>₹{subtotal.toLocaleString('en-IN')}</span>
             </div>
-            <div className="flex justify-between text-gray-700 mb-1">
-              <span>Booking Fee (est.)</span>
-              <span className="font-medium">₹{bookingFee}</span>
+            
+            <div className="flex justify-between">
+              <div>
+                <span className="text-gray-600">Booking Fee </span>
+                <span className="text-xs text-gray-500">({(BOOKING_FEE_RATE * 100)}%)</span>:
+              </div>
+              <span>₹{bookingFee.toLocaleString('en-IN')}</span>
             </div>
-            <div className="flex justify-between text-gray-700 mb-1">
-              <span>GST (18%)</span>
-              <span className="font-medium">₹{gstAmount}</span>
+            
+            <div className="flex justify-between">
+              <div>
+                <span className="text-gray-600">GST </span>
+                <span className="text-xs text-gray-500">({GST_RATE * 100}% on ₹{(subtotal + bookingFee).toLocaleString('en-IN')})</span>:
+              </div>
+              <span>₹{gstAmount.toLocaleString('en-IN')}</span>
             </div>
-            <div className="flex justify-between font-semibold border-t border-gray-200 pt-2 mt-2">
-              <span>Total Amount</span>
-              <span>₹{totalAmount}</span>
+            
+            <div className="flex justify-between font-bold text-lg mt-4 pt-4 border-t">
+              <span>Total Amount:</span>
+              <span className="text-primary">₹{totalAmount.toLocaleString('en-IN')}</span>
+            </div>
+            
+            <div className="text-xs text-gray-500 mt-2">
+              * Inclusive of all taxes and fees
             </div>
           </div>
 
@@ -198,13 +225,23 @@ const CheckoutPage: React.FC = () => {
             />
           </div>
 
-          <button
-            onClick={() => setStep(2)}
-            disabled={totalAmount === 0 || !buyerDetails.email}
-            className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
-            Next
-          </button>
+          <div className="mt-6">
+            <button
+              onClick={() => setStep(2)}
+              disabled={totalAmount === 0 || !buyerDetails.email || tickets.reduce((sum, t) => sum + t.quantity, 0) > MAX_TICKETS_PER_BOOKING}
+              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 w-full"
+              title={tickets.reduce((sum, t) => sum + t.quantity, 0) > MAX_TICKETS_PER_BOOKING ? `Maximum ${MAX_TICKETS_PER_BOOKING} tickets allowed per booking` : ''}
+            >
+              {tickets.reduce((sum, t) => sum + t.quantity, 0) > MAX_TICKETS_PER_BOOKING 
+                ? `Maximum ${MAX_TICKETS_PER_BOOKING} tickets`
+                : 'Next'}
+            </button>
+            {tickets.reduce((sum, t) => sum + t.quantity, 0) > MAX_TICKETS_PER_BOOKING && (
+              <p className="text-sm text-red-500 mt-2 text-center">
+                Please reduce the number of tickets to {MAX_TICKETS_PER_BOOKING} or fewer to continue
+              </p>
+            )}
+          </div>
         </div>
       )}
 
@@ -229,17 +266,36 @@ const CheckoutPage: React.FC = () => {
                       <span>₹{t.price * t.quantity}</span>
                     </div>
                   ))}
-                <div className="border-t mt-2 pt-2 flex justify-between">
-                  <span className="text-gray-600">Sub-total</span>
-                  <span className="font-medium">₹{subtotal}</span>
-                </div>
-                <div className="mt-1 flex justify-between">
-                  <span className="text-gray-600">Booking Fee</span>
-                  <span className="font-medium">₹{bookingFee}</span>
-                </div>
-                <div className="border-t mt-3 pt-3 flex justify-between font-bold">
-                  <span>Total Amount</span>
-                  <span>₹{totalAmount}</span>
+                <div className="border-t mt-2 pt-3 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span>₹{subtotal.toLocaleString('en-IN')}</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <div>
+                      <span className="text-gray-600">Booking Fee </span>
+                      <span className="text-xs text-gray-500">({(BOOKING_FEE_RATE * 100)}%)</span>:
+                    </div>
+                    <span>₹{bookingFee.toLocaleString('en-IN')}</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <div>
+                      <span className="text-gray-600">GST </span>
+                      <span className="text-xs text-gray-500">({GST_RATE * 100}% on ₹{(subtotal + bookingFee).toLocaleString('en-IN')})</span>:
+                    </div>
+                    <span>₹{gstAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                  
+                  <div className="flex justify-between font-bold text-lg mt-4 pt-4 border-t">
+                    <span>Total Amount:</span>
+                    <span className="text-primary">₹{totalAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                  
+                  <div className="text-xs text-gray-500">
+                    * Inclusive of all taxes and fees
+                  </div>
                 </div>
               </>
             )}
@@ -287,8 +343,8 @@ const CheckoutPage: React.FC = () => {
           </button>
         </div>
       )}
-    </div>
-    <Footer/>
+      </div>
+      <Footer />
     </>
   );
 };

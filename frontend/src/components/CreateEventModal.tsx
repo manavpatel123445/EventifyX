@@ -8,9 +8,10 @@ import { fetchCategories } from "../services/categoryService";
 interface CreateEventModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose }) => {
+const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -46,6 +47,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose }) 
       toast.success("Event created successfully 🎉");
       queryClient.invalidateQueries({ queryKey: ["events"] });
       onClose();
+      if (onSuccess) onSuccess();
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message || "Failed to create event";
@@ -348,3 +350,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose }) 
 };
 
 export default CreateEventModal;
+function onSuccess() {
+  throw new Error("Function not implemented.");
+}
+

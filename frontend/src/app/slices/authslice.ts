@@ -1,17 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-
-export type UserRole = 'user' | 'event_manager' | 'admin';
-
-export interface User {
-  _id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  status: 'active' | 'inactive' | 'suspended';
-  profileImage?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import type { User, UserRole } from "../../types/user";
 
 interface AuthState {
   user: User | null;

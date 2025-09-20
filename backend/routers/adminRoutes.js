@@ -17,7 +17,9 @@ import {
   deleteCategory,
   
   // Analytics
-  getAdvancedAnalytics
+  getAdvancedAnalytics,
+  getRevenueAnalytics,
+  getManagerRevenue
 } from "../controllers/adminController.js";
 
 import { protect, authorize } from "../middlewares/authMiddleware.js";
@@ -37,6 +39,14 @@ router.get("/dashboard", getDashboardStats);
 // Get advanced analytics
 // GET /api/admin/analytics?startDate=2024-01-01&endDate=2024-12-31
 router.get("/analytics", getAdvancedAnalytics);
+
+// Get revenue analytics
+// GET /api/admin/analytics/revenue?startDate=2024-01-01&endDate=2024-12-31&managerId=xxx
+router.get("/analytics/revenue", getRevenueAnalytics);
+
+// Get manager revenue
+// GET /api/admin/analytics/manager/:managerId/revenue?startDate=2024-01-01&endDate=2024-12-31
+router.get("/analytics/manager/:managerId/revenue", getManagerRevenue);
 
 // USER MANAGEMENT ROUTES
 

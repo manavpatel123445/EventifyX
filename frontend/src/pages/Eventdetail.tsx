@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import React, { useEffect, useMemo } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { getEventById } from "../services/eventService";
@@ -162,6 +162,39 @@ const Eventdetail: React.FC = () => {
               </div>
             </div>
 
+            {/* Organizer Info */}
+            <div className="mt-8 border-t pt-6">
+              <h2 className="text-xl font-semibold mb-3">About the Organizer</h2>
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  {event.eventManager?.profileImage ? (
+                    <img 
+                      src={event.eventManager.profileImage} 
+                      alt={event.eventManager.name || 'Organizer'}
+                      className="w-16 h-16 rounded-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null;
+                        target.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM2QjcyOEEiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMjAgMjF2LTJhMTAgMTAgMCAwMC0xMC0xMFMwIDkgMCAxMXYyYTIgMiAwIDAwMiAyaDE2YTIgMiAwIDAwLTJ6Ii8+PGNpcmNsZSBjeD0iMTIiIGN5PSI3IiByPSI0Ii8+PC9zdmc+';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">{event.eventManager?.name || 'EventifyX Team'}</h3>
+                  <p className="text-gray-500 mt-1">
+                    {event.eventManager?.email || 'Contact information not available'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Gallery */}
             <div>
               <h2 className="text-xl font-semibold mb-3">Gallery</h2>
@@ -180,9 +213,33 @@ const Eventdetail: React.FC = () => {
           {/* Right Booking Panel */}
           <div className="space-y-6">
             <div className="border rounded-xl p-6 shadow-lg sticky top-10">
+              <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
+                {event.eventManager?.profileImage ? (
+                  <img 
+                    src={event.eventManager.profileImage} 
+                    alt={event.eventManager.name || 'Organizer'}
+                    className="w-10 h-10 rounded-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiwjNkI3MjhBIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIwIDIxdi0yYTEwIDEwIDAgMDAtMTAtMTBTMCA5IDAgMTF2MmEyIDIgMCAwMDIgMmgxNmEyIDIgMCAwMDItMnoiLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjciIHI9IjQiLz48L3N2Zz4=';
+                    }}
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-gray-500">Organized by</p>
+                  <p className="font-medium">{event.eventManager?.name || 'EventifyX Team'}</p>
+                </div>
+              </div>
               <ul className="space-y-3 text-gray-700">
-                <li>📅 {new Date(event.startDate).toLocaleDateString()} – {new Date(event.endDate).toLocaleDateString()}</li>
-                <li>⏰ {event.startTime} – {event.endTime}</li>
+                <li>📅 {new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} – {new Date(event.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</li>
+                <li>⏰ {new Date(`2000-01-01T${event.startTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} – {new Date(`2000-01-01T${event.endTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</li>
                 <li>📍 {event.venue?.name}, {event.venue?.address}, {event.venue?.city}</li>
                 {event.venue?.state && (<li>🏙️ {event.venue.state}</li>)}
               </ul>

@@ -16,7 +16,7 @@ const MyEventRequests: React.FC = () => {
     refetch
   } = useQuery({
     queryKey: [viewManaged ? "managed-event-requests" : "my-event-requests"],
-    queryFn: () => viewManaged ? getRequestsForManagedEvents() : getMyEventRequests(),
+    queryFn: () => viewManaged ? getRequestsForManagedEvents() : getMyEventRequests(),  
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 

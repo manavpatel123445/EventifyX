@@ -266,7 +266,7 @@ const EventPage = () => {
                       <div className="flex items-center justify-between">
                         <div className="text-sm font-medium text-green-600">
                           {event.ticketPricing?.length
-                            ? `From ₹${Math.min(...event.ticketPricing.map(t => t.price))}`
+                            ? `From ₹${Math.min(...event.ticketPricing.map(t => t.price)).toLocaleString('en-IN')}`
                             : 'Free'}
                         </div>
                         <div className="text-xs text-gray-500">

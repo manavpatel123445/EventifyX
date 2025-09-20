@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import axios from "axios";
+import type { UserRole } from "../types/user";
 
 const API = axios.create({ 
   baseURL: "/api/users",
@@ -57,7 +58,8 @@ export interface UserProfile {
   phone?: string;
   dateOfBirth?: string;
   profileImage?: string;
-  role: string;
+  description?: string;
+  role: UserRole;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -70,6 +72,7 @@ export interface UpdateProfileData {
   phone?: string;
   dateOfBirth?: string;
   profileImage?: string;
+  description?: string;
 }
 
 export interface ChangePasswordData {

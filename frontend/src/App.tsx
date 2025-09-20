@@ -28,11 +28,11 @@ import AdminProfilePage from './admin/Pages/AdminProfilePage';
 import EventManagerRequestPage from './pages/EventManagerRequestPage';
 import CheckoutSuccessPage from './pages/CheckoutSuccessPage';
 import MyTicketsPage from './pages/MyTicketsPage';
+import RevenueAnalyticsPage from './admin/Pages/RevenueAnalyticsPage';
 import SaleRevanue from './EventManager/Page/SaleRevanue';
-
+import SaleRevanueList from './EventManager/Page/SaleRevanue';
 
 const queryClient = new QueryClient();
-
 
 function App() {
   return (
@@ -44,7 +44,7 @@ function App() {
             <Route path="/events" element={<EventPage />} />
             <Route path="/events/:id" element={<Eventdetail />} />
             <Route path="/demo/event-view" element={<EventViewDemo />} />
-            <Route path="/create-event" element={<CreateEventpage />} />
+            <Route path="/create-event" element={<RoleProtectedRoute allowedRoles={['user', 'event_manager']}><CreateEventpage /></RoleProtectedRoute>} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/checkout-success" element={<CheckoutSuccessPage />} />
             <Route path="/login" element={<Loginpage />} />
@@ -53,9 +53,9 @@ function App() {
             <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
             <Route path="/contact" element={<ContectPage />} />
             <Route path="/eventdetail" element={<Eventdetail />} />
-            <Route path="/myEventRequests" element={<MyEventRequests />} />
-            <Route path="/profile" element={<RoleProtectedRoute requiredRole="user"><ProfilePage /></RoleProtectedRoute>} />
-            <Route path="/my-tickets" element={<RoleProtectedRoute requiredRole="user"><MyTicketsPage /></RoleProtectedRoute>} />
+            <Route path="/myEventRequests" element={<RoleProtectedRoute allowedRoles={['user', 'event_manager']}><MyEventRequests /></RoleProtectedRoute>} />
+            <Route path="/profile" element={<RoleProtectedRoute allowedRoles={["user", "event_manager"]}><ProfilePage /></RoleProtectedRoute>} />
+            <Route path="/my-tickets" element={<RoleProtectedRoute allowedRoles={['user', 'event_manager']}><MyTicketsPage /></RoleProtectedRoute>} />
 
             {/* Event Manager Request Route */}
             <Route
@@ -77,79 +77,54 @@ function App() {
               }
             />
             {/* Admin Routes */}
-            <Route
-              path="/admin/dashboard"
-              element={
-                <RoleProtectedRoute requiredRole="admin">
-                  <AdminDashboard />
-                </RoleProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/eventlist"
-              element={
-                <RoleProtectedRoute requiredRole="admin">
-                  <EventListPage />
-                </RoleProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/userlist"
-              element={
-                <RoleProtectedRoute requiredRole="admin">
-                  <UserListPage />
-                </RoleProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/admin/profile"
-              element={
-                <RoleProtectedRoute requiredRole="admin">
-                  <AdminProfilePage />
-                </RoleProtectedRoute>
-              }
-            />
-
-
+            <Route path="/admin" element={
+              <RoleProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/admin/events" element={
+              <RoleProtectedRoute allowedRoles={['admin']}>
+                <EventListPage />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/admin/users" element={
+              <RoleProtectedRoute allowedRoles={['admin']}>
+                <UserListPage />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/admin/revenue" element={
+              <RoleProtectedRoute allowedRoles={['admin']}>
+                <RevenueAnalyticsPage />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/admin/profile" element={
+              <RoleProtectedRoute allowedRoles={['admin']}>
+                <AdminProfilePage />
+              </RoleProtectedRoute>
+            } />
 
             {/* Event Manager Routes */}
-
-            <Route
-              path="/manager/dashboard"
-              element={
-                <RoleProtectedRoute requiredRole="event_manager">
-                  <ManagerDashbord />
-                </RoleProtectedRoute>
-              }
-            />
-            <Route
-              path="/manager/eventlist"
-              element={
-                <RoleProtectedRoute requiredRole="event_manager">
-                  <EventList />
-                </RoleProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/manager/managersale"
-              element={
-                <RoleProtectedRoute requiredRole="event_manager">
-                  <SaleRevanue />
-                </RoleProtectedRoute>   
-              }
-            />
-
-
-            <Route
-              path="/manager/profile"
-              element={
-                <RoleProtectedRoute requiredRole="event_manager">
-                  <ManagerProfile />
-                </RoleProtectedRoute>
-              }
-            />
+            <Route path="/manager" element={
+              <RoleProtectedRoute allowedRoles={['event_manager']}>
+                <ManagerDashbord />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/manager/eventlist" element={
+              <RoleProtectedRoute allowedRoles={['event_manager']}>
+                <EventList />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/manager/sale-revenue" element={
+              <RoleProtectedRoute allowedRoles={['event_manager']}>
+                <SaleRevanue/>
+              </RoleProtectedRoute>
+            } />
+            
+            <Route path="/manager/profile" element={
+              <RoleProtectedRoute allowedRoles={['event_manager']}>
+                <ManagerProfile />
+              </RoleProtectedRoute>
+            } />
 
             <Route path="*" element={<Home />} />
             <Route path="*" element={<Home />} />

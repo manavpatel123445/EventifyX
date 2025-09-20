@@ -19,6 +19,6 @@ router.get("/tickets", protect, getUserTickets);
 router.get("/tickets/payment/:paymentId", getTicketsByPayment);
 
 // Get tickets by session ID (for success page)
-router.get("/tickets/session/:sessionId", getTicketsBySession);
+router.get("/tickets/session/:sessionId", optionalAuth, getTicketsBySession);
 
 export default router;

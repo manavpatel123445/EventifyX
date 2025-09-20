@@ -24,6 +24,7 @@ const ManagerProfile: React.FC = () => {
     newPassword: '',
     phone: '',
     birthDate: '',
+    description: '',
   });
 
   useEffect(() => {
@@ -34,6 +35,7 @@ const ManagerProfile: React.FC = () => {
         avatar: profile.profileImage || '',
         phone: profile.phone || '',
         birthDate: profile.dateOfBirth ? new Date(profile.dateOfBirth).toISOString().split('T')[0] : '',
+        description: profile.description || '',
       }));
     }
   }, [profile]);
@@ -95,6 +97,7 @@ const ManagerProfile: React.FC = () => {
       profileImage: formData.avatar,
       phone: formData.phone || undefined,
       dateOfBirth: formData.birthDate || undefined,
+      description: formData.description || undefined,
     });
     if (formData.currentPassword && formData.newPassword) {
       changePasswordMutation.mutate({ currentPassword: formData.currentPassword, newPassword: formData.newPassword });
@@ -191,6 +194,21 @@ const ManagerProfile: React.FC = () => {
               value={profile?.email || ''}
               disabled
               className="w-full px-4 py-2 border rounded-lg bg-gray-100 text-gray-500"
+            />
+          </div>
+
+          <div className="lg:col-span-2">
+            <label className="flex items-center gap-2 text-gray-700 mb-1">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              Description
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => handleChange('description', e.target.value)}
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none min-h-[100px]"
+              placeholder="Tell us about yourself..."
             />
           </div>
 

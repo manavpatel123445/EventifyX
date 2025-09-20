@@ -656,3 +656,180 @@ export const getAdvancedAnalytics = async (req, res) => {
     });
   }
 };
+
+// 📈 Get Revenue Analytics
+export const getRevenueAnalytics = async (req, res) => {
+  try {
+    const { startDate, endDate, managerId } = req.query;
+    
+    const matchStage = {};
+    
+    // Add date filter if provided
+    if (startDate && endDate) {
+      matchStage.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+    
+    // Add manager filter if provided
+    if (managerId && mongoose.Types.ObjectId.isValid(managerId)) {
+      matchStage.eventManager = new mongoose.Types.ObjectId(managerId);
+    }
+    
+    const pipeline = [
+      { $match: matchStage },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+            status: "$status"
+          },
+          totalRevenue: { $sum: "$totalRevenue" },
+          totalBookings: { $sum: "$totalBookings" },
+          eventCount: { $sum: 1 }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: "$_id.year",
+            month: "$_id.month"
+          },
+          totalRevenue: { $sum: "$totalRevenue" },
+          totalBookings: { $sum: "$totalBookings" },
+          eventCount: { $sum: "$eventCount" },
+          byStatus: {
+            $push: {
+              status: "$_id.status",
+              revenue: "$totalRevenue",
+              bookings: "$totalBookings"
+            }
+          }
+        }
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } }
+    ];
+    
+    const analytics = await Event.aggregate(pipeline);
+    
+    res.status(200).json({
+      success: true,
+      data: analytics
+    });
+    
+  } catch (error) {
+    console.error('Revenue analytics error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch revenue analytics'
+    });
+  }
+};
+
+// 💰 Get Manager Revenue
+export const getManagerRevenue = async (req, res) => {
+  try {
+    const { managerId } = req.params;
+    const { startDate, endDate } = req.query;
+    
+    if (!mongoose.Types.ObjectId.isValid(managerId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid manager ID'
+      });
+    }
+    
+    const matchStage = {
+      eventManager: new mongoose.Types.ObjectId(managerId),
+      status: { $in: ['completed', 'ongoing'] } // Only count completed and ongoing events
+    };
+    
+    // Add date filter if provided
+    if (startDate && endDate) {
+      matchStage.startDate = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+    
+    const pipeline = [
+      { $match: matchStage },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$totalRevenue" },
+          totalBookings: { $sum: "$totalBookings" },
+          eventCount: { $sum: 1 },
+          events: {
+            $push: {
+              eventId: "$_id",
+              title: "$title",
+              startDate: "$startDate",
+              totalRevenue: "$totalRevenue",
+              totalBookings: "$totalBookings"
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          totalRevenue: 1,
+          totalBookings: 1,
+          eventCount: 1,
+          averageRevenuePerEvent: { $divide: ["$totalRevenue", "$eventCount"] },
+          events: 1
+        }
+      }
+    ];
+    
+    const result = await Event.aggregate(pipeline);
+    const stats = result[0] || {
+      totalRevenue: 0,
+      totalBookings: 0,
+      eventCount: 0,
+      averageRevenuePerEvent: 0,
+      events: []
+    };
+    
+    // Calculate 20/80 split
+    const adminShare = stats.totalRevenue * 0.2; // 20% for admin
+    const managerShare = stats.totalRevenue * 0.8; // 80% for manager
+    
+    // Get manager details
+    const manager = await User.findById(managerId).select('name email role');
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        manager,
+        ...stats,
+        revenueSplit: {
+          admin: {
+            percentage: 20,
+            amount: parseFloat(adminShare.toFixed(2))
+          },
+          manager: {
+            percentage: 80,
+            amount: parseFloat(managerShare.toFixed(2))
+          },
+          totalRevenue: stats.totalRevenue
+        },
+        events: stats.events.map(event => ({
+          ...event,
+          adminShare: parseFloat((event.totalRevenue * 0.2).toFixed(2)),
+          managerShare: parseFloat((event.totalRevenue * 0.8).toFixed(2))
+        }))
+      }
+    });
+    
+  } catch (error) {
+    console.error('Manager revenue error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch manager revenue'
+    });
+  }
+};

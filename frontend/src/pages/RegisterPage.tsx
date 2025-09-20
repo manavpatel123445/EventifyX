@@ -58,8 +58,11 @@ const RegisterPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [terms, setTerms] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  // Single state to control both password fields' visibility
+  const [showPasswords, setShowPasswords] = useState(false);
+  
+  // Toggle both password fields' visibility
+  const togglePasswordsVisibility = () => setShowPasswords(!showPasswords);
   const [errors, setErrors] = useState<{
     name?: string;
     email?: string;
@@ -200,7 +203,7 @@ const RegisterPage: React.FC = () => {
               <div>
                 <label className="block text-gray-600 mb-1">Password</label>
                 <Input
-                  type={showPassword ? "text" : "password"}
+                  type={showPasswords ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
@@ -209,10 +212,10 @@ const RegisterPage: React.FC = () => {
                     <button
                       type="button"
                       tabIndex={-1}
-                      onClick={() => setShowPassword((v) => !v)}
+                      onClick={togglePasswordsVisibility}
                       className="focus:outline-none"
                     >
-                      {showPassword ? (
+                      {showPasswords ? (
                         <FaEyeSlash className="h-4 w-4 text-gray-400" />
                       ) : (
                         <FaEye className="h-4 w-4 text-gray-400" />
@@ -233,7 +236,7 @@ const RegisterPage: React.FC = () => {
                   Confirm Password
                 </label>
                 <Input
-                  type={showConfirmPassword ? "text" : "password"}
+                  type={showPasswords ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Re-enter your password"
@@ -242,10 +245,10 @@ const RegisterPage: React.FC = () => {
                     <button
                       type="button"
                       tabIndex={-1}
-                      onClick={() => setShowConfirmPassword((v) => !v)}
+                      onClick={togglePasswordsVisibility}
                       className="focus:outline-none"
                     >
-                      {showConfirmPassword ? (
+                      {showPasswords ? (
                         <FaEyeSlash className="h-4 w-4 text-gray-400" />
                       ) : (
                         <FaEye className="h-4 w-4 text-gray-400" />

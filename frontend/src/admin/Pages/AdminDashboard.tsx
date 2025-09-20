@@ -2,17 +2,16 @@
 
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Calendar, ClipboardList, DollarSign, Trash2, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
-import toast from "react-hot-toast";
+import { Users, Calendar, ClipboardList, DollarSign, ChevronLeft, ChevronRight, IndianRupee } from "lucide-react";
 
 import SideBar from "../components/SideBar";
-import { getDashboardStats, cleanupCompletedEvents } from "../../services/adminService";
+import { getDashboardStats } from "../../services/adminService";
 import { getAllEvents } from "../../services/eventService";
 import { getAllRequests } from "../../services/eventManagerRequestService";
 import { EventViewModal } from "../../components";
 
 const AdminDashboard: React.FC = () => {
-  const [isCleaningUp, setIsCleaningUp] = useState(false);
+ 
   const [viewEvent, setViewEvent] = useState<Event | null>(null);
   
   // Events pagination
@@ -52,32 +51,6 @@ const AdminDashboard: React.FC = () => {
   const totalRequests = (pendingResp as any)?.data?.pagination?.total ?? 0;
   const totalRequestsPages = Math.ceil(totalRequests / requestsLimit);
 
-  const handleCleanupCompletedEvents = async () => {
-    if (isCleaningUp) return;
-
-    const confirmed = window.confirm(
-      "This will soft delete all completed events older than 30 days. Are you sure you want to continue?"
-    );
-
-    if (!confirmed) return;
-
-    setIsCleaningUp(true);
-
-    try {
-      const response = await cleanupCompletedEvents();
-
-      if (response.success) {
-        toast.success(`Successfully cleaned up ${response.deletedCount} completed events`);
-      } else {
-        toast.error("Failed to cleanup completed events");
-      }
-    } catch (error: any) {
-      console.error("Cleanup error:", error);
-      toast.error(error.response?.data?.message || "Failed to cleanup completed events");
-    } finally {
-      setIsCleaningUp(false);
-    }
-  };
 
   return (
     <div className="flex min-h-screen">
@@ -110,10 +83,10 @@ const AdminDashboard: React.FC = () => {
             </div>
           </div>
           <div className="bg-white shadow rounded-xl p-6 flex items-center space-x-4">
-            <DollarSign className="text-yellow-500 w-8 h-8" />
+            <IndianRupee className="text-yellow-500 w-8 h-8" />
             <div>
               <p className="text-gray-500">Revenue</p>
-              <h3 className="text-2xl font-bold">{loadingStats ? "…" : `$${(stats?.revenue?.totalRevenue ?? 0).toLocaleString()}`}</h3>
+              <h3 className="text-2xl font-bold">{loadingStats ? "…" : `₹${(stats?.revenue?.totalRevenue ?? 0).toLocaleString()}`}</h3>
             </div>
           </div>
         </div>
