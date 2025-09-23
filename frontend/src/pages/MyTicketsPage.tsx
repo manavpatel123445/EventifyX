@@ -118,7 +118,7 @@ const MyTicketsPage: React.FC = () => {
         _id: String(ev?._id || ''),
         title: String(ev?.title || 'Event'),
         date: String(ev?.date || ev?.startDate || ev?.endDate || new Date().toISOString()),
-        location: String(ev?.location || ev?.venue || ''),
+        location: String(ev?.location || (typeof ev?.venue === 'object' ? ev.venue?.name || ev.venue?.city || ev.venue?.address || JSON.stringify(ev.venue) : ev?.venue) || 'Venue not specified'),
         image: String(ev?.image || (Array.isArray(ev?.images) ? ev.images[0] : '') || ''),
       },
       payment: {
@@ -501,7 +501,7 @@ const MyTicketsPage: React.FC = () => {
                     </div>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <p className="text-xs text-gray-500 mb-1">Price</p>
-                      <p className="font-medium">${ticket.price.toFixed(2)}</p>
+                      <p className="font-medium">₹{ticket.price.toFixed(2)}</p>
                     </div>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <p className="text-xs text-gray-500 mb-1">Status</p>

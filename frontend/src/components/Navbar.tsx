@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { ChevronDown, User, LogOut, Shield, BarChart3, Calendar, Ticket } from "lucide-react";
-import { ROLES, ROLE_DISPLAY_NAMES, ROLE_COLORS, hasRole } from "../utils/roles";
+import { ROLES, ROLE_DISPLAY_NAMES, ROLE_COLORS, hasRole, capitalizeFirstLetter } from "../utils/roles";
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
@@ -32,6 +32,29 @@ const Navbar: React.FC = () => {
   };
   
   const currentUser = getCurrentUser();
+  
+  // Resolve avatar URL from stored user.profileImage
+  const avatarUrl = React.useMemo(() => {
+    try {
+      const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
+      if (!userStr) return null;
+      const user = JSON.parse(userStr);
+      const val = user?.profileImage as string | undefined;
+      if (!val) return null;
+      // If already a data URL or http(s) URL, use directly
+      if (typeof val === 'string' && (val.startsWith('data:image') || val.startsWith('http'))) {
+        return val;
+      }
+      // If it's a localStorage key (e.g., avatar_<userId>), try to load
+      if (typeof val === 'string') {
+        const stored = localStorage.getItem(val);
+        if (stored) return stored;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }, [isLoggedIn]);
   const userRole = currentUser?.role as keyof typeof ROLE_DISPLAY_NAMES | undefined;
 
   React.useEffect(() => {
@@ -110,17 +133,25 @@ const Navbar: React.FC = () => {
                 }}
                 className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:text-red-500 transition"
               >
-                <div className="w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                  {currentUser.name?.[0]?.toUpperCase() || 'U'}
-                </div>
-                <span className="hidden md:block">{currentUser.name}</span>
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={currentUser.name || 'User'}
+                    className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                    {currentUser.name?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                )}
+                <span className="hidden md:block">{capitalizeFirstLetter(currentUser.name)}</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
               
               {showDropdown && (
                 <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50">
                   <div className="px-4 py-2 border-b border-gray-100">
-                    <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
+                    <p className="text-sm font-medium text-gray-900">{capitalizeFirstLetter(currentUser.name)}</p>
                     <p className="text-xs text-gray-500">{currentUser.email}</p>
                     {userRole && (
                       <span 
@@ -143,6 +174,7 @@ const Navbar: React.FC = () => {
                       <Shield className="w-4 h-4 mr-2" />
                       Admin Dashboard
                     </Link>
+
                   )}
                   
                   {/* Event Manager Dashboard */}
@@ -182,8 +214,7 @@ const Navbar: React.FC = () => {
                     </Link>
                   )}
                   
-                  {hasRole(userRole, ROLES.EVENT_MANAGER) && (
-                    <Link
+                  <Link
                       to="/my-tickets"
                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
                       onClick={() => setShowDropdown(false)}
@@ -191,7 +222,6 @@ const Navbar: React.FC = () => {
                       <Ticket className="w-4 h-4 mr-2" />
                       My Tickets
                     </Link>
-                  )}
                   
                   <Link
                     to="/profile"

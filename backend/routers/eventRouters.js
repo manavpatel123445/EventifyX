@@ -79,6 +79,10 @@ router.post("/admin/requests/:requestId/approve", protect, authorize("admin"), a
 // POST /api/events/admin/requests/:requestId/reject
 router.post("/admin/requests/:requestId/reject", protect, authorize("admin"), rejectEventRequest);
 
+// Soft delete an event (Admin only)
+// PATCH /api/events/admin/:eventId/soft-delete
+router.patch("/admin/:eventId/soft-delete", protect, authorize("admin"), softDeleteEvent);
+
 // Auto soft delete completed events (Admin only)
 // POST /api/events/admin/cleanup-completed
 router.post("/admin/cleanup-completed", protect, authorize("admin"), autoSoftDeleteCompletedEvents);

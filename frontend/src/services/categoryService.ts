@@ -27,7 +27,7 @@ export const fetchCategories = async () => {
   return data;
 };
 
-export const createCategory = async (category: { name: string; description?: string; status?: string; location?: string }) => {
+export const createCategory = async (category: { name: string; description?: string; status?: string; location?: string; icon?: string }) => {
   const { data } = await axios.post("/api/categories", category);
   return data;
 };

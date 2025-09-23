@@ -79,6 +79,7 @@ export const getAllEventRequests = async (req, res) => {
       .populate("requestedBy", "name email")
       .populate("category", "name")
       .populate("reviewedBy", "name")
+      .populate("approvedEvent", "title slug _id")
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -300,7 +301,7 @@ export const getAllEvents = async (req, res) => {
       category, 
       city, 
       date, 
-      status = "upcoming", 
+      status, 
       search,
       page = 1, 
       limit = 12,
@@ -310,8 +311,17 @@ export const getAllEvents = async (req, res) => {
     
     const filter = { isPublic: true, isDeleted: false };
     
-    // Add status filter if provided
-    if (status) filter.status = status;
+    // Status filtering
+    // - If status === 'all', include upcoming + ongoing + completed
+    // - If a valid status is provided, use it as-is (e.g., 'upcoming', 'ongoing', 'completed', 'cancelled')
+    // - If no status is provided, default to active statuses only (upcoming + ongoing)
+    if (status === 'all') {
+      filter.status = { $in: ["upcoming", "ongoing", "completed"] };
+    } else if (status) {
+      filter.status = status;
+    } else {
+      filter.status = { $in: ["upcoming", "ongoing"] };
+    }
     
     // Add filters
     if (category) filter.category = category;
@@ -671,6 +681,7 @@ export const getRequestsForManagedEvents = async (req, res) => {
 export const softDeleteEvent = async (req, res) => {
   try {
     const { eventId } = req.params;
+    const { force } = req.query; // when 'true', allow admin to delete regardless of status
     const event = await Event.findById(eventId);
     if (!event) {
       return res.status(404).json({
@@ -678,10 +689,10 @@ export const softDeleteEvent = async (req, res) => {
         message: 'Event not found',
       });
     }
-    if (event.status !== 'cancelled' && event.status !== 'completed') {
+    if (force !== 'true' && event.status !== 'cancelled' && event.status !== 'completed') {
       return res.status(400).json({
         success: false,
-        message: 'Only completed or cancelled events can be deleted',
+        message: 'Only completed or cancelled events can be deleted. Pass force=true to override.',
       });
     }
     if (event.isDeleted) {

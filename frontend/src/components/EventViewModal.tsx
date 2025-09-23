@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import type { Event } from "../services/eventService";
 
 interface EventViewModalProps {
@@ -9,6 +9,25 @@ interface EventViewModalProps {
 
 const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event }) => {
   if (!isOpen || !event) return null;
+
+  // Safely compute metrics from ticketPricing
+  const ticketMetrics = useMemo(() => {
+    const base = { sold: 0, revenue: 0, capacity: 0 };
+    try {
+      if (!Array.isArray(event.ticketPricing)) return base;
+      return event.ticketPricing.reduce((acc, t) => {
+        const sold = Number((t as any).sold) || 0;
+        const price = Number((t as any).price) || 0;
+        const qty = Number((t as any).quantity) || 0;
+        acc.sold += sold;
+        acc.revenue += sold * price;
+        acc.capacity += qty;
+        return acc;
+      }, { ...base });
+    } catch {
+      return base;
+    }
+  }, [event.ticketPricing]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -103,7 +122,7 @@ const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event 
             <div>
               <h3 className="text-lg font-semibold mb-2 text-gray-700">Category</h3>
               <span className="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
-                {event.category.name}
+                {event.category?.name || (event.category as any) || 'No category'}
               </span>
             </div>
 
@@ -176,9 +195,9 @@ const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event 
             <div>
               <h3 className="text-lg font-semibold mb-3 text-gray-700">Venue</h3>
               <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="font-medium text-gray-800">{event.venue.name}</p>
-                <p className="text-sm text-gray-600">{event.venue.address}</p>
-                <p className="text-sm text-gray-600">{event.venue.city}, {event.venue.state}</p>
+                <p className="font-medium text-gray-800">{event.venue?.name || '-'}</p>
+                <p className="text-sm text-gray-600">{event.venue?.address || '-'}</p>
+                <p className="text-sm text-gray-600">{event.venue?.city || '-'}{event.venue?.state ? `, ${event.venue.state}` : ''}</p>
               </div>
             </div>
 
@@ -186,22 +205,28 @@ const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event 
             <div>
               <h3 className="text-lg font-semibold mb-3 text-gray-700">Ticket Pricing</h3>
               <div className="space-y-2">
-                {event.ticketPricing.map((ticket, index) => (
-                  <div key={index} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
-                    <div>
-                      <span className="font-medium text-gray-800 capitalize">{ticket.type}</span>
-                      <p className="text-sm text-gray-600">
-                        {ticket.sold} sold of {ticket.quantity} total
-                      </p>
+                {(event.ticketPricing || []).map((ticket, index) => {
+                  const sold = Number((ticket as any).sold) || 0;
+                  const price = Number((ticket as any).price) || 0;
+                  const quantity = Number((ticket as any).quantity) || 0;
+                  const available = Math.max(0, quantity - sold);
+                  return (
+                    <div key={index} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                      <div>
+                        <span className="font-medium text-gray-800 capitalize">{ticket.type}</span>
+                        <p className="text-sm text-gray-600">
+                          {sold} sold of {quantity} total
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-green-600">₹{price}</p>
+                        <p className="text-sm text-gray-600">
+                          {available} available
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-green-600">₹{ticket.price}</p>
-                      <p className="text-sm text-gray-600">
-                        {ticket.quantity - ticket.sold} available
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -212,16 +237,16 @@ const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event 
           <h3 className="text-lg font-semibold mb-4 text-gray-700">Event Statistics</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-blue-50 p-4 rounded-lg text-center">
-              <p className="text-2xl font-bold text-blue-600">{event.totalBookings}</p>
+              <p className="text-2xl font-bold text-blue-600">{(event.totalBookings ?? ticketMetrics.sold).toLocaleString()}</p>
               <p className="text-sm text-blue-800">Total Bookings</p>
             </div>
             <div className="bg-green-50 p-4 rounded-lg text-center">
-              <p className="text-2xl font-bold text-green-600">₹{event.totalRevenue}</p>
+              <p className="text-2xl font-bold text-green-600">₹{(event.totalRevenue ?? ticketMetrics.revenue).toLocaleString('en-IN')}</p>
               <p className="text-sm text-green-800">Total Revenue</p>
             </div>
             <div className="bg-purple-50 p-4 rounded-lg text-center">
               <p className="text-2xl font-bold text-purple-600">
-                {event.ticketPricing.reduce((total, ticket) => total + ticket.quantity, 0)}
+                {ticketMetrics.capacity.toLocaleString()}
               </p>
               <p className="text-sm text-purple-800">Total Capacity</p>
             </div>

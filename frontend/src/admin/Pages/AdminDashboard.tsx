@@ -2,13 +2,14 @@
 
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Calendar, ClipboardList, DollarSign, ChevronLeft, ChevronRight, IndianRupee } from "lucide-react";
+import { Users, Calendar, ClipboardList, ChevronLeft, ChevronRight, IndianRupee } from "lucide-react";
 
 import SideBar from "../components/SideBar";
 import { getDashboardStats } from "../../services/adminService";
 import { getAllEvents } from "../../services/eventService";
 import { getAllRequests } from "../../services/eventManagerRequestService";
 import { EventViewModal } from "../../components";
+import { capitalizeFirstLetter } from "../../utils/roles";
 
 const AdminDashboard: React.FC = () => {
  
@@ -19,7 +20,7 @@ const AdminDashboard: React.FC = () => {
   const eventsLimit = 10;
   
   // Manager requests pagination
-  const [requestsPage, setRequestsPage] = useState(1);
+  const [requestsPage] = useState(1);
   const requestsLimit = 5;
 
   const { data: statsResp, isLoading: loadingStats } = useQuery({ queryKey: ["dashboardStats"], queryFn: getDashboardStats });
@@ -33,13 +34,13 @@ const AdminDashboard: React.FC = () => {
     }) 
   });
   
-  const { data: pendingResp, isLoading: loadingPending } = useQuery({ 
-    queryKey: ["pendingRequests", { status: "pending", page: requestsPage, limit: requestsLimit }], 
-    queryFn: () => getAllRequests({ 
-      status: "pending", 
-      page: requestsPage, 
-      limit: requestsLimit 
-    }) 
+  useQuery({
+    queryKey: ["pendingRequests", { status: "pending", page: requestsPage, limit: requestsLimit }],
+    queryFn: () => getAllRequests({
+      status: "pending",
+      page: requestsPage,
+      limit: requestsLimit
+    })
   });
 
   const stats = (statsResp as any)?.data ?? statsResp; // support both {data:{}} and flat
@@ -47,9 +48,6 @@ const AdminDashboard: React.FC = () => {
   const totalEvents = (eventsResp as any)?.data?.pagination?.total ?? 0;
   const totalEventsPages = Math.ceil(totalEvents / eventsLimit);
   
-  const pending = (pendingResp as any)?.data?.requests ?? [];
-  const totalRequests = (pendingResp as any)?.data?.pagination?.total ?? 0;
-  const totalRequestsPages = Math.ceil(totalRequests / requestsLimit);
 
 
   return (
@@ -78,7 +76,7 @@ const AdminDashboard: React.FC = () => {
           <div className="bg-white shadow rounded-xl p-6 flex items-center space-x-4">
             <ClipboardList className="text-blue-500 w-8 h-8" />
             <div>
-              <p className="text-gray-500">Manager Requests</p>
+              <p className="text-gray-500">Event Requests</p>
               <h3 className="text-2xl font-bold">{loadingStats ? "…" : stats?.requests?.pending ?? 0}</h3>
             </div>
           </div>
@@ -95,13 +93,13 @@ const AdminDashboard: React.FC = () => {
         <div className="bg-white rounded-xl shadow p-6">
           <h2 className="text-xl font-semibold mb-4">Event Management</h2>
           <table className="w-full border-collapse">
-            <thead>
-              <tr className="text-left bg-gray-50">
-                <th className="p-3">Event Name</th>
-                <th className="p-3">Date</th>
-                <th className="p-3">Location</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Actions</th>
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event Title</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -113,8 +111,19 @@ const AdminDashboard: React.FC = () => {
               )}
               {!loadingEvents && events.map((event: any) => (
                 <tr key={event._id} className="border-t">
-                  <td className="p-3">{event.title}</td>
-                  <td className="p-3">{event.startDate ? new Date(event.startDate).toLocaleDateString() : '-'}</td>
+                  <td className="p-3">{event.title ? capitalizeFirstLetter(event.title) : 'Untitled Event'}</td>
+                  <td className="p-3">
+                    {event.startDate ? (
+                      <div className="flex flex-col space-y-1">
+                        <div className="text-sm font-medium text-gray-900">
+                          {new Date(event.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {new Date(`2000-01-01T${event.startTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(`2000-01-01T${event.endTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                        </div>
+                      </div>
+                    ) : '-'}
+                  </td>
                   <td className="p-3">{event.venue?.city}</td>
                   <td className="p-3">
                     {(() => {
@@ -181,102 +190,10 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Pending Manager Requests */}
-        <div className="bg-white rounded-xl shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Manager Requests</h2>
-            <div className="text-sm text-gray-500">
-              {!loadingPending && `Showing ${pending.length} of ${totalRequests} requests`}
-            </div>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested On</th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {loadingPending ? (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
-                      Loading requests...
-                    </td>
-                  </tr>
-                ) : pending.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
-                      No pending manager requests
-                    </td>
-                  </tr>
-                ) : (
-                  pending.map((req: any) => (
-                    <tr key={req._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="text-sm font-medium text-gray-900">
-                            {req.user?.name || 'N/A'}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{req.user?.email || 'N/A'}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'N/A'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                        <button
-                          onClick={() => console.log('Approve', req._id)}
-                          className="px-3 py-1 bg-green-100 text-green-700 rounded-md hover:bg-green-200"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => console.log('Reject', req._id)}
-                          className="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200"
-                        >
-                          Reject
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+      
           
           {/* Pagination */}
-          {totalRequestsPages > 1 && (
-            <div className="flex items-center justify-between mt-4 px-2">
-              <button
-                onClick={() => setRequestsPage(p => Math.max(1, p - 1))}
-                disabled={requestsPage === 1}
-                className="flex items-center px-3 py-1 rounded border disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" /> Previous
-              </button>
-              
-              <div className="text-sm text-gray-600">
-                Page {requestsPage} of {totalRequestsPages}
-              </div>
-              
-              <button
-                onClick={() => setRequestsPage(p => Math.min(totalRequestsPages, p + 1))}
-                disabled={requestsPage >= totalRequestsPages}
-                className="flex items-center px-3 py-1 rounded border disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next <ChevronRight className="w-4 h-4 ml-1" />
-              </button>
-            </div>
-          )}
-        </div>
-
+        
         {/* System Maintenance */}
         
       </div>

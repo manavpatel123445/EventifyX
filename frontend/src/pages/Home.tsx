@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { getAllEvents, type Event } from "../services/eventService";
+import { formatINR } from "../utils/currency";
 import { getAllCategories } from "../services/categoryService";
 
 interface Category {
@@ -48,10 +49,11 @@ const Home = () => {
     error: eventsError,
     refetch: refetchEvents
   } = useQuery({
-    queryKey: ['events', 'upcoming', { status: 'upcoming', limit: 8 }],
+    queryKey: ['events', 'active', { limit: 9 }],
     queryFn: async () => {
       console.log('🔍 Fetching events with TanStack Query...');
-      const response = await getAllEvents({ status: "upcoming", limit: 8 });
+      // No status passed so backend returns active (upcoming + ongoing)
+      const response = await getAllEvents({ limit: 9 });
       console.log('📡 Events API Response:', response);
       return response;
     },
@@ -345,7 +347,7 @@ const Home = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 
-                {events.slice(0, 8).map((event) => (
+                {events.slice(0, 9).map((event) => (
                    <Link
                      key={event._id}
                      to={`/events/${event._id}`}
@@ -438,7 +440,9 @@ const Home = () => {
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            From ${event.ticketPricing?.[0]?.price || 'Free'}
+                            From {typeof event.ticketPricing?.[0]?.price === 'number' 
+                              ? formatINR(event.ticketPricing[0].price)
+                              : 'Free'}
                           </div>
                          
                         </div>

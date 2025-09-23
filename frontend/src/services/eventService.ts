@@ -205,6 +205,12 @@ export const cancelEvent = async (eventId: string, reason?: string) => {
   return data;
 };
 
+// Admin: Soft delete an event
+export const softDeleteEventAdmin = async (eventId: string) => {
+  const { data } = await eventAPI.patch(`/admin/${eventId}/soft-delete?force=true`);
+  return data;
+};
+
 /**
  * Requests cancellation of an event
  * @param eventId - ID of the event to cancel
@@ -293,11 +299,7 @@ export interface Event {
   }[];
   images: string[];
   eventManager: {
-    profileImage: string | undefined;
-    profileImage: string | undefined;
-    profileImage: any;
-    profileImage: any;
-    profileImage: any;
+    profileImage?: string;
     _id: string;
     name: string;
     email: string;

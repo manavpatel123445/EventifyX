@@ -13,6 +13,7 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({ isOpen, onClo
   const [form, setForm] = useState({
     name: "",
     description: "",
+    icon: "",
   });
 
   const queryClient = useQueryClient();
@@ -23,7 +24,7 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({ isOpen, onClo
       toast.success("Category added successfully 🎉");
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       onClose();
-      setForm({ name: "", description: "" });
+      setForm({ name: "", description: "", icon: "" });
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message || "Failed to add category";
@@ -43,7 +44,9 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({ isOpen, onClo
       toast.error("Category name is required");
       return;
     }
-    mutation.mutate(form);
+    const payload = { ...form } as any;
+    if (!payload.icon) delete payload.icon; // optional
+    mutation.mutate(payload);
   };
 
   return (
@@ -85,6 +88,25 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({ isOpen, onClo
               className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-red-500"
               placeholder="Short description of the category"
             />
+          </div>
+
+          {/* Optional Icon */}
+          <div>
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium">Icon (optional)</label>
+              {form.icon && (
+                <span className="text-sm">Preview: <span className="text-lg align-middle">{form.icon}</span></span>
+              )}
+            </div>
+            <input
+              type="text"
+              name="icon"
+              value={form.icon}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-red-500"
+              placeholder="Emoji like 🎵 or an icon name/URL"
+            />
+            <p className="text-xs text-gray-500 mt-1">Tip: You can paste an emoji (e.g., 🎵) or leave it blank to use the default.</p>
           </div>
 
           <button

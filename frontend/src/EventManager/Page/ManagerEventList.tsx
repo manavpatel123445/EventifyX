@@ -7,13 +7,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 
 import CreateEventModal from '../../components/CreateEventModal'
+import CreateCategoryModal from '../../components/CreateCategoryModal'
 import UpdateEventModal from '../../components/UpdateEventModal'
 import { EventViewModal } from '../../components'
 import ManagerSideBar from '../components/ManagerSidebar'
 import { cancelEvent, getMyManagedEvents, getRequestsForManagedEvents, type Event, requestEventCancellation } from '../../services/eventService'
+import { capitalizeFirstLetter } from '../../utils/roles'
 
 const ManagerEventList = () => {
   const [isCreateOpen, setCreateOpen] = useState(false)
+  const [isCategoryModalOpen, setCategoryModalOpen] = useState(false)
   const [editEvent, setEditEvent] = useState<Event | null>(null)
   const [viewEvent, setViewEvent] = useState<Event | null>(null)
   const [page, setPage] = useState(1)
@@ -100,12 +103,20 @@ const ManagerEventList = () => {
       <div className="flex-1 p-8 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">My Events</h1>
-          <button
-            className="bg-red-500 text-white px-4 py-2 rounded shadow hover:bg-red-600 transition"
-            onClick={() => setCreateOpen(true)}
-          >
-            + Create Event
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              className="bg-blue-500 text-white px-4 py-2 rounded shadow hover:bg-blue-600 transition"
+              onClick={() => setCategoryModalOpen(true)}
+            >
+              + Create Category
+            </button>
+            <button
+              className="bg-red-500 text-white px-4 py-2 rounded shadow hover:bg-red-600 transition"
+              onClick={() => setCreateOpen(true)}
+            >
+              + Create Event
+            </button>
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow p-6">
@@ -145,8 +156,8 @@ const ManagerEventList = () => {
 
                   return (
                     <tr key={ev._id} className={`text-sm ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                      <td className="px-4 py-3 font-medium">{ev.title}</td>
-                      <td className="px-4 py-3">{ev.category?.name ?? '-'}</td>
+                      <td className="px-4 py-3 font-medium">{capitalizeFirstLetter(ev.title)}</td>
+                      <td className="px-4 py-3">{ev.category?.name ? capitalizeFirstLetter(ev.category.name) : '-'}</td>
                       <td className="px-4 py-3">{new Date(ev.startDate).toLocaleDateString()} {ev.startTime}</td>
                       <td className="px-4 py-3">{ev.venue?.city ?? ''}</td>
                       <td className="px-4 py-3">{sold}</td>
@@ -231,12 +242,12 @@ const ManagerEventList = () => {
               <tbody>
                 {requests.map((req, i) => (
                   <tr key={req._id || i} className={`text-sm ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                    <td className="px-4 py-3">{req.approvedEvent?.title ?? '-'}</td>
-                    <td className="px-4 py-3">{req.requestedBy?.name ?? '-'}</td>
+                    <td className="px-4 py-3">{req.approvedEvent?.title ? capitalizeFirstLetter(req.approvedEvent.title) : '-'}</td>
+                    <td className="px-4 py-3">{req.requestedBy?.name ? capitalizeFirstLetter(req.requestedBy.name) : '-'}</td>
                     <td className="px-4 py-3">
                       <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">{req.status}</span>
                     </td>
-                    <td className="px-4 py-3">{req.reviewedBy?.name ?? '-'}</td>
+                    <td className="px-4 py-3">{req.reviewedBy?.name ? capitalizeFirstLetter(req.reviewedBy.name) : '-'}</td>
                     <td className="px-4 py-3">{req.reviewedAt ? new Date(req.reviewedAt).toLocaleString() : '-'}</td>
                   </tr>
                 ))}
@@ -259,7 +270,7 @@ const ManagerEventList = () => {
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-bold mb-4">Request Event Cancellation</h2>
             <p className="mb-4">
-              You are about to request cancellation for: <strong>{selectedEvent.title}</strong>
+              You are about to request cancellation for: <strong>{capitalizeFirstLetter(selectedEvent.title)}</strong>
             </p>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -311,6 +322,10 @@ const ManagerEventList = () => {
           // Refresh the events list
           queryClient.invalidateQueries({ queryKey: ['managedEvents'] });
         }} 
+      />
+      <CreateCategoryModal 
+        isOpen={isCategoryModalOpen}
+        onClose={() => setCategoryModalOpen(false)}
       />
       
       <UpdateEventModal

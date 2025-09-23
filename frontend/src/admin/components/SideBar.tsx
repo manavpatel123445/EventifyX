@@ -33,7 +33,7 @@ const SideBar: React.FC = () => {
     },
     
     { 
-      name: "profile", 
+      name: "Profile", 
       path: "/admin/profile", 
       icon: <User className="w-5 h-5" /> 
     },

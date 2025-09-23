@@ -11,6 +11,7 @@ import { Button } from '../../components/ui/button';
 import { getRevenueAnalytics, getManagerRevenue } from '../../services/adminService';
 import useAuth from '../../hooks/useAuth';
 import { DatePickerWithRange } from '../../components/ui/date-range-picker';
+import { capitalizeFirstLetter } from '../../utils/roles';
 
 const RevenueAnalyticsPage: React.FC = () => {
   const { user } = useAuth();
@@ -185,7 +186,7 @@ const RevenueAnalyticsPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${totals.totalRevenue.toLocaleString()}
+              ₹{totals.totalRevenue.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">
               {dateRange?.from && dateRange?.to 
@@ -234,7 +235,7 @@ const RevenueAnalyticsPage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${revenueData.data.averageRevenuePerEvent.toFixed(2)}
+                ₹{revenueData.data.averageRevenuePerEvent.toFixed(2)}
               </div>
             </CardContent>
           </Card>
@@ -300,7 +301,7 @@ const RevenueAnalyticsPage: React.FC = () => {
                             </span>
                           </div>
                           <div>
-                            <div className="font-medium">{user.name || 'Anonymous User'}</div>
+                            <div className="font-medium">{user.name ? capitalizeFirstLetter(user.name) : 'Anonymous User'}</div>
                             <div className="text-sm text-muted-foreground">{user.email || 'No email'}</div>
                           </div>
                         </div>
@@ -309,7 +310,7 @@ const RevenueAnalyticsPage: React.FC = () => {
                         {user.ticketsPurchased?.toLocaleString() || 0}
                       </td>
                       <td className="p-4 text-right align-middle font-medium">
-                        ${user.totalSpent?.toFixed(2) || '0.00'}
+                        ₹{user.totalSpent?.toFixed(2) || '0.00'}
                       </td>
                       <td className="p-4 text-right align-middle text-sm text-muted-foreground">
                         {user.lastPurchase 
@@ -351,12 +352,12 @@ const RevenueAnalyticsPage: React.FC = () => {
                 <tbody>
                   {revenueData.data.events.map((event: any) => (
                     <tr key={event.eventId} className="border-b hover:bg-gray-50">
-                      <td className="p-4 font-medium">{event.title}</td>
+                      <td className="p-4 font-medium">{event.title ? capitalizeFirstLetter(event.title) : 'Untitled Event'}</td>
                       <td className="text-right p-4">
-                        {new Date(event.startDate).toLocaleDateString()}
+                        {new Date(event.startDate).toLocaleDateString('en-GB')}
                       </td>
                       <td className="text-right p-4">
-                        ${event.totalRevenue?.toLocaleString()}
+                        ₹{event.totalRevenue?.toLocaleString()}
                       </td>
                       <td className="text-right p-4">
                         {event.totalBookings?.toLocaleString()}

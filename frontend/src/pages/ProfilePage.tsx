@@ -13,16 +13,15 @@ import {
   Heart,
   Ticket,
   Star,
-  UserCog,
   Shield,
   BarChart3,
   Upload
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { ROLES } from "../utils/roles";
-import { getProfile, updateProfile, changePassword, type UserProfile, type UpdateProfileData } from "../services/userService";
+import { ROLES, getRoleDisplayName, getRoleStyles, hasRole, capitalizeFirstLetter } from "../utils/roleUtils";
+import { NavLink } from "react-router-dom";
 import { uploadAvatar } from "../services/eventService";
-import { getRoleDisplayName, getRoleStyles, isEventManager } from "../utils/roleUtils";
+import { type UserProfile, getProfile, updateProfile, type UpdateProfileData } from "../services/userService";
 
 interface UserStats {
   eventsCreated: number;
@@ -75,7 +74,7 @@ const ProfilePage = () => {
         
         // Initialize stats (you can replace with actual API calls)
         const userStats: UserStats = {
-          eventsCreated: isEventManager(userData.role) ? 5 : 0,
+          eventsCreated: hasRole(userData.role, ROLES.EVENT_MANAGER) ? 5 : 0,
           eventsAttended: 12,
           upcomingEvents: 3,
           totalSpent: 450,
@@ -204,7 +203,7 @@ const ProfilePage = () => {
                   </label>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold">{user?.name || 'My Profile'}</h1>
+                  <h1 className="text-2xl font-bold">{user?.name ? capitalizeFirstLetter(user.name) : 'My Profile'}</h1>
                   <p className="text-purple-100">{user?.email || 'Manage your account and track your events'}</p>
                   {user?.role && (
                     <span 
@@ -212,7 +211,7 @@ const ProfilePage = () => {
                         getRoleStyles(user.role).bg
                       } ${getRoleStyles(user.role).text}`}
                     >
-                      {getRoleDisplayName(user.role)}
+                      {capitalizeFirstLetter(getRoleDisplayName(user.role))}
                     </span>
                   )}
                 </div>
@@ -279,7 +278,7 @@ const ProfilePage = () => {
                   user={user}
                   onUpdate={handleProfileUpdate}
                   isEditing={isEditing}
-                  onEditToggle={() => setIsEditing(!isEditing)} onChangePassword={function (currentPassword: string, newPassword: string): Promise<void> {
+                  onEditToggle={() => setIsEditing(!isEditing)} onChangePassword={function (_currentPassword: string, _newPassword: string): Promise<void> {
                     throw new Error("Function not implemented.");
                   } }                />
               </div>
@@ -291,10 +290,14 @@ const ProfilePage = () => {
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
                   <div className="space-y-3">
                     <button className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                    <NavLink to="/events">
                       <div className="flex items-center space-x-3">
+                        
                         <Calendar className="h-5 w-5 text-blue-600" />
                         <span className="text-sm font-medium">Browse Events</span>
+                      
                       </div>
+                      </NavLink>
                     </button>
                     {user?.role !== ROLES.EVENT_MANAGER && (
                       <button className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
@@ -305,14 +308,18 @@ const ProfilePage = () => {
                       </button>
                     )}
                     <button className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                    <NavLink to="/my-tickets">
                       <div className="flex items-center space-x-3">
+                        
                         <Ticket className="h-5 w-5 text-purple-600" />
                         <span className="text-sm font-medium">My Tickets</span>
+                      
                       </div>
+                      </NavLink>
                     </button>
                     <button className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                       <div className="flex items-center space-x-3">
-                        <Heart className="h-5 w-5 text-red-600" />
+                        <Heart className="h-5 w-5 text-red-600"/>
                         <span className="text-sm font-medium">Favorites</span>
                       </div>
                     </button>
@@ -327,13 +334,13 @@ const ProfilePage = () => {
                       recentEvents.map((event) => (
                         <div key={event._id} className="p-4 rounded-lg border border-gray-200 hover:bg-gray-50">
                           <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-medium text-gray-900 text-sm">{event.title}</h4>
+                            <h4 className="font-medium text-gray-900 text-sm">{capitalizeFirstLetter(event.title)}</h4>
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
-                              {event.status}
+                              {capitalizeFirstLetter(event.status)}
                             </span>
                           </div>
                           <p className="text-xs text-gray-600 mb-2">
-                            {event.venue.name}, {event.venue.city}
+                            {capitalizeFirstLetter(event.venue.name)}, {capitalizeFirstLetter(event.venue.city)}
                           </p>
                           <p className="text-xs text-gray-500">
                             {new Date(event.date).toLocaleDateString()}
@@ -362,7 +369,7 @@ const ProfilePage = () => {
                         user?.role ? getRoleStyles(user.role).bg : 'bg-gray-100'
                       } ${user?.role ? getRoleStyles(user.role).text : 'text-gray-800'}`}
                     >
-                      {user?.role ? getRoleDisplayName(user.role) : 'User'}
+                      {user?.role ? capitalizeFirstLetter(getRoleDisplayName(user.role)) : 'User'}
                     </span>
                     </div>
                     <p className="mb-2"><strong>Status:</strong> {user?.status?.toUpperCase()}</p>
@@ -372,7 +379,7 @@ const ProfilePage = () => {
                       <div className="mt-3 p-3 bg-blue-50 rounded-lg">
                         <p className="font-medium text-blue-800 flex items-center">
                           <BarChart3 className="w-4 h-4 mr-2" />
-                          Event Manager Benefits
+                          {capitalizeFirstLetter(getRoleDisplayName(user.role))} Benefits
                         </p>
                         <ul className="mt-1 space-y-1 text-xs text-blue-700">
                           <li className="flex items-start">
@@ -426,3 +433,4 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage
+

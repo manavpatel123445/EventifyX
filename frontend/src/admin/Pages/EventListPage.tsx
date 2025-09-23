@@ -7,11 +7,13 @@ import {
   getAllEvents, 
   getAllEventRequests, 
   approveEventRequest, 
-  rejectEventRequest
+  rejectEventRequest,
+  softDeleteEventAdmin
 } from "../../services/eventService";
 import CreateEventModal from '../../components/CreateEventModal';
 import CreateCategoryModal from '../../components/CreateCategoryModal';
 import { EventViewModal } from '../../components';
+import { capitalizeFirstLetter } from '../../utils/roles';
 
 const EventListPage: React.FC = () => {
   const [isEventModalOpen, setEventModalOpen] = useState(false);
@@ -33,8 +35,8 @@ const EventListPage: React.FC = () => {
   });
 
   const { data: evtResp, isLoading: loadingEvt, error: errorEvt } = useQuery({
-    queryKey: ["admin-events", { page: evtPage, limit }],
-    queryFn: () => getAllEvents({ status: "approved", page: evtPage, limit }),
+    queryKey: ["admin-events", { page: evtPage, limit, status: "all" }],
+    queryFn: () => getAllEvents({ page: evtPage, limit, status: 'all' }),
   });
 
   const requests = (reqResp as any)?.data?.requests ?? [];
@@ -62,6 +64,15 @@ const EventListPage: React.FC = () => {
   const rejectMutation = useMutation({
     mutationFn: (id: string) => rejectEventRequest(id),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-event-requests"] });
+    },
+  });
+
+  // Soft delete event mutation (admin)
+  const softDeleteMutation = useMutation({
+    mutationFn: (eventId: string) => softDeleteEventAdmin(eventId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
       queryClient.invalidateQueries({ queryKey: ["admin-event-requests"] });
     },
   });
@@ -110,9 +121,18 @@ const EventListPage: React.FC = () => {
                   {requests.map((req: any) => (
                     <tr key={req._id} className="border-b">
                       <td className="px-4 py-2">{req.title}</td>
-                      <td className="px-4 py-2">{req.requestedBy?.name || "-"}</td>
-                      <td className="px-4 py-2">{req.category?.name || "-"}</td>
-                      <td className="py-2">{new Date(req.startDate).toLocaleDateString()}-{new Date(req.endDate).toLocaleDateString()}<br/>{req.startTime} - {req.endTime}</td>
+                      <td className="px-4 py-2">{req.requestedBy?.name ? capitalizeFirstLetter(req.requestedBy.name) : "-"}</td>
+                      <td className="px-4 py-2">{req.category?.name ? capitalizeFirstLetter(req.category.name) : "-"}</td>
+                      <td className="py-2">
+                        <div className="flex flex-col space-y-1">
+                              <div className="text-sm font-medium text-gray-900">
+                                {new Date(req.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })} - {new Date(req.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                              </div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(`2000-01-01T${req.startTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(`2000-01-01T${req.endTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                          </div>
+                        </div>
+                      </td>
                       <td className="px-4 py-2">{typeof req.venue === "object" ? req.venue.name || JSON.stringify(req.venue) : req.venue}</td>
                       <td className="px-4 py-2">
                         <span className={`px-3 py-1 rounded-full text-sm ${req.status === "approved" ? "bg-green-100 text-green-700" : req.status === "rejected" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}`}>
@@ -144,6 +164,11 @@ const EventListPage: React.FC = () => {
                             </button>
                           </>
                         )}
+                        {req.status === 'approved' && req.approvedEvent?._id && req.approvedEvent.isDeleted && (
+                          <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                            Deleted
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -172,11 +197,11 @@ const EventListPage: React.FC = () => {
             <div className="text-center py-8 text-gray-500">No sales data available.</div>
           ) : (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <h3 className="text-gray-600 text-sm font-medium">Total Revenue</h3>
                   <p className="text-2xl font-bold">
-                    ${events.reduce((total: number, event: any) => {
+                  ₹{events.reduce((total: number, event: any) => {
                       return total + (event.ticketPricing?.reduce((sum: number, ticket: any) => {
                         return sum + ((ticket.sold || 0) * (ticket.price || 0));
                       }, 0) || 0);
@@ -197,6 +222,17 @@ const EventListPage: React.FC = () => {
                   <h3 className="text-gray-600 text-sm font-medium">Total Events</h3>
                   <p className="text-2xl font-bold">{events.length}</p>
                 </div>
+                <div className="bg-amber-50 p-4 rounded-lg">
+                  <h3 className="text-gray-600 text-sm font-medium">Admin Income (20%)</h3>
+                  <p className="text-2xl font-bold">
+                  ₹{events.reduce((total: number, event: any) => {
+                      const revenue = (event.ticketPricing?.reduce((sum: number, ticket: any) => {
+                        return sum + ((ticket.sold || 0) * (ticket.price || 0));
+                      }, 0) || 0);
+                      return total + (revenue * 0.20);
+                    }, 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
               </div>
 
               <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -207,6 +243,7 @@ const EventListPage: React.FC = () => {
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tickets</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacity</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin (20%)</th>
                       <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -232,10 +269,10 @@ const EventListPage: React.FC = () => {
                               <div className="flex items-center">
                                 <div>
                                   <div className="text-sm font-medium text-gray-900">
-                                    {event.title || 'Untitled Event'}
+                                    {event.title ? capitalizeFirstLetter(event.title) : 'Untitled Event'}
                                   </div>
                                   <div className="text-sm text-gray-500">
-                                    {event.category?.name || event.category || 'No category'}
+                                    {event.category?.name ? capitalizeFirstLetter(event.category.name) : event.category || 'No category'}
                                   </div>
                                 </div>
                               </div>
@@ -252,18 +289,37 @@ const EventListPage: React.FC = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-gray-900">
-                                ${ticketMetrics.revenue.toLocaleString('en-US', { 
+                              ₹{ticketMetrics.revenue.toLocaleString('en-US', { 
                                   minimumFractionDigits: 2, 
                                   maximumFractionDigits: 2 
                                 })}
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900 text-amber-700">
+                              ₹{(ticketMetrics.revenue * 0.20).toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
                               <button 
                                 onClick={() => setViewEvent(event)}
                                 className="text-blue-600 hover:text-blue-900 hover:underline"
                               >
                                 View
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (window.confirm('Soft delete this event?')) {
+                                    softDeleteMutation.mutate(event._id);
+                                  }
+                                }}
+                                disabled={softDeleteMutation.isPending}
+                                className="text-red-600 hover:text-red-800 hover:underline disabled:opacity-50"
+                              >
+                                {softDeleteMutation.isPending ? 'Deleting...' : 'Soft Delete'}
                               </button>
                             </td>
                           </tr>

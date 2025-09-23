@@ -30,7 +30,7 @@ import CheckoutSuccessPage from './pages/CheckoutSuccessPage';
 import MyTicketsPage from './pages/MyTicketsPage';
 import RevenueAnalyticsPage from './admin/Pages/RevenueAnalyticsPage';
 import SaleRevanue from './EventManager/Page/SaleRevanue';
-import SaleRevanueList from './EventManager/Page/SaleRevanue';
+
 
 const queryClient = new QueryClient();
 

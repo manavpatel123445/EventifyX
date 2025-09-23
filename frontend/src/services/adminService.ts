@@ -44,6 +44,12 @@ export const getDashboardStats = async () => {
   return data;
 };
 
+// Get top spenders across users (admin analytics)
+export const getTopSpenders = async (params: { limit?: number } = {}) => {
+  const { data } = await adminAPI.get("/analytics/top-spenders", { params });
+  return data;
+};
+
 export const getAdvancedAnalytics = async (params?: { startDate?: string; endDate?: string }) => {
   const { data } = await adminAPI.get("/analytics", { params });
   return data;

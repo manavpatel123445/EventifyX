@@ -16,7 +16,7 @@ const getRateLimitConfig = (windowMs = 15 * 60 * 1000, max = 100) => {
 };
 
 // Different rate limits for different types of routes
-export const authLimiter = getRateLimitConfig(15 * 60 * 1000, 5); // 5 requests per 15 minutes for auth
+export const authLimiter = getRateLimitConfig(15 * 60 * 1000, 20); // 5 requests per 15 minutes for auth
 export const apiLimiter = getRateLimitConfig(15 * 60 * 1000, 100); // 100 requests per 15 minutes for API
 export const publicLimiter = getRateLimitConfig(60 * 60 * 1000, 1000); // 1000 requests per hour for public routes
 export const strictLimiter = getRateLimitConfig(60 * 60 * 1000, 10); // 10 requests per hour for sensitive operations

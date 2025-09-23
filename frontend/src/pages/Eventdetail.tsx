@@ -238,8 +238,19 @@ const Eventdetail: React.FC = () => {
                 </div>
               </div>
               <ul className="space-y-3 text-gray-700">
-                <li>📅 {new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} – {new Date(event.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</li>
-                <li>⏰ {new Date(`2000-01-01T${event.startTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} – {new Date(`2000-01-01T${event.endTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</li>
+                <li>
+                  📅 {(() => {
+                    const sd = new Date(event.startDate);
+                    const ed = new Date(event.endDate);
+                    const sameDay = sd.toDateString() === ed.toDateString();
+                    const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    return sameDay ? fmt(sd) : `${fmt(sd)} – ${fmt(ed)}`;
+                  })()}
+                </li>
+                <li>
+                  ⏰ {new Date(`2000-01-01T${event.startTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                  {event.endTime ? ` – ${new Date(`2000-01-01T${event.endTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}` : ''}
+                </li>
                 <li>📍 {event.venue?.name}, {event.venue?.address}, {event.venue?.city}</li>
                 {event.venue?.state && (<li>🏙️ {event.venue.state}</li>)}
               </ul>

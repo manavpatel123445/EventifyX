@@ -375,52 +375,7 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
           </div>
 
           {/* Profile Image */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Profile Image</label>
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-                {profileImagePreview ? (
-                  <img 
-                    src={profileImagePreview} 
-                    alt="Profile Preview" 
-                    className="w-full h-full object-cover" 
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.onerror = null;
-                      target.src = '/default-avatar.svg';
-                    }}
-                  />
-                ) : event?.eventManager?.profileImage ? (
-                  <img 
-                    src={getLocalAvatar(event.eventManager.profileImage) || '/default-avatar.svg'} 
-                    alt="Current Profile" 
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.onerror = null;
-                      target.src = '/default-avatar.svg';
-                    }}
-                  />
-                ) : (
-                  <img 
-                    src="/default-avatar.svg" 
-                    alt="Default Profile" 
-                    className="w-full h-full object-cover"
-                  />
-                )}
-              </div>
-              <div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleProfileImageSelect}
-                  className="text-sm text-gray-600"
-                />
-                <p className="text-xs text-gray-500 mt-1">PNG, JPG, JPEG up to 5MB</p>
-              </div>
-            </div>
-          </div>
-
+          
           {/* Event Images */}
           <div>
             <label className="block text-sm font-medium mb-2">Event Images</label>

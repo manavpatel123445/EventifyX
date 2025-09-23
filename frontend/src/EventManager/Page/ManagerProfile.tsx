@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import ManagerSideBar from '../components/ManagerSidebar';
 import { getProfile, updateProfile as updateProfileApi, changePassword as changePasswordApi, type UserProfile } from '../../services/userService';
 import { uploadAvatar as uploadImageToCloudinary } from '../../services/eventService';
+import { capitalizeFirstLetter } from '../../utils/roles';
 
 const ManagerProfile: React.FC = () => {
   const { data, refetch, isLoading, isError, error } = useQuery<{ success: boolean; user: UserProfile}>({
@@ -164,7 +165,7 @@ const ManagerProfile: React.FC = () => {
               />
             </label>
           </div>
-          <h2 className="text-2xl font-bold mt-4">{profile?.name || 'Event Manager'}</h2>
+          <h2 className="text-2xl font-bold mt-4">{profile?.name ? capitalizeFirstLetter(profile.name) : 'Event Manager'}</h2>
           <p className="text-gray-600 flex items-center gap-2">
             <Shield className="w-4 h-4 text-red-500" />
             {profile?.role || 'event_manager'}

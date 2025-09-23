@@ -6,6 +6,7 @@ import { getMyManagedEvents, type Event } from '../../services/eventService'
 import { getManagerRevenue } from '../../services/adminService'
 import useAuth from '../../hooks/useAuth'
 import { formatINR } from '../../utils/currency';
+import { capitalizeFirstLetter } from '../../utils/roles';
 
 
 const SaleRevanueList = () => {
@@ -119,8 +120,8 @@ const SaleRevanueList = () => {
                   }[currentStatus] || 'bg-gray-100 text-gray-700';
                   return (
                     <tr key={ev._id} className={`text-sm ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                      <td className="px-4 py-3 font-medium">{ev.title}</td>
-                      <td className="px-4 py-3">{ev.category?.name ?? '-'}</td>
+                      <td className="px-4 py-3 font-medium">{capitalizeFirstLetter(ev.title)}</td>
+                      <td className="px-4 py-3">{ev.category?.name ? capitalizeFirstLetter(ev.category.name) : '-'}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div>{new Date(ev.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
                         <div className="text-gray-500 text-xs">

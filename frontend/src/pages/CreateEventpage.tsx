@@ -75,6 +75,7 @@ const CreateEventPage: React.FC = () => {
   });
   
   const [images, setImages] = useState<string[]>([]);
+  const [singleDay, setSingleDay] = useState<boolean>(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Create event request mutation
@@ -115,7 +116,8 @@ const CreateEventPage: React.FC = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (startDate && startDate <= today) newErrors.startDate = "Start date must be in the future";
-    if (startDate && endDate && endDate <= startDate) newErrors.endDate = "End date must be after start date";
+    // Allow single-day events: endDate can be the same as startDate
+    if (startDate && endDate && endDate < startDate) newErrors.endDate = "End date must be the same as or after start date";
 
     // Time validation
     if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
@@ -166,7 +168,30 @@ const CreateEventPage: React.FC = () => {
 
   // Handle input changes
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    // Auto-behavior for single-day events
+    if (field === "startDate") {
+      setFormData(prev => {
+        // If single-day is ON or no end date yet, keep endDate in sync and turn single-day ON
+        if (singleDay || !prev.endDate) {
+          return { ...prev, startDate: value, endDate: value };
+        }
+        return { ...prev, startDate: value };
+      });
+      if (singleDay || !formData.endDate) {
+        setSingleDay(true);
+      }
+    } else if (field === "endDate") {
+      // If user chooses a different end date than start date, automatically turn OFF single-day
+      if (value && value !== formData.startDate) {
+        setSingleDay(false);
+      } else if (value && value === formData.startDate) {
+        setSingleDay(true);
+      }
+      setFormData(prev => ({ ...prev, endDate: value }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
+
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
     }
@@ -267,19 +292,44 @@ const CreateEventPage: React.FC = () => {
                     {errors.startDate && <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>}
                   </div>
 
-                  {/* End Date */}
+                  {/* Single-day toggle and End Date */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       End Date *
                     </label>
+                   
                     <input
                       type="date"
                       value={formData.endDate}
                       onChange={(e) => handleInputChange("endDate", e.target.value)}
                       className={`w-full rounded-lg border px-4 py-3 text-gray-700 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition ${errors.endDate ? "border-red-500 bg-red-50" : ""}`}
                       min={formData.startDate || new Date().toISOString().split('T')[0]}
+                      disabled={singleDay}
                     />
+                     <div className="flex items-center justify-between mb-2">
+                      <label className="inline-flex items-center gap-3 text-sm text-gray-700 select-none">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                          checked={singleDay}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setSingleDay(checked);
+                            if (checked && formData.startDate) {
+                              setFormData(prev => ({ ...prev, endDate: prev.startDate }));
+                            }
+                          }}
+                        />
+                        <span className="font-medium">Single-day</span>
+                        
+                      </label>
+                    </div>
                     {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
+                    {singleDay ? (
+                      <p className="text-xs text-gray-500 mt-1">End date follows Start date automatically for single-day events.</p>
+                    ) : (
+                      <p className="text-xs text-gray-400 mt-1">Turn on single-day to auto-set End date to Start date.</p>
+                    )}
                   </div>
 
                   {/* Start Time */}

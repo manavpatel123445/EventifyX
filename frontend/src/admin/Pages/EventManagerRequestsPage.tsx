@@ -8,9 +8,9 @@ import {
   getAllRequests,
   approveRequest,
   rejectRequest,
-  type EventManagerRequest,
   type GetRequestsResponse,
 } from "../../services/eventManagerRequestService";
+import { capitalizeFirstLetter } from "../../utils/roles";
 
 const EventManagerRequestsPage: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState("pending");
@@ -106,12 +106,12 @@ const EventManagerRequestsPage: React.FC = () => {
                         alt={req.user.name}
                         className="h-8 w-8 rounded-full"
                       />
-                      {req.user.name}
+                      {capitalizeFirstLetter(req.user.name)}
                     </td>
                     <td className="px-4 py-2">{req.user.email}</td>
                     <td className="px-4 py-2 capitalize">{req.status}</td>
                     <td className="px-4 py-2">
-                      {new Date(req.submittedAt).toLocaleDateString()}
+                      {new Date(req.submittedAt).toLocaleDateString('en-GB')}
                     </td>
                     <td className="px-4 py-2 flex gap-2">
                       {req.status === "pending" && (

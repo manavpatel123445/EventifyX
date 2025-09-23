@@ -15,17 +15,18 @@ import SideBar from "../components/SideBar";
 import { type User } from "../../types/user";
 import { getAllUsers, updateUserStatus, deleteUser, getDashboardStats } from "../../services/adminService";
 import toast from "react-hot-toast";
+import { capitalizeFirstLetter } from "../../utils/roles";
 
 const UserListPage: React.FC = () => {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter] = useState<string>("all");
   const [roleFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const limit = 9;
 
-  const { data, isLoading, refetch, isRefetching } = useQuery({
+  const { data, isLoading, isRefetching } = useQuery({
     queryKey: ["admin-users", { search, status: statusFilter, role: roleFilter, page, limit }],
     queryFn: () => getAllUsers({ 
       search, 
@@ -193,7 +194,7 @@ const UserListPage: React.FC = () => {
             ) : displayUsers.map((user) => (
               <tr key={user._id} className="border-b hover:bg-gray-50">
                 <td className="px-4 py-3 flex items-center gap-2">
-                            {user.name}
+                            {capitalizeFirstLetter(user.name)}
                 </td>
                 <td className="px-4 py-3">{user.email}</td>
                 <td className="px-4 py-3">{user.role}</td>
@@ -245,7 +246,7 @@ const UserListPage: React.FC = () => {
                     className="text-red-600" 
                     disabled={deleteMutation.isPending} 
                     onClick={() => {
-                      if (window.confirm(`Are you sure you want to delete ${user.name}?`)) {
+                      if (window.confirm(`Are you sure you want to delete ${capitalizeFirstLetter(user.name)}?`)) {
                         deleteMutation.mutate(user._id);
                       }
                     }}
@@ -301,7 +302,7 @@ const UserListPage: React.FC = () => {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-semibold text-gray-900">{selectedUser.name}</h3>
+                    <h3 className="text-xl font-semibold text-gray-900">{capitalizeFirstLetter(selectedUser.name)}</h3>
                     <span className="px-2.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
                       {selectedUser.role?.replace('_', ' ').toUpperCase()}
                     </span>
@@ -355,7 +356,7 @@ const UserListPage: React.FC = () => {
                       <div>
                         <p className="text-xs font-medium text-gray-500">Member Since</p>
                         <p className="text-sm text-gray-900">
-                          {selectedUser?.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString('en-US', {
+                          {selectedUser?.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString('en-GB', {
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric'
@@ -371,8 +372,8 @@ const UserListPage: React.FC = () => {
                           <p className="text-xs font-medium text-gray-500">Date of Birth</p>
                           <p className="text-sm text-gray-900">
                             {selectedUser.dateOfBirth instanceof Date 
-                              ? selectedUser.dateOfBirth.toLocaleDateString()
-                              : new Date(selectedUser.dateOfBirth).toLocaleDateString()
+                              ? selectedUser.dateOfBirth.toLocaleDateString('en-GB')
+                              : new Date(selectedUser.dateOfBirth).toLocaleDateString('en-GB')
                             }
                           </p>
                         </div>

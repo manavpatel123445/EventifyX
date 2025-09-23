@@ -37,13 +37,19 @@ const EventPage = () => {
         category: selectedCategory || undefined,
         city: selectedCity || undefined,
         page: currentPage,
-        limit: 12
+        limit: 9
       };
 
       const response = await getAllEvents(params);
       if (response.success) {
         const data: EventsData = response.data;
-        setEvents(data.events.filter(event => event.status !== 'completed'));
+        const now = new Date();
+        const activeEvents = data.events.filter(event => {
+          const end = event?.endDate ? new Date(event.endDate) : (event?.startDate ? new Date(event.startDate) : null);
+          if (!end) return true; // if no dates, keep it
+          return end >= now && event.status !== 'cancelled';
+        });
+        setEvents(activeEvents);
         setTotalPages(data.pagination.pages);
       } else {
         toast.error("Failed to load events");
@@ -246,7 +252,14 @@ const EventPage = () => {
                           {event.category?.name || 'General'}
                         </span>
                         <span className="text-sm text-gray-500">
-                          {formatDate(event.startDate)}
+                          {(() => {
+                            const sd = new Date(event.startDate);
+                            const ed = event.endDate ? new Date(event.endDate) : null;
+                            if (ed && sd.toDateString() !== ed.toDateString()) {
+                              return `${formatDate(event.startDate)} – ${formatDate(event.endDate as string)}`;
+                            }
+                            return formatDate(event.startDate);
+                          })()}
                         </span>
                       </div>
                       <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
@@ -261,7 +274,9 @@ const EventPage = () => {
                       </div>
                       <div className="flex items-center text-sm text-gray-500 mb-3">
                         <span className="mr-1">⏰</span>
-                        <span>{formatTime(event.startTime)}</span>
+                        <span>
+                          {formatTime(event.startTime)}{event.endTime ? ` – ${formatTime(event.endTime)}` : ''}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="text-sm font-medium text-green-600">

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, Ticket, DollarSign, TrendingUp, ChevronLeft, ChevronRight, IndianRupee } from "lucide-react";
+import { Calendar, Ticket, TrendingUp, ChevronLeft, ChevronRight, IndianRupee } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import ManagerSideBar from "../components/ManagerSidebar";
 import { getMyManagedEvents, type Event } from "../../services/eventService";
+import { capitalizeFirstLetter } from "../../utils/roles";
 
 const ManagerDashboard: React.FC = () => {
   const [page, setPage] = useState(1);
@@ -157,20 +158,20 @@ const ManagerDashboard: React.FC = () => {
               My Events
             </h2>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-100 text-left text-sm text-gray-600">
-                    <th className="px-4 py-3">Title</th>
-                    <th className="px-4 py-3">Category</th>
-                    <th className="px-4 py-3">Date/Time</th>
-                    <th className="px-4 py-3">Location</th>
-                    <th className="px-4 py-3">Tickets Sold</th>
-                    <th className="px-4 py-3">Revenue</th>
-                    <th className="px-4 py-3">Status</th>
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tickets Sold</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {events.map((event, i) => {
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {events.map((event, _i) => {
                     const sold = typeof event.totalBookings === "number"
                       ? event.totalBookings
                       : event.ticketPricing?.reduce((a, t) => a + (t.sold ?? 0), 0) ?? 0;
@@ -178,17 +179,35 @@ const ManagerDashboard: React.FC = () => {
                       ? event.totalRevenue
                       : event.ticketPricing?.reduce((a, t) => a + t.price * (t.sold ?? 0), 0) ?? 0;
                     return (
-                      <tr
-                        key={event._id}
-                        className={`text-sm ${i % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
-                      >
-                        <td className="px-4 py-3">{event.title}</td>
-                        <td className="px-4 py-3">{event.category?.name ?? "-"}</td>
-                        <td className="px-4 py-3">{new Date(event.startDate).toLocaleDateString()} {event.startTime}</td>
-                        <td className="px-4 py-3">{event.venue?.city ?? ""}</td>
-                        <td className="px-4 py-3">{sold}</td>
-                        <td className="px-4 py-3">₹{rev.toLocaleString()}</td>
-                        <td className="px-4 py-3">
+                      <tr key={event._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{capitalizeFirstLetter(event.title)}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{event.category?.name ? capitalizeFirstLetter(event.category.name) : "-"}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {event.startDate ? (
+                            <div className="flex flex-col space-y-1">
+                              <div className="text-sm font-medium text-gray-900">
+                                {new Date(event.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {new Date(`2000-01-01T${event.startTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(`2000-01-01T${event.endTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                              </div>
+                            </div>
+                          ) : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{event.venue?.city ?? ""}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{sold.toLocaleString()}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">₹{rev.toLocaleString()}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
                             {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
                           </span>
@@ -198,7 +217,7 @@ const ManagerDashboard: React.FC = () => {
                   })}
                   {events.length === 0 && (
                     <tr>
-                      <td className="px-4 py-6 text-center text-gray-400" colSpan={7}>
+                      <td className="px-6 py-4 text-center text-gray-500" colSpan={7}>
                         {isLoading ? "Loading events..." : "No events yet"}
                       </td>
                     </tr>

@@ -39,9 +39,7 @@ export const hasRole = (userRole: UserRole | null | undefined, requiredRole: Use
   return userRole === requiredRole;
 };
 
-export const getHighestRole = (roles: UserRole[]): UserRole | null => {
-  if (roles.includes(ROLES.ADMIN)) return ROLES.ADMIN;
-  if (roles.includes(ROLES.EVENT_MANAGER)) return ROLES.EVENT_MANAGER;
-  if (roles.includes(ROLES.USER)) return ROLES.USER;
-  return null;
+export const capitalizeFirstLetter = (str: string): string => {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 };
