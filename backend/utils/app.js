@@ -59,6 +59,16 @@ app.get("/", (req, res) => {
   res.send("EventifyX API is running...");
 });
 
+// Health check endpoint for Render.com monitoring
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || "development",
+    version: "1.0.0"
+  });
+});
+
 app.use("/api/events", eventRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/categories", categoryRouter);

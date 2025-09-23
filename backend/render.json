@@ -1,0 +1,15 @@
+{
+  "name": "eventifyx-backend",
+  "version": "1.0.0",
+  "description": "EventifyX Backend API",
+  "main": "utils/server.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "scripts": {
+    "start": "node utils/server.js",
+    "dev": "nodemon utils/server.js",
+    "build": "echo 'No build step required'"
+  }
+}
