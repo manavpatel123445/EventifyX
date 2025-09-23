@@ -204,11 +204,11 @@ const UserListPage: React.FC = () => {
                       user.status === "active"
                         ? "bg-green-100 text-green-700"
                         : user.status === "blocked"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-red-100 text-red-700"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-yellow-100 text-yellow-700"
                     }`}
                   >
-                    {user.status?.toString().toUpperCase()}
+                    {user.status?.charAt(0).toUpperCase() + user.status?.slice(1)}
                   </span>
                 </td>
                 <td className="px-4 py-3 space-x-2">
@@ -312,10 +312,12 @@ const UserListPage: React.FC = () => {
                       className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                         selectedUser.status === "active"
                           ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
+                          : selectedUser.status === "blocked"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-yellow-100 text-yellow-800"
                       }`}
                     >
-                      {selectedUser.status?.toString().toUpperCase()}
+                      {selectedUser.status?.charAt(0).toUpperCase() + selectedUser.status?.slice(1)}
                     </span>
                     {selectedUser.lastLogin && (
                       <>

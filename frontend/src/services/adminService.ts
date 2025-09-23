@@ -146,6 +146,9 @@ export const getManagerRevenue = async (managerId: string, params: { startDate?:
 // Import types
 import type { User } from "../types/user";
 
+// Re-export User type for external use
+export type { User };
+
 // Manager-specific user access
 const managerAPI = axios.create({ 
   baseURL: "/api/manager",

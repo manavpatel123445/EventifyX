@@ -109,7 +109,19 @@ const EventManagerRequestsPage: React.FC = () => {
                       {capitalizeFirstLetter(req.user.name)}
                     </td>
                     <td className="px-4 py-2">{req.user.email}</td>
-                    <td className="px-4 py-2 capitalize">{req.status}</td>
+                    <td className="px-4 py-2">
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          req.status === "approved"
+                            ? "bg-green-100 text-green-700"
+                            : req.status === "rejected"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        }`}
+                      >
+                        {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+                      </span>
+                    </td>
                     <td className="px-4 py-2">
                       {new Date(req.submittedAt).toLocaleDateString('en-GB')}
                     </td>

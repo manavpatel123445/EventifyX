@@ -95,65 +95,152 @@ const AdminDashboard: React.FC = () => {
           <table className="w-full border-collapse">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event Title</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event Title</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loadingEvents && (
-                <tr><td className="p-3 text-center" colSpan={5}>Loading events…</td></tr>
+                <tr><td className="px-4 py-3 text-center" colSpan={5}>Loading events…</td></tr>
               )}
               {!loadingEvents && events.length === 0 && (
-                <tr><td className="p-3 text-center" colSpan={5}>No events found</td></tr>
+                <tr><td className="px-4 py-3 text-center" colSpan={5}>No events found</td></tr>
               )}
               {!loadingEvents && events.map((event: any) => (
                 <tr key={event._id} className="border-t">
-                  <td className="p-3">{event.title ? capitalizeFirstLetter(event.title) : 'Untitled Event'}</td>
-                  <td className="p-3">
+                  <td className="px-4 py-3">{event.title ? capitalizeFirstLetter(event.title) : 'Untitled Event'}</td>
+                  <td className="px-4 py-3">
                     {event.startDate ? (
                       <div className="flex flex-col space-y-1">
                         <div className="text-sm font-medium text-gray-900">
-                          {new Date(event.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          {(() => {
+                            try {
+                              return new Date(event.startDate).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              });
+                            } catch {
+                              return 'Invalid Date';
+                            }
+                          })()}
                         </div>
                         <div className="text-xs text-gray-500">
-                          {new Date(`2000-01-01T${event.startTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(`2000-01-01T${event.endTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                          {(() => {
+                            try {
+                              const startTime = event.startTime || '00:00';
+                              const endTime = event.endTime || '23:59';
+                              return `${startTime} - ${endTime}`;
+                            } catch {
+                              return '-';
+                            }
+                          })()}
                         </div>
                       </div>
                     ) : '-'}
                   </td>
-                  <td className="p-3">{event.venue?.city}</td>
-                  <td className="p-3">
+                  <td className="px-4 py-3">
                     {(() => {
-                      const now = new Date();
-                      const endDate = new Date(event.endDate);
-                      type EventStatus = 'Upcoming' | 'Ongoing' | 'Completed' | 'Cancelled';
-                      let currentStatus = event.status as EventStatus;
-
-                      if (event.status !== 'Cancelled' && endDate < now) {
-                        currentStatus = 'Completed';
+                      try {
+                        if (event.venue && typeof event.venue === 'object' && event.venue.city) {
+                          return event.venue.city;
+                        } else if (event.venue && typeof event.venue === 'string') {
+                          return event.venue;
+                        } else if (event.location) {
+                          return event.location;
+                        }
+                        return '-';
+                      } catch {
+                        return '-';
                       }
-
-                      const statusColorClass = {
-                        Upcoming: 'bg-green-100 text-green-700',
-                        Ongoing: 'bg-blue-100 text-blue-700',
-                        Completed: 'bg-gray-100 text-gray-700',
-                        Cancelled: 'bg-red-100 text-red-700',
-                      }[currentStatus] || 'bg-gray-100 text-gray-700';
-
-                      return (
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColorClass}`}>
-                          {currentStatus}
-                        </span>
-                      );
                     })()}
                   </td>
-                  <td className="p-3">
+                  <td className="px-4 py-3">
+                    {(() => {
+                      try {
+                        const now = new Date();
+                        const endDate = new Date(event.endDate);
+                        type EventStatus = 'Upcoming' | 'Ongoing' | 'Completed' | 'Cancelled';
+                        let currentStatus = event.status as EventStatus;
+
+                        // Check if dates are valid - improved logic
+                        if (!event.endDate || isNaN(endDate.getTime())) {
+                          // If no end date or invalid date, use original status
+                          const fallbackColorClass = {
+                            upcoming: 'bg-green-100 text-green-700',
+                            ongoing: 'bg-yellow-100 text-yellow-700',
+                            completed: 'bg-blue-100 text-blue-700',
+                            cancelled: 'bg-red-100 text-red-700',
+                            active: 'bg-green-100 text-green-700',
+                            pending: 'bg-yellow-100 text-yellow-700',
+                            approved: 'bg-green-100 text-green-700',
+                            rejected: 'bg-red-100 text-red-700',
+                          }[currentStatus?.toLowerCase()] || 'bg-gray-100 text-gray-700';
+
+                          return (
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${fallbackColorClass}`}>
+                              {currentStatus ? currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1) : 'Unknown'}
+                            </span>
+                          );
+                        }
+
+                        // Calculate status based on dates
+                        if (event.status !== 'Cancelled' && event.status !== 'cancelled' && endDate < now) {
+                          currentStatus = 'Completed';
+                        }
+
+                        // More robust status color mapping with case-insensitive keys
+                        const statusColorClass = {
+                          upcoming: 'bg-green-100 text-green-700',
+                          ongoing: 'bg-yellow-100 text-yellow-700',
+                          completed: 'bg-blue-100 text-blue-700',
+                          cancelled: 'bg-red-100 text-red-700',
+                          active: 'bg-green-100 text-green-700',
+                          pending: 'bg-yellow-100 text-yellow-700',
+                          approved: 'bg-green-100 text-green-700',
+                          rejected: 'bg-red-100 text-red-700',
+                          Upcoming: 'bg-green-100 text-green-700',
+                          Ongoing: 'bg-yellow-100 text-yellow-700',
+                          Completed: 'bg-blue-100 text-blue-700',
+                          Cancelled: 'bg-red-100 text-red-700',
+                        }[currentStatus] || 'bg-gray-100 text-gray-700';
+
+                        return (
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColorClass}`}>
+                            {currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}
+                          </span>
+                        );
+                      } catch (error) {
+                        // Improved error handling with proper status extraction
+                        const errorStatus = event.status || event.statusText || 'Unknown';
+                        type StatusKey = 'upcoming' | 'ongoing' | 'completed' | 'cancelled' | 'active' | 'pending' | 'approved' | 'rejected';
+                        const statusKey = errorStatus?.toLowerCase() as StatusKey;
+                        const errorColorClass = {
+                          upcoming: 'bg-green-100 text-green-700',
+                          ongoing: 'bg-yellow-100 text-yellow-700',
+                          completed: 'bg-blue-100 text-blue-700',
+                          cancelled: 'bg-red-100 text-red-700',
+                          active: 'bg-green-100 text-green-700',
+                          pending: 'bg-yellow-100 text-yellow-700',
+                          approved: 'bg-green-100 text-green-700',
+                          rejected: 'bg-red-100 text-red-700',
+                        }[statusKey] || 'bg-gray-100 text-gray-700';
+
+                        return (
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${errorColorClass}`}>
+                            {errorStatus.charAt(0).toUpperCase() + errorStatus.slice(1)}
+                          </span>
+                        );
+                      }
+                    })()}
+                  </td>
+                  <td className="px-4 py-3">
                     <button
                       onClick={() => setViewEvent(event)}
-                      className="px-3 py-1 rounded border text-gray-700 hover:bg-gray-50"
+                      className="px-3 py-1 rounded border text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       View
                     </button>
