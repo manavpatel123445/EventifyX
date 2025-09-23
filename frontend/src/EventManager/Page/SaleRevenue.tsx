@@ -23,7 +23,7 @@ const SaleRevanue = () => {
   })
   
   // Fetch manager's revenue data
-  const { data: revenueData, isLoading: isLoadingRevenue } = useQuery({
+  const { isLoading: isLoadingRevenue } = useQuery({
     queryKey: ['manager-revenue'],
     queryFn: async () => {
       if (!user?.id) return null;

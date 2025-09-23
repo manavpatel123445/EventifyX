@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { updateEvent, uploadImage, getLocalAvatar, getCurrentUserAvatar, type EventRequestData, type Event, uploadAvatar } from "../services/eventService";
+import { updateEvent, uploadImage, getLocalAvatar, type EventRequestData, type Event, uploadAvatar } from "../services/eventService";
 import { getAllCategories } from "../services/categoryService";
 
 interface UpdateEventModalProps {
@@ -35,8 +35,7 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
   });
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [profileImage, setProfileImage] = useState<File | null>(null);
-  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
+  const [profileImage] = useState<File | null>(null);
 
   const queryClient = useQueryClient();
   
@@ -49,12 +48,6 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
   // Prefill form when event loads
   useEffect(() => {
     if (event) {
-      // Get current user's profile image
-      const currentUserAvatar = getCurrentUserAvatar();
-      if (currentUserAvatar) {
-        setProfileImagePreview(currentUserAvatar);
-      }
-
       setForm({
         title: event.title,
         description: event.description,
@@ -123,20 +116,6 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
     }
   };
 
-  const handleProfileImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setProfileImage(file);
-      
-      // Create preview URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleRemoveExistingImage = (idx: number) => {
     const imgs = Array.isArray(form.images) ? [...form.images] : [];
     imgs.splice(idx, 1);
@@ -154,8 +133,6 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
         try {
           // Use the uploadAvatar function which handles local storage
           profileImageUrl = await uploadAvatar(profileImage);
-          // Update the preview with the new image
-          setProfileImagePreview(profileImageUrl);
         } catch (error) {
           console.error('Error uploading profile image:', error);
           toast.error('Failed to upload profile image');

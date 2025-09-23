@@ -12,11 +12,14 @@ export const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onClose })
   const [error, setError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(true);
 
-  const handleScan = (result: string | null) => {
-    if (result) {
-      setResult(result);
-      setIsScanning(false);
-      onScan(result);
+  const handleScan = (detectedCodes: any[]) => {
+    if (detectedCodes && detectedCodes.length > 0) {
+      const result = detectedCodes[0]?.rawValue || detectedCodes[0]?.data;
+      if (result) {
+        setResult(result);
+        setIsScanning(false);
+        onScan(result);
+      }
     }
   };
 
@@ -47,11 +50,9 @@ export const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onScan, onClose })
             {isScanning ? (
               <div className="border-4 border-primary rounded-lg overflow-hidden">
                 <Scanner
-                  onDecode={(result: string | null) => handleScan(result)}
-                  onError={(error: any) => handleError(error)}
+                  onScan={handleScan}
+                  onError={handleError}
                   constraints={{ facingMode: 'environment' }}
-                  containerStyle={{ width: '100%' }}
-                  videoStyle={{ width: '100%' }}
                 />
               </div>
             ) : (

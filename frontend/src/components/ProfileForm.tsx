@@ -5,7 +5,6 @@ import { type RootState } from "../app/store";
 import { setUser } from "../app/slices/authslice";
 import { getProfile, updateProfile, changePassword,type UserProfile,type UpdateProfileData,type ChangePasswordData } from "../services/userService";
 import { uploadAvatar } from "../services/eventService";
-import ImageUpload from "./ImageUpload";
 import { Button } from "./ui/button";
 import { Input } from "./ui/Input";
 import toast from "react-hot-toast";

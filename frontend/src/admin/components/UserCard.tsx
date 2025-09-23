@@ -5,7 +5,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../../components/ui/card';
 import { format } from 'date-fns';
-import { Mail, Phone, Calendar, User as UserIcon, Shield, Check, X } from 'lucide-react';
+import { Mail, Phone, Check, X } from 'lucide-react';
 
 type ExtendedUser = User & {
   _id: string;

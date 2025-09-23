@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { CheckCircle, Download, Calendar, MapPin, User, CreditCard } from 'lucide-react';
 
 interface Ticket {
@@ -83,7 +82,6 @@ const CheckoutSuccessPage: React.FC = () => {
         if (!response.ok) {
           // Poll up to ~10s while webhook processes
           const start = Date.now();
-          let lastErr: any = null;
           while (Date.now() - start < 10000) {
             await new Promise(r => setTimeout(r, 1500));
             const r2 = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/tickets/session/${sessionId}`);
@@ -92,8 +90,6 @@ const CheckoutSuccessPage: React.FC = () => {
               setTickets(d2);
               setLoading(false);
               return;
-            } else {
-              lastErr = await r2.text();
             }
           }
           // After polling, still not ready — use a default placeholder ticket

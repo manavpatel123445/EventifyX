@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   Calendar,
@@ -7,9 +7,6 @@ import {
   LogOut,
   User,
   ChevronRight,
-  FileText,
-  BarChart2,
-  Settings,
   Shield
 } from "lucide-react";
 import { toast } from "react-hot-toast";

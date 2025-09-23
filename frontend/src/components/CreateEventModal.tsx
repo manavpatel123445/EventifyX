@@ -350,7 +350,4 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, on
 };
 
 export default CreateEventModal;
-function onSuccess() {
-  throw new Error("Function not implemented.");
-}
 

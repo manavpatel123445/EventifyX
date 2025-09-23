@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { QRCodeScanner } from '../components/QRCodeScanner';
 import { Button } from '../components/ui/button';
-import { Scan } from 'lucide-react';
+import { Scan, X } from 'lucide-react';
 
 const ScanTicketsPage: React.FC = () => {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scanResult, setScanResult] = useState<any>(null);
-  const navigate = useNavigate();
 
   const handleScan = (data: string) => {
     try {
