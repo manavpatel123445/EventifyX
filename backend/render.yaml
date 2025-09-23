@@ -3,12 +3,15 @@ services:
     name: eventifyx-backend
     env: node
     plan: free
-    buildCommand: npm install && npm run build
+    nodeVersion: 18.17.0
+    buildCommand: npm ci && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: MONGODB_URL
+        sync: false
+      - key: JWT_SECRET
         sync: false
       - key: STRIPE_SECRET_KEY
         sync: false
