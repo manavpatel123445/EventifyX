@@ -14,7 +14,7 @@
   "scripts": {
     "start": "node utils/server.js",
     "dev": "nodemon utils/server.js",
-    "build": "echo \"No build step required for Node.js backend\"",
+    "build": "echo \"Build completed successfully - no build step required for Node.js backend\"",
     "test": "echo \"No tests configured\" && exit 0",
     "lint": "echo \"No linting configured\" && exit 0",
     "validate-env": "node scripts/validate-env.js"
