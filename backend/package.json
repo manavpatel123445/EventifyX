@@ -17,7 +17,8 @@
     "build": "echo \"Build completed successfully - no build step required for Node.js backend\"",
     "test": "echo \"No tests configured\" && exit 0",
     "lint": "echo \"No linting configured\" && exit 0",
-    "validate-env": "node scripts/validate-env.js"
+    "validate-env": "node scripts/validate-env.js",
+    "preflight-check": "node scripts/preflight-check.js"
   },
   "dependencies": {
     "axios": "^1.11.0",
