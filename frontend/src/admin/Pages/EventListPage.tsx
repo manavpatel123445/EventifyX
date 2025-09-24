@@ -319,7 +319,7 @@ const EventListPage: React.FC = () => {
                                 disabled={softDeleteMutation.isPending}
                                 className="text-red-600 hover:text-red-800 hover:underline disabled:opacity-50"
                               >
-                                {softDeleteMutation.isPending ? 'Deleting...' : 'Soft Delete'}
+                                {softDeleteMutation.isPending ? 'Deleting...' : 'Delete'}
                               </button>
                             </td>
                           </tr>
