@@ -4,8 +4,9 @@ import {
   getUserTickets, 
   getTicketsByPayment,
   getTicketsBySession,
+  getPaymentLogs,
 } from "../controllers/paymentController.js";
-import { optionalAuth, protect } from "../middlewares/authMiddleware.js";
+import { optionalAuth, protect, authorize } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
@@ -20,5 +21,8 @@ router.get("/tickets/payment/:paymentId", getTicketsByPayment);
 
 // Get tickets by session ID (for success page)
 router.get("/tickets/session/:sessionId", optionalAuth, getTicketsBySession);
+
+// Payment logs (manager/admin)
+router.get("/logs", protect, authorize("event_manager", "admin"), getPaymentLogs);
 
 export default router;

@@ -1,13 +1,20 @@
 import axios from "axios";
 
-// Create category API instance (admin routes)
+// API roots
 const API_ROOT = import.meta.env.VITE_API_BASE_URL || "/api";
-const categoryAPI = axios.create({
+
+// Public categories (no admin required)
+const publicCategoryAPI = axios.create({
+  baseURL: `${API_ROOT}/categories`,
+});
+
+// Admin categories
+const adminCategoryAPI = axios.create({
   baseURL: `${API_ROOT}/admin/categories`,
 });
 
 // Add auth token to requests
-categoryAPI.interceptors.request.use(
+publicCategoryAPI.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
     if (token) {
@@ -19,16 +26,16 @@ categoryAPI.interceptors.request.use(
 );
 
 export const getAllCategories = async () => {
-  const { data } = await categoryAPI.get("/");
+  const { data } = await publicCategoryAPI.get("/");
   return data;
 };
 
 export const fetchCategories = async () => {
-  const { data } = await axios.get(`${API_ROOT}/admin/categories`);
+  const { data } = await publicCategoryAPI.get("/");
   return data;
 };
 
 export const createCategory = async (category: { name: string; description?: string; status?: string; location?: string; icon?: string }) => {
-  const { data } = await axios.post(`${API_ROOT}/admin/categories`, category);
+  const { data } = await adminCategoryAPI.post("/", category);
   return data;
 };

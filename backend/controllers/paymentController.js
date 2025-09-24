@@ -353,3 +353,65 @@ export const getTicketsBySession = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch tickets" });
   }
 };
+
+// Admin/Manager: Get payment logs
+export const getPaymentLogs = async (req, res, next) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      eventId,
+      userId,
+      transactionId,
+      status,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      managerOnly
+    } = req.query;
+
+    const filters = {};
+    if (eventId) filters.event = eventId;
+    if (userId) filters.user = userId;
+    if (transactionId) filters.transactionId = transactionId;
+    if (status) filters.status = status;
+
+    // If managerOnly, restrict to events of the current manager
+    if (managerOnly === 'true' && req.user?.role === 'event_manager') {
+      const managerEventIds = await Event.find({ eventManager: req.user._id }).distinct('_id');
+      if (filters.event) {
+        // If specific eventId provided, ensure it's within manager's events
+        filters.event = managerEventIds.includes(filters.event) ? filters.event : null;
+      } else {
+        filters.event = { $in: managerEventIds };
+      }
+    }
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [data, totalItems] = await Promise.all([
+      Payment.find(filters)
+        .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .populate('user', 'name email')
+        .populate('event', 'title')
+        .lean(),
+      Payment.countDocuments(filters),
+    ]);
+
+    const totalPages = Math.max(1, Math.ceil(totalItems / limitNum));
+    res.json({
+      data,
+      pagination: {
+        totalPages,
+        currentPage: pageNum,
+        totalItems,
+        pageSize: limitNum,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
