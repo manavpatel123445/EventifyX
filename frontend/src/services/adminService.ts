@@ -2,8 +2,9 @@
 import axios from "axios";
 
 // Create admin API instance
+const API_ROOT = import.meta.env.VITE_API_BASE_URL || "/api";
 const adminAPI = axios.create({ 
-  baseURL: "/api/admin",
+  baseURL: `${API_ROOT}/admin`,
 });
 
 // Add auth token to requests
@@ -113,7 +114,7 @@ export const deleteCategory = async (categoryId: string) => {
 // Events Management Services
 export const cleanupCompletedEvents = async () => {
   // Create events API instance for this specific call
-  const eventsAPI = axios.create({ baseURL: "/api/events" });
+  const eventsAPI = axios.create({ baseURL: `${API_ROOT}/events` });
   
   // Add auth token
   const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
@@ -151,7 +152,7 @@ export type { User };
 
 // Manager-specific user access
 const managerAPI = axios.create({ 
-  baseURL: "/api/manager",
+  baseURL: `${API_ROOT}/manager`,
 });
 
 // Add auth token to requests

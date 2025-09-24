@@ -3,8 +3,9 @@ import axios from "axios";
 import type { ReactNode } from "react";
 
 // Create event API instance
+const API_ROOT = import.meta.env.VITE_API_BASE_URL || "/api";
 const eventAPI = axios.create({ 
-  baseURL: "/api/events",
+  baseURL: `${API_ROOT}/events`,
 });
 
 // Add auth token to requests

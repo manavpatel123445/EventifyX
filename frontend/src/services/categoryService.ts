@@ -1,8 +1,9 @@
 import axios from "axios";
 
 // Create category API instance
+const API_ROOT = import.meta.env.VITE_API_BASE_URL || "/api";
 const categoryAPI = axios.create({
-  baseURL: "/api/categories",
+  baseURL: `${API_ROOT}/categories`,
 });
 
 // Add auth token to requests
@@ -23,11 +24,11 @@ export const getAllCategories = async () => {
 };
 
 export const fetchCategories = async () => {
-  const { data } = await axios.get("/api/categories");
+  const { data } = await axios.get(`${API_ROOT}/categories`);
   return data;
 };
 
 export const createCategory = async (category: { name: string; description?: string; status?: string; location?: string; icon?: string }) => {
-  const { data } = await axios.post("/api/categories", category);
+  const { data } = await axios.post(`${API_ROOT}/categories`, category);
   return data;
 };

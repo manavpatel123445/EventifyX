@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const API = axios.create({ baseURL: "/api/auth" });
+const API_ROOT = import.meta.env.VITE_API_BASE_URL || "/api";
+const API = axios.create({ baseURL: `${API_ROOT}/auth` });
 
 // Add authorization header to all requests
 API.interceptors.request.use((config) => {

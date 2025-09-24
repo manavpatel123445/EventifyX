@@ -13,7 +13,7 @@ export default defineConfig({
   
   server: {
     proxy: {
-      '/api': 'https://eventifyx.onrender.com',
+      '/api': 'http://localhost:3002',
     },
   },
 })

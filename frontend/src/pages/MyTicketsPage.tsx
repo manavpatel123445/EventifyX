@@ -42,6 +42,7 @@ const MyTicketsPage: React.FC = () => {
   const [pageSize, setPageSize] = useState<number>(6);
 
   const sessionId = searchParams.get('session_id');
+  const API_ROOT = import.meta.env.VITE_API_BASE_URL || '';
 
   // Unique event options from tickets
   const eventOptions = useMemo(() => {
@@ -142,7 +143,7 @@ const MyTicketsPage: React.FC = () => {
 
       // Helper: try multiple possible backend endpoints for "my tickets"
       const fetchMyTicketsWithFallbacks = async (): Promise<Ticket[]> => {
-        const bases = [import.meta.env.VITE_API_URL].filter(Boolean) as string[];
+        const bases = [API_ROOT || ''];
         const paths = [
           '/api/payments/tickets'
         ];
@@ -150,7 +151,7 @@ const MyTicketsPage: React.FC = () => {
         for (const base of bases) {
           for (const path of paths) {
             try {
-              const res = await fetch(`${base}${path}`, { headers });
+              const res = await fetch(`${base}${path}` || path, { headers });
               if (res.ok) {
                 const data = await res.json();
                 if (Array.isArray(data)) return data as Ticket[];
@@ -190,14 +191,14 @@ const MyTicketsPage: React.FC = () => {
 
       try {
         // Try to fetch tickets by session; if not yet created, poll briefly
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/tickets/session/${sessionId}`, { headers });
+        const response = await fetch(`${API_ROOT}/api/payments/tickets/session/${sessionId}`, { headers });
         
         if (!response.ok) {
           // Poll up to ~10s while webhook processes
           const start = Date.now();
           while (Date.now() - start < 10000) {
             await new Promise(r => setTimeout(r, 1500));
-            const r2 = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/tickets/session/${sessionId}`, { headers });
+            const r2 = await fetch(`${API_ROOT}/api/payments/tickets/session/${sessionId}`, { headers });
             if (r2.ok) {
               const d2 = await r2.json();
               setTickets(Array.isArray(d2) ? d2.map(normalizeTicket) : []);
@@ -240,7 +241,7 @@ const MyTicketsPage: React.FC = () => {
       try {
         const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
         const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-        const r = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/tickets/session/${sessionId}`, { headers });
+        const r = await fetch(`${API_ROOT}/api/payments/tickets/session/${sessionId}`, { headers });
         if (r.ok) {
           const data = await r.json();
           if (Array.isArray(data) && data.length > 0) {
