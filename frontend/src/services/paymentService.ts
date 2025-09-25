@@ -65,6 +65,8 @@ export interface PaymentLogsParams {
   eventId?: string;
   userId?: string;
   transactionId?: string;
+  userName?: string;
+  eventName?: string;
   status?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";

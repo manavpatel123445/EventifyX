@@ -354,7 +354,7 @@ export const getTicketsBySession = async (req, res) => {
   }
 };
 
-// Admin/Manager: Get payment logs
+// Admin/Manager: Get payment logs with real Stripe data
 export const getPaymentLogs = async (req, res, next) => {
   try {
     const {
@@ -363,11 +363,27 @@ export const getPaymentLogs = async (req, res, next) => {
       eventId,
       userId,
       transactionId,
+      userName,
+      eventName,
       status,
       sortBy = 'createdAt',
       sortOrder = 'desc',
       managerOnly
     } = req.query;
+
+    console.log('Search parameters received:', {
+      page,
+      limit,
+      eventId,
+      userId,
+      transactionId,
+      userName,
+      eventName,
+      status,
+      sortBy,
+      sortOrder,
+      managerOnly
+    });
 
     const filters = {};
     if (eventId) filters.event = eventId;
@@ -390,20 +406,111 @@ export const getPaymentLogs = async (req, res, next) => {
     const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
     const skip = (pageNum - 1) * limitNum;
 
-    const [data, totalItems] = await Promise.all([
-      Payment.find(filters)
-        .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
-        .skip(skip)
-        .limit(limitNum)
-        .populate('user', 'name email')
-        .populate('event', 'title')
-        .lean(),
-      Payment.countDocuments(filters),
-    ]);
+    // Build query with text search if userName or eventName provided
+    let query = Payment.find(filters);
+    let totalItemsQuery = Payment.find(filters).select('_id');
 
+    // Add text search for user name and event name
+    if (userName || eventName) {
+      const searchConditions = [];
+
+      if (userName) {
+        // Search in populated user name field
+        const userSearchQuery = await Payment.find(filters)
+          .populate('user', 'name')
+          .then(payments => payments.filter(p =>
+            p.user?.name && p.user.name.toLowerCase().includes(userName.toLowerCase())
+          ));
+        if (userSearchQuery.length > 0) {
+          searchConditions.push({ _id: { $in: userSearchQuery.map(p => p._id) } });
+        }
+      }
+
+      if (eventName) {
+        // Search in populated event title field
+        const eventSearchQuery = await Payment.find(filters)
+          .populate('event', 'title')
+          .then(payments => payments.filter(p =>
+            p.event?.title && p.event.title.toLowerCase().includes(eventName.toLowerCase())
+          ));
+        if (eventSearchQuery.length > 0) {
+          searchConditions.push({ _id: { $in: eventSearchQuery.map(p => p._id) } });
+        }
+      }
+
+      if (searchConditions.length > 0) {
+        query = query.find({ $or: searchConditions });
+        totalItemsQuery = totalItemsQuery.find({ $or: searchConditions });
+      }
+    }
+
+    const totalItems = await totalItemsQuery.countDocuments();
     const totalPages = Math.max(1, Math.ceil(totalItems / limitNum));
+
+    // Fetch payments from database
+    const payments = await query
+      .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .populate('user', 'name email')
+      .populate('event', 'title')
+      .lean();
+
+    console.log('Found payments:', payments.length);
+    console.log('Sample transaction IDs:', payments.slice(0, 3).map(p => p.transactionId));
+    console.log('Search filters applied:', filters);
+
+    // If searching by transactionId, log more details
+    if (transactionId) {
+      console.log('Searching for transactionId:', transactionId);
+      const matchingPayments = payments.filter(p =>
+        p.transactionId && p.transactionId.toLowerCase().includes(transactionId.toLowerCase())
+      );
+      console.log('Matching payments found:', matchingPayments.length);
+    }
+
+    // Fetch real-time data from Stripe for each payment
+    const enrichedPayments = await Promise.all(
+      payments.map(async (payment) => {
+        try {
+          // If we have a Stripe session ID, fetch real data from Stripe
+          if (payment.stripeSessionId) {
+            const session = await stripe.checkout.sessions.retrieve(payment.stripeSessionId);
+
+            // Update payment with real Stripe data
+            payment.transactionId = session.payment_intent || payment.stripeSessionId;
+            payment.status = session.payment_status || payment.status;
+            payment.amount = (session.amount_total || 0) / 100; // Convert from cents
+            payment.currency = session.currency || payment.currency;
+
+            // If payment is successful, get more details from payment intent
+            if (session.payment_intent && session.payment_status === 'paid') {
+              try {
+                const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent);
+                payment.transactionId = paymentIntent.id;
+                payment.status = paymentIntent.status;
+
+                // Get receipt URL if available
+                if (paymentIntent.charges && paymentIntent.charges.data.length > 0) {
+                  payment.receiptUrl = paymentIntent.charges.data[0].receipt_url;
+                }
+              } catch (piError) {
+                console.warn('Could not fetch payment intent details:', piError?.message || piError);
+              }
+            }
+          }
+
+          return payment;
+        } catch (stripeError) {
+          console.warn('Could not fetch Stripe data for payment:', payment._id, stripeError?.message || stripeError);
+          // Return payment with database data if Stripe fetch fails
+          return payment;
+        }
+      })
+    );
+
     res.json({
-      data,
+      data: enrichedPayments,
       pagination: {
         totalPages,
         currentPage: pageNum,
@@ -412,6 +519,7 @@ export const getPaymentLogs = async (req, res, next) => {
       },
     });
   } catch (err) {
+    console.error('Error in getPaymentLogs:', err);
     next(err);
   }
 };
