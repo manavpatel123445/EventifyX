@@ -37,20 +37,7 @@ const AdminPaymentLogsPage = () => {
     sortOrder: 'desc'
   }), [paymentLogsPage, paymentLogsLimit, eventId, userId, transactionId, userName, eventName, status]);
 
-  // Revenue & Sales Table Query Parameters
-  // Note: revenueParams is currently unused but kept for future implementation when revenue table needs separate query
-  const revenueParams: PaymentLogsParams = useMemo(() => ({
-    page: revenuePage,
-    limit: 10, // Using fixed limit for revenue table
-    eventId,
-    userId,
-    transactionId,
-    userName,
-    eventName,
-    status,
-    sortBy: 'createdAt',
-    sortOrder: 'desc'
-  }), [revenuePage, eventId, userId, transactionId, userName, eventName, status]);
+ 
 
   const queryClient = useQueryClient();
 
