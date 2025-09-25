@@ -56,8 +56,8 @@ const AdminPaymentLogsPage = () => {
 
   const {
     data: paymentLogsResponse,
-    isLoading: loading,
-    error,
+    isLoading: _loading,
+    error: _error,
     refetch
   } = useQuery<PaymentLogsResponse>({
     queryKey: ['paymentLogs', paymentLogsParams] as const,
@@ -92,7 +92,7 @@ const AdminPaymentLogsPage = () => {
     refetch();
   };
 
-  if (error) {
+  if (_error) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
@@ -392,9 +392,9 @@ const AdminPaymentLogsPage = () => {
         {/* Revenue & Sales Summary Table */}
         <div className="bg-white rounded-xl shadow p-6 mt-6">
           <h2 className="text-xl font-semibold mb-4">Revenue & Sales Summary</h2>
-          {loading ? (
+          {_loading ? (
             <div className="text-center py-8">Loading sales data...</div>
-          ) : error ? (
+          ) : _error ? (
             <div className="text-center text-red-500 py-8">Failed to fetch sales data</div>
           ) : logs.length === 0 ? (
             <div className="text-center py-8 text-gray-500">No sales data available.</div>
@@ -453,7 +453,7 @@ const AdminPaymentLogsPage = () => {
                         const ticketsCount = Array.isArray(log.tickets) ? log.tickets.length : 0;
                         const adminShare = (log.amount || 0) * 0.20;
 
-                        function setSelectedEvent(ev: any) {
+                        function setSelectedEvent(_ev: any) {
                           throw new Error('Function not implemented.');
                         }
 
