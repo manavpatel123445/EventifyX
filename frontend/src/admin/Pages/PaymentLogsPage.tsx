@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAdminPaymentLogs, type PaymentLogsParams, type PaymentLogsResponse } from '../../services/paymentService';
 import SideBar from '../components/SideBar';
@@ -56,6 +56,21 @@ const AdminPaymentLogsPage = () => {
   const logs = paymentLogsResponse?.data || [];
   const paymentLogsTotalPages = paymentLogsResponse?.pagination?.totalPages || 1;
 
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const dropdown = document.getElementById('export-dropdown');
+      const exportButton = document.querySelector('[data-export-button]');
+
+      if (dropdown && !dropdown.contains(event.target as Node) && !exportButton?.contains(event.target as Node)) {
+        dropdown.classList.add('hidden');
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
   // Handle search
   const handleSearch = () => {
     console.log('Search triggered with:', {
@@ -105,33 +120,142 @@ const AdminPaymentLogsPage = () => {
       <div className="flex-1 p-6 space-y-8 overflow-x-auto">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">Payment Logs</h1>
-          <button
-            onClick={() => {
-              const headers = ["Date","Transaction ID","User Name","Event Name","Amount","Currency","Status","Payment Method","Sold Tickets"];
-              const rows = logs.map((l) => [
-                new Date(l.createdAt).toISOString(),
-                l.transactionId || "",
-                typeof l.user === 'string' ? '' : (l.user?.name || ''),
-                typeof l.event === 'string' ? '' : (l.event?.title || ''),
-                String(l.amount ?? 0),
-                l.currency || '',
-                l.status || '',
-                (l as any).provider || '',
-                Array.isArray(l.tickets) ? String(l.tickets.length) : '0'
-              ]);
-              const csv = [headers, ...rows].map(r => r.map((v: any) => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
-              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement('a');
-              link.href = url;
-              link.download = `payment_logs_page_${paymentLogsPage}.csv`;
-              link.click();
-              URL.revokeObjectURL(url);
-            }}
-            className="px-4 py-2 text-sm rounded-md border bg-white hover:bg-gray-50"
-          >
-            Export
-          </button>
+          <div className="relative">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const dropdown = document.getElementById('export-dropdown');
+                dropdown?.classList.toggle('hidden');
+              }}
+              data-export-button
+              className="px-4 py-2 text-sm rounded-md border bg-white hover:bg-gray-50 flex items-center gap-2"
+            >
+              Export
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Dropdown Menu */}
+            <div
+              id="export-dropdown"
+              className="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border z-10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="py-1">
+                <button
+                  onClick={() => {
+                    // CSV Export Logic
+                    const headers = ["Date","Transaction ID","User Name","Event Name","Amount","Currency","Status","Payment Method","Sold Tickets"];
+                    const rows = logs.map((l) => [
+                      new Date(l.createdAt).toISOString(),
+                      l.transactionId || "",
+                      typeof l.user === 'string' ? '' : (l.user?.name || ''),
+                      typeof l.event === 'string' ? '' : (l.event?.title || ''),
+                      String(l.amount ?? 0),
+                      l.currency || '',
+                      l.status || '',
+                      (l as any).provider || '',
+                      Array.isArray(l.tickets) ? String(l.tickets.length) : '0'
+                    ]);
+                    const csv = [headers, ...rows].map(r => r.map((v: any) => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `payment_logs_page_${paymentLogsPage}.csv`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+
+                    // Hide dropdown
+                    const dropdown = document.getElementById('export-dropdown');
+                    dropdown?.classList.add('hidden');
+                  }}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  📄 Download CSV
+                </button>
+                <button
+                  onClick={() => {
+                    // PDF Export Logic
+                    const printContent = `
+                      <html>
+                        <head>
+                          <title>Payment Logs Report</title>
+                          <style>
+                            body { font-family: Arial, sans-serif; margin: 20px; }
+                            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                            th { background-color: #f2f2f2; font-weight: bold; }
+                            h1 { color: #333; text-align: center; }
+                            .header-info { margin-bottom: 20px; text-align: center; }
+                            .summary { margin: 20px 0; padding: 15px; background-color: #f9f9f9; border-radius: 5px; }
+                            .amount { text-align: right; }
+                          </style>
+                        </head>
+                        <body>
+                          <h1>Payment Logs Report</h1>
+                          <div class="header-info">
+                            <p><strong>Generated on:</strong> ${new Date().toLocaleDateString()}</p>
+                            <p><strong>Total Transactions:</strong> ${logs.length}</p>
+                            <p><strong>Page:</strong> ${paymentLogsPage}</p>
+                          </div>
+
+                          <div class="summary">
+                            <h3>Summary</h3>
+                            <p><strong>Total Revenue:</strong> ₹${logs.reduce((total: number, log: any) => total + (log.amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <p><strong>Total Tickets Sold:</strong> ${logs.reduce((total: number, log: any) => total + (Array.isArray(log.tickets) ? log.tickets.length : 0), 0).toLocaleString()}</p>
+                            <p><strong>Admin Income (20%):</strong> ₹${logs.reduce((total: number, log: any) => total + ((log.amount || 0) * 0.20), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                          </div>
+
+                          <table>
+                            <thead>
+                              <tr>
+                                <th>Date</th>
+                                <th>Transaction ID</th>
+                                <th>User</th>
+                                <th>Event</th>
+                                <th class="amount">Amount</th>
+                                <th>Status</th>
+                                <th>Tickets</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              ${logs.map((log: any) => `
+                                <tr>
+                                  <td>${new Date(log.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
+                                  <td>${log.transactionId || '-'}</td>
+                                  <td>${typeof log.user === 'string' ? '' : (log.user?.name || 'Unknown User')}</td>
+                                  <td>${typeof log.event === 'string' ? '' : (log.event?.title || 'Unknown Event')}</td>
+                                  <td class="amount">₹${(log.amount ?? 0).toFixed(2)}</td>
+                                  <td>${log.status || '-'}</td>
+                                  <td>${Array.isArray(log.tickets) ? log.tickets.length : 0}</td>
+                                </tr>
+                              `).join('')}
+                            </tbody>
+                          </table>
+                        </body>
+                      </html>
+                    `;
+
+                    const printWindow = window.open('', '_blank');
+                    if (printWindow) {
+                      printWindow.document.write(printContent);
+                      printWindow.document.close();
+                      printWindow.print();
+                    }
+
+                    // Hide dropdown
+                    const dropdown = document.getElementById('export-dropdown');
+                    dropdown?.classList.add('hidden');
+                  }}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  📋 Download PDF
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Filters */}
@@ -377,177 +501,10 @@ const AdminPaymentLogsPage = () => {
         </div>
 
         {/* Revenue & Sales Summary Table */}
-        <div className="bg-white rounded-xl shadow p-6 mt-6">
-          <h2 className="text-xl font-semibold mb-4">Revenue & Sales Summary</h2>
-          {_loading ? (
-            <div className="text-center py-8">Loading sales data...</div>
-          ) : _error ? (
-            <div className="text-center text-red-500 py-8">Failed to fetch sales data</div>
-          ) : logs.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">No sales data available.</div>
-          ) : (
-            <div className="space-y-6">
-              {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="text-gray-600 text-sm font-medium">Total Revenue</h3>
-                  <p className="text-2xl font-bold">
-                    ₹{logs.reduce((total: number, log: any) => {
-                      return total + (log.amount || 0);
-                    }, 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                </div>
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h3 className="text-gray-600 text-sm font-medium">Total Tickets Sold</h3>
-                  <p className="text-2xl font-bold">
-                    {logs.reduce((total: number, log: any) => {
-                      return total + (Array.isArray(log.tickets) ? log.tickets.length : 0);
-                    }, 0).toLocaleString()}
-                  </p>
-                </div>
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <h3 className="text-gray-600 text-sm font-medium">Total Transactions</h3>
-                  <p className="text-2xl font-bold">{logs.length}</p>
-                </div>
-                <div className="bg-amber-50 p-4 rounded-lg">
-                  <h3 className="text-gray-600 text-sm font-medium">Admin Income (20%)</h3>
-                  <p className="text-2xl font-bold">
-                    ₹{logs.reduce((total: number, log: any) => {
-                      return total + ((log.amount || 0) * 0.20);
-                    }, 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                </div>
-              </div>
-
-              {/* Detailed Sales Table */}
-              <div className="overflow-x-auto rounded-lg border border-gray-200">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tickets</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin (20%)</th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {logs.length > 0 ? (
-                      logs.map((log: any) => {
-                        const u: any = typeof log.user === 'string' ? { _id: log.user } : (log.user || {});
-                        const ev: any = typeof log.event === 'string' ? { _id: log.event } : (log.event || {});
-                        const ticketsCount = Array.isArray(log.tickets) ? log.tickets.length : 0;
-                        const adminShare = (log.amount || 0) * 0.20;
-
-                        function setSelectedEvent(_ev: any) {
-                          throw new Error('Function not implemented.');
-                        }
-
-                        return (
-                          <tr key={log._id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <div>
-                                  <div className="text-sm font-medium text-gray-900">
-                                    {ev?.title || 'Unknown Event'}
-                                  </div>
-                                  <div className="text-sm text-gray-500">
-                                    {ev?._id || 'N/A'}
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">
-                                {u?.name || 'Unknown User'}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {u?._id || 'N/A'}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">
-                                {ticketsCount.toLocaleString()}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">
-                                ₹{(log.amount || 0).toLocaleString('en-US', {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2
-                                })}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900 text-amber-700">
-                                ₹{adminShare.toLocaleString('en-US', {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <div className="flex items-center justify-end space-x-3">
-                                <button 
-                                  onClick={() => {
-                                    setSelectedEvent(ev);
-                                    setIsModalOpen(true);
-                                  }}
-                                  className="text-blue-600 hover:text-blue-900 hover:underline"
-                                >
-                                  View Event
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    if (window.confirm('Are you sure you want to delete this payment record?')) {
-                                      // TODO: Implement delete payment
-                                      console.log('Delete payment:', log._id);
-                                    }
-                                  }}
-                                  className="text-red-600 hover:text-red-800 hover:underline"
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                          No payment logs found
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
+        
 
               {/* Pagination */}
-              <div className="flex justify-between items-center p-4">
-                <span className="text-sm text-gray-500">Page {revenuePage} of {paymentLogsTotalPages}</span>
-                <div className="space-x-2">
-                  <button 
-                    className="px-3 py-1 border rounded disabled:opacity-50" 
-                    disabled={revenuePage <= 1} 
-                    onClick={() => setRevenuePage(p => Math.max(1, p - 1))}
-                  >
-                    Previous
-                  </button>
-                  <button 
-                    className="px-3 py-1 border rounded disabled:opacity-50" 
-                    disabled={revenuePage >= paymentLogsTotalPages} 
-                    onClick={() => setRevenuePage(p => p + 1)}
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
+              
 
       </div>
 

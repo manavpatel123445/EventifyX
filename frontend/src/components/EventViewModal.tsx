@@ -39,7 +39,12 @@ const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event 
   };
 
   const formatTime = (timeString: string) => {
-    return timeString;
+    if (!timeString || timeString === '00:00') return '12:00 AM';
+    const [hours, minutes] = timeString.split(':');
+    const hour24 = parseInt(hours, 10);
+    const period = hour24 >= 12 ? 'PM' : 'AM';
+    const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+    return `${hour12}:${minutes} ${period}`;
   };
 
   const getStatusColor = (status: string) => {
@@ -170,24 +175,53 @@ const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event 
             <div>
               <h3 className="text-lg font-semibold mb-3 text-gray-700">Date & Time</h3>
               <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <div>
-                    <p className="font-medium text-gray-800">Start</p>
-                    <p className="text-sm text-gray-600">
-                      {formatDate(event.startDate)} at {formatTime(event.startTime)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  <div>
-                    <p className="font-medium text-gray-800">End</p>
-                    <p className="text-sm text-gray-600">
-                      {formatDate(event.endDate)} at {formatTime(event.endTime)}
-                    </p>
-                  </div>
-                </div>
+                {(() => {
+                  const startDate = event.startDate;
+                  const endDate = event.endDate;
+                  const isSameDate = startDate && endDate &&
+                    new Date(startDate).toDateString() === new Date(endDate).toDateString();
+
+                  if (isSameDate) {
+                    // Same date - show single entry with time range
+                    return (
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <div>
+                          <p className="font-medium text-gray-800">
+                            {formatDate(event.startDate)}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {formatTime(event.startTime)} - {formatTime(event.endTime)}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    // Different dates - show separate start and end
+                    return (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <div>
+                            <p className="font-medium text-gray-800">Start</p>
+                            <p className="text-sm text-gray-600">
+                              {formatDate(event.startDate)} at {formatTime(event.startTime)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                          <div>
+                            <p className="font-medium text-gray-800">End</p>
+                            <p className="text-sm text-gray-600">
+                              {formatDate(event.endDate)} at {formatTime(event.endTime)}
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  }
+                })()}
               </div>
             </div>
 

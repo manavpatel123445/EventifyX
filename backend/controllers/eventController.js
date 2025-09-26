@@ -352,7 +352,7 @@ export const getAllEvents = async (req, res) => {
     console.log('Sort options:', sortOptions);
 
     const events = await Event.find(filter)
-      .populate("eventManager", "name")
+      .populate("eventManager", "name email profileImage status")
       .populate("category", "name")
       .sort(sortOptions)
       .limit(limit * 1)

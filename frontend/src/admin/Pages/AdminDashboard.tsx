@@ -133,7 +133,18 @@ const AdminDashboard: React.FC = () => {
                             try {
                               const startTime = event.startTime || '00:00';
                               const endTime = event.endTime || '23:59';
-                              return `${startTime} - ${endTime}`;
+
+                              // Convert 24-hour to 12-hour format with AM/PM
+                              const formatTime = (time24: string) => {
+                                if (!time24 || time24 === '00:00') return '12:00 AM';
+                                const [hours, minutes] = time24.split(':');
+                                const hour24 = parseInt(hours, 10);
+                                const period = hour24 >= 12 ? 'PM' : 'AM';
+                                const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+                                return `${hour12}:${minutes} ${period}`;
+                              };
+
+                              return `${formatTime(startTime)} - ${formatTime(endTime)}`;
                             } catch {
                               return '-';
                             }

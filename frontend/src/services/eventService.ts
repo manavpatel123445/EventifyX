@@ -275,6 +275,7 @@ export interface EventRequestData {
 }
 
 export interface Event {
+  [x: string]: boolean;
   _id: string;
   title: string;
   description: string;
@@ -304,6 +305,7 @@ export interface Event {
     _id: string;
     name: string;
     email: string;
+    status?: string;
   };
   status: "upcoming" | "ongoing" | "completed" | "cancelled";
   isPublic: boolean;
