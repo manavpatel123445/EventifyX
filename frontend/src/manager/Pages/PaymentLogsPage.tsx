@@ -9,8 +9,8 @@ const ManagerPaymentLogsPage = () => {
   const [paymentLogsPage, setPaymentLogsPage] = useState<number>(1);
   const [paymentLogsLimit, setPaymentLogsLimit] = useState<number>(10);
 
-  // Revenue & Sales Table State
-  const [revenuePage, setRevenuePage] = useState<number>(1);
+  
+ 
 
   const [eventId] = useState<string>("");
   const [userId] = useState<string>("");
@@ -45,7 +45,6 @@ const ManagerPaymentLogsPage = () => {
 
   const {
     data: paymentLogsResponse,
-    isLoading: loading,
     error,
     refetch
   } = useQuery<PaymentLogsResponse>({
@@ -68,7 +67,7 @@ const ManagerPaymentLogsPage = () => {
       eventName
     });
     setPaymentLogsPage(1); // Reset payment logs to first page when searching
-    setRevenuePage(1); // Reset revenue to first page when searching
+    // Reset revenue to first page when searching
     queryClient.invalidateQueries({ queryKey: ['paymentLogs'] });
     refetch();
   };
@@ -76,7 +75,7 @@ const ManagerPaymentLogsPage = () => {
   // Handle filters
   const handleFilterChange = () => {
     setPaymentLogsPage(1); // Reset payment logs to first page when filtering
-    setRevenuePage(1); // Reset revenue to first page when filtering
+    // Reset revenue to first page when filtering
     queryClient.invalidateQueries({ queryKey: ['paymentLogs'] });
     refetch();
   };
@@ -161,7 +160,7 @@ const ManagerPaymentLogsPage = () => {
                   const searchValue = e.target.value;
                   setSearch(searchValue);
                   setPaymentLogsPage(1);
-                  setRevenuePage(1);
+               
 
                   // Update the appropriate search field based on search type
                   if (searchType === 'transactionId') {
@@ -190,7 +189,7 @@ const ManagerPaymentLogsPage = () => {
                   setUserName('');
                   setEventName('');
                   setPaymentLogsPage(1);
-                  setRevenuePage(1);
+                  
                   queryClient.invalidateQueries({ queryKey: ['paymentLogs'] });
                 }}
                 className="px-3 py-2 text-sm border rounded-md bg-gray-100 hover:bg-gray-200"
