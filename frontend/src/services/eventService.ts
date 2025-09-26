@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
-import type { ReactNode } from "react";
 
 // Create event API instance
 const API_ROOT = import.meta.env.VITE_API_BASE_URL || "/api";
@@ -331,7 +330,6 @@ export interface EventRequest {
   startTime: string;
   endTime: string;
   venue: {
-    [x: string]: ReactNode;
     name: string;
     address: string;
     city: string;
