@@ -18,14 +18,43 @@ db();
 
 const app = express();
 
-// CORS with credentials support
-const allowedOrigin = process.env.CLIENT_URL || "http://localhost:5173";
+// CORS with credentials support - Allow multiple origins including local development
+const allowedOrigins = [
+  // Always include local development
+  "http://localhost:5173",
+  "http://localhost:3000",
+
+  // Production origins
+  "https://eventify-x-wqka.vercel.app",
+  "https://eventifyx.onrender.com",
+
+  // Environment variable (if set)
+  ...(process.env.CLIENT_URL ? [process.env.CLIENT_URL] : [])
+];
+
+console.log('🌐 Allowed CORS Origins:', allowedOrigins);
+
 app.use(
   cors({
-    origin: allowedOrigin,
+    origin: function (origin, callback) {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) {
+        console.log('✅ Allowing request with no origin (mobile/curl)');
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        console.log(`✅ Allowing CORS request from: ${origin}`);
+        return callback(null, true);
+      } else {
+        console.log(`❌ Blocking CORS request from: ${origin}`);
+        console.log('Allowed origins:', allowedOrigins);
+        return callback(new Error(`CORS policy: Origin ${origin} not allowed`), false);
+      }
+    },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
   })
 );
 

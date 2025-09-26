@@ -180,6 +180,50 @@ export const getEventById = async (identifier: string) => {
   return data;
 };
 
+// Multi-day event support
+export interface DateSpecificTicketsResponse {
+  success: boolean;
+  data: {
+    event: {
+      _id: string;
+      title: string;
+      description: string;
+      startTime: string;
+      endTime: string;
+      venue: {
+        name: string;
+        address: string;
+        city: string;
+        state: string;
+      };
+      images: string[];
+      category: {
+        _id: string;
+        name: string;
+      };
+      eventManager: {
+        profileImage?: string;
+        _id: string;
+        name: string;
+        email: string;
+        status?: string;
+      };
+    };
+    selectedDate: string;
+    tickets: {
+      type: string;
+      price: number;
+      quantity: number;
+      sold: number;
+      available: number;
+      remainingForUser: number;
+      canPurchase: boolean;
+    }[];
+    userTickets: any[];
+    isMultiDay: boolean;
+  };
+}
+
 // Event Manager Services (for users with event_manager role)
 export const getMyManagedEvents = async (params?: {
   status?: string;
@@ -299,6 +343,20 @@ export interface Event {
     quantity: number;
     sold: number;
   }[];
+  // Multi-day event support
+  eventDates?: {
+    date: string;
+    isActive: boolean;
+    ticketAvailability?: {
+      type: string;
+      quantity: number;
+      sold: number;
+    }[];
+    timeSlots?: {
+      time: string;
+      available: boolean;
+    }[];
+  }[];
   images: string[];
   eventManager: {
     profileImage?: string;
@@ -386,5 +444,13 @@ export interface GetRequestsResponse {
 
 export const getTicketsBySessionId = async (sessionId: string) => {
   const { data } = await eventAPI.get(`/tickets/session/${sessionId}`);
+  return data;
+};
+
+export const getDateSpecificTickets = async (eventId: string, date: string, userId?: string) => {
+  const params = new URLSearchParams();
+  if (userId) params.append('userId', userId);
+
+  const { data } = await eventAPI.get(`/${eventId}/date/${date}`, { params });
   return data;
 };

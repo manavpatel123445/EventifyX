@@ -12,6 +12,7 @@ import {
   getEventById,
   updateEvent,
   cancelEvent,
+  getDateSpecificTickets,
   
   // Event Manager Operations
   getMyManagedEvents,
@@ -92,5 +93,12 @@ router.post("/admin/cleanup-completed", protect, authorize("admin"), autoSoftDel
 // =============================================================================
 // GET /api/events/6743ab123456789 or GET /api/events/music-concert-2024
 router.get("/:identifier", getEventById);
+
+// =============================================================================
+// MULTI-DAY EVENT ROUTES
+// =============================================================================
+// Get date-specific ticket availability for multi-day events
+// GET /api/events/:eventId/date/:date?tickets&userId=123
+router.get("/:eventId/date/:date", getDateSpecificTickets);
 
 export default router;

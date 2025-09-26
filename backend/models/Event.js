@@ -99,6 +99,36 @@ const eventSchema = new mongoose.Schema(
         min: [0, "Sold tickets cannot be negative"]
       }
     }],
+
+    // Multi-day event support - array of dates when the event occurs
+    eventDates: [{
+      date: {
+        type: Date,
+        required: true
+      },
+      isActive: {
+        type: Boolean,
+        default: true
+      },
+      // Date-specific ticket availability (overrides global ticketPricing if specified)
+      ticketAvailability: [{
+        type: {
+          type: String,
+          required: true,
+          enum: ["regular", "vip", "premium"]
+        },
+        quantity: {
+          type: Number,
+          required: true,
+          min: [1, "Quantity must be at least 1"]
+        },
+        sold: {
+          type: Number,
+          default: 0,
+          min: [0, "Sold tickets cannot be negative"]
+        }
+      }]
+    }],
     images: [{
       type: String,
       validate: {

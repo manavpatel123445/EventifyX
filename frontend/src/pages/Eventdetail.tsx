@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { getEventById } from "../services/eventService";
+import { getEventById, getDateSpecificTickets, type DateSpecificTicketsResponse } from "../services/eventService";
 import type { Event } from "../services/eventService";
 import toast from "react-hot-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -11,6 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 const Eventdetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [selectedDate, setSelectedDate] = useState<string>("");
 
   const {
     data: eventData,
@@ -30,6 +31,24 @@ const Eventdetail: React.FC = () => {
     }
   });
 
+  // Query for date-specific tickets when a date is selected
+  const {
+    data: dateTicketsData,
+    isLoading: dateTicketsLoading
+  } = useQuery<DateSpecificTicketsResponse>({
+    queryKey: ["dateTickets", id, selectedDate],
+    queryFn: async () => {
+      if (!id || !selectedDate) throw new Error("Event ID or date not found");
+      const userId = localStorage.getItem("userId") || sessionStorage.getItem("userId");
+      const response = await getDateSpecificTickets(id, selectedDate, userId || undefined);
+      if ((response as any)?.success) {
+        return response as DateSpecificTicketsResponse;
+      }
+      throw new Error("Failed to fetch date-specific tickets");
+    },
+    enabled: !!id && !!selectedDate
+  });
+
   useEffect(() => {
     if (isError) {
       toast.error("Event not found");
@@ -41,6 +60,32 @@ const Eventdetail: React.FC = () => {
   // Always call hooks consistently; derive values guarded by undefined data
   const event = eventData as Event | undefined;
 
+  // Get available dates for multi-day events
+  const availableDates = useMemo(() => {
+    if (!event?.eventDates || event.eventDates.length === 0) return [];
+    return event.eventDates
+      .filter(date => date.isActive)
+      .map(date => ({
+        value: date.date,
+        label: new Date(date.date).toLocaleDateString('en-US', {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric'
+        })
+      }));
+  }, [event]);
+
+  // Auto-select first available date for multi-day events
+  useEffect(() => {
+    if (event?.eventDates && event.eventDates.length > 0 && !selectedDate) {
+      const firstActiveDate = event.eventDates.find(date => date.isActive);
+      if (firstActiveDate) {
+        setSelectedDate(firstActiveDate.date);
+      }
+    }
+  }, [event, selectedDate]);
+
   const banner = useMemo(() => {
     if (event && Array.isArray(event.images) && event.images.length > 0) return event.images[0];
     return "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=1200&auto=format&fit=crop&q=60";
@@ -51,10 +96,29 @@ const Eventdetail: React.FC = () => {
     return [] as string[];
   }, [event]);
 
+  // Get current ticket information (either date-specific or general)
+  const currentTickets = useMemo(() => {
+    if (dateTicketsData?.data?.tickets) {
+      return dateTicketsData.data.tickets;
+    }
+    if (event?.ticketPricing) {
+      return event.ticketPricing.map(ticket => ({
+        type: ticket.type,
+        price: ticket.price,
+        quantity: ticket.quantity,
+        sold: ticket.sold,
+        available: Math.max(0, ticket.quantity - (ticket.sold ?? 0)),
+        remainingForUser: 10, // Default limit
+        canPurchase: ticket.quantity > (ticket.sold ?? 0)
+      }));
+    }
+    return [];
+  }, [event, dateTicketsData]);
+
   const ticketMinPrice = useMemo(() => {
-    if (!event || !Array.isArray(event.ticketPricing) || event.ticketPricing.length === 0) return 0;
-    return event.ticketPricing.reduce((min, t) => Math.min(min, t.price), event.ticketPricing[0].price);
-  }, [event]);
+    if (currentTickets.length === 0) return 0;
+    return currentTickets.reduce((min, t) => Math.min(min, t.price), currentTickets[0].price);
+  }, [currentTickets]);
 
   if (isLoading) {
     return (
@@ -278,7 +342,40 @@ const Eventdetail: React.FC = () => {
 
               <div className="mt-4">
                 <p className="text-lg font-bold">{ticketMinPrice > 0 ? `₹${ticketMinPrice} onwards` : 'Free'}</p>
-              <button
+
+                {/* Date Selection for Multi-Day Events */}
+                {availableDates.length > 1 && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Date
+                    </label>
+                    <select
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    >
+                      {availableDates.map((date) => (
+                        <option key={date.value} value={date.value}>
+                          {date.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Show selected date for multi-day events */}
+                {availableDates.length > 1 && selectedDate && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    Selected: {new Date(selectedDate).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </div>
+                )}
+
+                <button
                   onClick={() => {
                     const isAuthenticated = Boolean(localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken"));
                     if (!isAuthenticated) {
@@ -286,7 +383,12 @@ const Eventdetail: React.FC = () => {
                       navigate("/login", { state: { from: `/event/${id}` } });
                       return;
                     }
-                    navigate(`/checkout?eventId=${event._id}`);
+
+                    // For multi-day events, include the selected date
+                    const checkoutUrl = selectedDate
+                      ? `/checkout?eventId=${event._id}&date=${selectedDate}`
+                      : `/checkout?eventId=${event._id}`;
+                    navigate(checkoutUrl);
                   }}
                   disabled={(() => {
                     const now = new Date();
@@ -303,17 +405,21 @@ const Eventdetail: React.FC = () => {
                 </button>
               </div>
 
-              {Array.isArray(event.ticketPricing) && event.ticketPricing.length > 0 && (
+              {/* Ticket Types */}
+              {currentTickets.length > 0 && (
                 <div className="mt-4">
                   <h3 className="font-semibold mb-2">Ticket Types</h3>
                   <ul className="space-y-1 text-sm text-gray-700">
-                    {event.ticketPricing.map((t, i) => (
+                    {currentTickets.map((t, i) => (
                       <li key={i} className="flex justify-between">
                         <span className="capitalize">{t.type}</span>
-                        <span>₹{t.price} · {t.quantity - (t.sold ?? 0)} left</span>
+                        <span>₹{t.price} · {t.available} left</span>
                       </li>
                     ))}
                   </ul>
+                  {dateTicketsLoading && (
+                    <div className="mt-2 text-xs text-gray-500">Loading date-specific availability...</div>
+                  )}
                 </div>
               )}
             </div>
