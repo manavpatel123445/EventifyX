@@ -275,7 +275,8 @@ export interface EventRequestData {
 }
 
 export interface Event {
-  [x: string]: boolean;
+  isDeleted: boolean;
+ 
   _id: string;
   title: string;
   description: string;

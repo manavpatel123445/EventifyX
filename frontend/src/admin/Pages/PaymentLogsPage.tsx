@@ -9,9 +9,6 @@ const AdminPaymentLogsPage = () => {
   const [paymentLogsPage, setPaymentLogsPage] = useState<number>(1);
   const [paymentLogsLimit, setPaymentLogsLimit] = useState<number>(10);
 
-  // Revenue & Sales Table State
-  const [revenuePage, setRevenuePage] = useState<number>(1);
-
   const [eventId] = useState<string>("");
   const [userId] = useState<string>("");
   const [transactionId, setTransactionId] = useState<string>("");
@@ -81,7 +78,6 @@ const AdminPaymentLogsPage = () => {
       eventName
     });
     setPaymentLogsPage(1); // Reset payment logs to first page when searching
-    setRevenuePage(1); // Reset revenue to first page when searching
     queryClient.invalidateQueries({ queryKey: ['paymentLogs'] });
     refetch();
   };
@@ -89,7 +85,6 @@ const AdminPaymentLogsPage = () => {
   // Handle filters
   const handleFilterChange = () => {
     setPaymentLogsPage(1); // Reset payment logs to first page when filtering
-    setRevenuePage(1); // Reset revenue to first page when filtering
     queryClient.invalidateQueries({ queryKey: ['paymentLogs'] });
     refetch();
   };
@@ -283,7 +278,6 @@ const AdminPaymentLogsPage = () => {
                   const searchValue = e.target.value;
                   setSearch(searchValue);
                   setPaymentLogsPage(1);
-                  setRevenuePage(1);
 
                   // Update the appropriate search field based on search type
                   if (searchType === 'transactionId') {
@@ -312,7 +306,6 @@ const AdminPaymentLogsPage = () => {
                   setUserName('');
                   setEventName('');
                   setPaymentLogsPage(1);
-                  setRevenuePage(1);
                   queryClient.invalidateQueries({ queryKey: ['paymentLogs'] });
                 }}
                 className="px-3 py-2 text-sm border rounded-md bg-gray-100 hover:bg-gray-200"
@@ -499,13 +492,6 @@ const AdminPaymentLogsPage = () => {
             </button>
           </div>
         </div>
-
-        {/* Revenue & Sales Summary Table */}
-        
-
-              {/* Pagination */}
-              
-
       </div>
 
       {/* Event View Modal */}
@@ -524,3 +510,5 @@ const AdminPaymentLogsPage = () => {
 };
 
 export default AdminPaymentLogsPage;
+
+
