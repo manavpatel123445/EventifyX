@@ -32,16 +32,7 @@ const allowedOrigins = [
   "https://eventifyx.onrender.com"
 ];
 
-// CRITICAL: Override CLIENT_URL if it would block localhost
-if (process.env.CLIENT_URL && process.env.CLIENT_URL !== "https://eventify-x-wqka.vercel.app") {
-  allowedOrigins.push(process.env.CLIENT_URL);
-  console.log('✅ Added CLIENT_URL from environment:', process.env.CLIENT_URL);
-} else if (process.env.CLIENT_URL) {
-  console.log('⚠️ CLIENT_URL is set to production URL - ensuring localhost still works');
-}
-
 console.log('🌐 Final Allowed CORS Origins:', allowedOrigins);
-console.log('🔧 CLIENT_URL from env:', process.env.CLIENT_URL);
 
 app.use(
   cors({
