@@ -388,6 +388,7 @@ export interface EventRequest {
   startTime: string;
   endTime: string;
   venue: {
+    state: string;
     name: string;
     address: string;
     city: string;
