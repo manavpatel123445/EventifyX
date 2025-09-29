@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // API roots
-const API_ROOT = import.meta.env.VITE_API_BASE_URL || "/api";
+const API_ROOT = import.meta.env.VITE_API_URL || "/api";
 
 // Public categories (no admin required)
 const publicCategoryAPI = axios.create({
