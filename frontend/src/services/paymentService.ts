@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
 
-const API_ROOT = import.meta.env.VITE_API_URL || "/api";
+const API_ROOT = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 const paymentsAPI = axios.create({
   baseURL: `${API_ROOT}/payments`,

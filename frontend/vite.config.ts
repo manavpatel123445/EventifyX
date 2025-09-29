@@ -17,7 +17,7 @@ export default defineConfig({
       'Content-Security-Policy': [
         "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https:;",
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://r.stripe.com https://api.stripe.com https://checkout.stripe.com https://*.stripe.com;",
-        "connect-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:3000 https://js.stripe.com https://r.stripe.com https://api.stripe.com https://checkout.stripe.com https://*.stripe.com wss://*.stripe.com ws://*.stripe.com;",
+        "connect-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:3000 https://eventifyx.onrender.com https://js.stripe.com https://r.stripe.com https://api.stripe.com https://checkout.stripe.com https://*.stripe.com wss://*.stripe.com ws://*.stripe.com;",
         "frame-src 'self' 'unsafe-inline' https://js.stripe.com https://checkout.stripe.com https://r.stripe.com https://*.stripe.com;",
         "img-src 'self' 'unsafe-inline' data: https: blob:;",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.stripe.com;",
