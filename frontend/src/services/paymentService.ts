@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
 
-const API_ROOT = import.meta.env.VITE_API_BASE_URL || "/api";
+const API_ROOT = import.meta.env.VITE_API_URL || "/api";
 
 const paymentsAPI = axios.create({
   baseURL: `${API_ROOT}/payments`,
@@ -78,17 +78,18 @@ export const getPaymentLogs = async (params: PaymentLogsParams = {}): Promise<Pa
   const { data } = await paymentsAPI.get("/logs", { params });
   return data;
 };
-
+ 
 export const getAdminPaymentLogs = async (params: PaymentLogsParams = {}): Promise<PaymentLogsResponse> => {
   // Admin logs often live under /api/admin/payments/logs
   const { data } = await adminPaymentsAPI.get("/logs", { params });
   return data;
 };
 
-export const getPaymentById = async (paymentId: string): Promise<PaymentLog> => {
-  const { data } = await paymentsAPI.get(`/${paymentId}`);
+export const createCheckoutSession = async (eventId: string, tickets: any[], buyerDetails: any) => {
+  const { data } = await paymentsAPI.post("/create-checkout-session", {
+    eventId,
+    tickets,
+    buyerDetails,
+  });
   return data;
 };
-
-
-

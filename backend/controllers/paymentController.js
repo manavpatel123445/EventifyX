@@ -55,18 +55,53 @@ export const createCheckoutSession = async (req, res) => {
       },
     });
 
-    // Create a pending Payment record
+    // Create a pending Payment record (holds tickets temporarily)
     const amountTotal = tickets.reduce((sum, t) => sum + (Number(t.price) * Number(t.quantity || 1)), 0);
-    await Payment.create({
-      user: req.user?._id, // optional if auth available
+
+    // Check ticket availability before creating session
+    for (const ticket of tickets) {
+      const event = await Event.findById(eventId);
+      const ticketType = ticket.type || 'regular';
+
+      // Find matching ticket pricing
+      const ticketPricing = Array.isArray(event.ticketPricing)
+        ? event.ticketPricing.find(t => t.type === ticketType)
+        : null;
+
+      if (!ticketPricing) {
+        return res.status(400).json({
+          message: `Invalid ticket type: ${ticketType}`
+        });
+      }
+
+      // Check if enough tickets are available
+      const requestedQuantity = Number(ticket.quantity) || 1;
+      const availableQuantity = ticketPricing.quantity - (ticketPricing.sold || 0);
+
+      if (requestedQuantity > availableQuantity) {
+        return res.status(400).json({
+          message: `Only ${availableQuantity} ${ticketType} tickets available`
+        });
+      }
+    }
+
+    // Create payment record with reserved status
+    const payment = await Payment.create({
+      user: req.user?._id,
       event: eventId,
       tickets: [],
       stripeSessionId: session.id,
       amount: amountTotal,
-      currency: "ind",
-        status: "pending",
-      metadata: { buyerDetails },
+      currency: "inr",
+      status: "reserved", // Changed from "pending" to "reserved"
+      reservedAt: new Date(),
+      metadata: {
+        buyerDetails,
+        reservedTickets: tickets // Store what we're reserving
+      },
     });
+
+    console.log(`🎫 Payment ${payment._id} reserved for ${tickets.length} ticket types`);
 
     return res.json({ id: session.id, url: session.url });
   } catch (error) {
@@ -93,10 +128,31 @@ export const stripeWebhook = async (req, res) => {
 
       // Mark payment succeeded and create tickets
       const payment = await Payment.findOne({ stripeSessionId: session.id });
-      if (payment && payment.status !== "succeeded") {
+      if (payment && payment.status === "reserved") {
         payment.status = "succeeded";
         payment.stripePaymentIntentId = session.payment_intent;
-        const createdTickets = []; // Array to store created ticket IDs
+        payment.completedAt = new Date();
+
+        // Update event inventory (permanently remove sold tickets)
+        const event = await Event.findById(payment.event);
+        const reservedTickets = payment.metadata?.reservedTickets || [];
+
+        for (const reservedTicket of reservedTickets) {
+          const ticketType = reservedTicket.type || 'regular';
+          const ticketPricing = Array.isArray(event.ticketPricing)
+            ? event.ticketPricing.find(t => t.type === ticketType)
+            : null;
+
+          if (ticketPricing) {
+            ticketPricing.sold = (ticketPricing.sold || 0) + (Number(reservedTicket.quantity) || 1);
+            console.log(`🎫 Sold ${reservedTicket.quantity} ${ticketType} tickets`);
+          }
+        }
+
+        await event.save();
+        console.log(`📦 Event ${event._id} inventory updated after successful payment`);
+
+        const createdTickets = [];
         try {
           // Retrieve PaymentIntent to access charges and receipt URL
           const pi = await stripe.paymentIntents.retrieve(session.payment_intent, {
@@ -109,12 +165,11 @@ export const stripeWebhook = async (req, res) => {
 
         // Parse tickets metadata
         const ticketsMeta = JSON.parse(session.metadata?.tickets || "[]");
-        // createdTickets is already declared above
         for (const t of ticketsMeta) {
           for (let i = 0; i < (Number(t.quantity) || 1); i++) {
             // Generate unique ticket ID
             const ticketId = `${payment._id}_${t.type || "regular"}_${i + 1}`;
-            
+
             // Generate QR code data
             const qrData = {
               ticketId,
@@ -124,7 +179,7 @@ export const stripeWebhook = async (req, res) => {
               price: Number(t.price) || 0,
               timestamp: new Date().toISOString(),
             };
-            
+
             // Generate QR code as base64 string
             const qrCodeDataURL = await QRCode.toDataURL(JSON.stringify(qrData), {
               width: 200,
@@ -140,12 +195,12 @@ export const stripeWebhook = async (req, res) => {
               user: payment.user,
               event: payment.event,
               payment: payment._id,
-              type: (t.type || "regular").toLowerCase(), // Ensure type is lowercase to match enum
+              type: (t.type || "regular").toLowerCase(),
               price: Number(t.price) || 0,
               status: "active",
               qrCode: qrCodeDataURL,
               seatNumber: `${(t.type || 'regular').toLowerCase()}-${i + 1}`,
-              metadata: { 
+              metadata: {
                 ticketId, 
                 qrData,
                 eventId: payment.event.toString(),
@@ -521,5 +576,30 @@ export const getPaymentLogs = async (req, res, next) => {
   } catch (err) {
     console.error('Error in getPaymentLogs:', err);
     next(err);
+  }
+};
+
+// Cleanup expired reservations (call this periodically)
+export const cleanupExpiredReservations = async () => {
+  try {
+    const expiredTime = new Date(Date.now() - 30 * 60 * 1000); // 30 minutes ago
+
+    const expiredPayments = await Payment.find({
+      status: "reserved",
+      reservedAt: { $lt: expiredTime }
+    });
+
+    for (const payment of expiredPayments) {
+      payment.status = "expired";
+      payment.expiredAt = new Date();
+      await payment.save();
+      console.log(`🧹 Cleaned up expired reservation: ${payment._id}`);
+    }
+
+    console.log(`🧹 Cleaned up ${expiredPayments.length} expired reservations`);
+    return expiredPayments.length;
+  } catch (error) {
+    console.error("Error cleaning up expired reservations:", error);
+    throw error;
   }
 };

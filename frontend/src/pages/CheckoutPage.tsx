@@ -197,17 +197,8 @@ const CheckoutPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Show Debug Info */}
-          <div className="mb-4 p-3 bg-gray-100 rounded-lg text-xs">
-            <p>Debug: Event has {event.eventDates?.length || 0} dates</p>
-            <p>Debug: Selected date: {selectedDate || 'none'}</p>
-            <p>Debug: Should show date selection: {event.eventDates && event.eventDates.length > 1 ? 'YES' : 'NO'}</p>
-            <p>Debug: Event spans multiple days: {(() => {
-              const startDate = new Date(event.startDate);
-              const endDate = new Date(event.endDate);
-              return startDate.toDateString() !== endDate.toDateString() ? 'YES' : 'NO';
-            })()}</p>
-          </div>
+        
+         
 
           {/* Date Selection for Multi-Day Events */}
           {(() => {
