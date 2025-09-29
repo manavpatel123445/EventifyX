@@ -3,8 +3,8 @@ import axios from "axios";
 
 // Create event API instance
 const API_ROOT = import.meta.env.VITE_API_URL || "/api";
-const eventAPI = axios.create({ 
-  baseURL: `${API_ROOT}/events`,
+const eventAPI = axios.create({
+  baseURL: API_ROOT.endsWith('/') ? `${API_ROOT}events` : `${API_ROOT}/events`,
 });
 
 // Add auth token to requests

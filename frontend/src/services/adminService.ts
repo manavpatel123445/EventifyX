@@ -4,7 +4,7 @@ import axios from "axios";
 // Create admin API instance
 const API_ROOT = import.meta.env.VITE_API_URL || "/api";
 const adminAPI = axios.create({ 
-  baseURL: `${API_ROOT}/admin`,
+  baseURL: API_ROOT.endsWith('/') ? `${API_ROOT}admin` : `${API_ROOT}/admin`,
 });
 
 // Add auth token to requests

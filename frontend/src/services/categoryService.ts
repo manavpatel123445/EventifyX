@@ -5,12 +5,12 @@ const API_ROOT = import.meta.env.VITE_API_URL || "/api";
 
 // Public categories (no admin required)
 const publicCategoryAPI = axios.create({
-  baseURL: `${API_ROOT}/categories`,
+  baseURL: API_ROOT.endsWith('/') ? `${API_ROOT}categories` : `${API_ROOT}/categories`,
 });
 
 // Admin categories
 const adminCategoryAPI = axios.create({
-  baseURL: `${API_ROOT}/admin/categories`,
+  baseURL: API_ROOT.endsWith('/') ? `${API_ROOT}admin/categories` : `${API_ROOT}/admin/categories`,
 });
 
 // Add auth token to requests
