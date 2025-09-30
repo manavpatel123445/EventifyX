@@ -89,16 +89,16 @@ router.patch("/admin/:eventId/soft-delete", protect, authorize("admin"), softDel
 router.post("/admin/cleanup-completed", protect, authorize("admin"), autoSoftDeleteCompletedEvents);
 
 // =============================================================================
-// PUBLIC: Get single event by ID or slug (keep LAST so it doesn't shadow others)
-// =============================================================================
-// GET /api/events/6743ab123456789 or GET /api/events/music-concert-2024
-router.get("/:identifier", getEventById);
-
-// =============================================================================
 // MULTI-DAY EVENT ROUTES
 // =============================================================================
 // Get date-specific ticket availability for multi-day events
 // GET /api/events/:eventId/date/:date?tickets&userId=123
 router.get("/:eventId/date/:date", getDateSpecificTickets);
+
+// =============================================================================
+// PUBLIC: Get single event by ID or slug (keep LAST so it doesn't shadow others)
+// =============================================================================
+// GET /api/events/6743ab123456789 or GET /api/events/music-concert-2024
+router.get("/:identifier", getEventById);
 
 export default router;
