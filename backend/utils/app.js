@@ -23,9 +23,8 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
   "http://localhost:5174",
-  
-  
-  // Production origins
+  "https://eventify-x-wqka-git-01-ad-156d02-manav-patels-projects-dc745a7f.vercel.app",
+  "https://eventify-x-wqka-bce6q4ghn-manav-patels-projects-dc745a7f.vercel.app/",
   "https://eventify-x-wqka.vercel.app",
   "https://eventifyx.onrender.com",
 
