@@ -42,23 +42,27 @@ app.use(
         return callback(null, true);
       }
 
-      // Check if origin is in allowed list
-      if (allowedOrigins.includes(origin)) {
+      // Check if origin is explicitly allowed or is a Vercel preview domain
+      const isAllowed =
+        allowedOrigins.includes(origin) ||
+        (typeof origin === 'string' && origin.endsWith('.vercel.app'));
+
+      if (isAllowed) {
         console.log(`✅ Allowing CORS request from: ${origin}`);
         return callback(null, true);
-      } else {
-        console.log(`❌ Blocking CORS request from: ${origin}`);
-        console.log('📋 Allowed origins:', allowedOrigins);
-        console.log('🔍 Current origin:', origin);
-
-        // Special handling for localhost requests
-        if (origin.includes('localhost')) {
-          console.log('🚨 LOCALHOST REQUEST BLOCKED! This should not happen with current config.');
-          console.log('🔧 Make sure to remove CLIENT_URL from Render environment variables');
-        }
-
-        return callback(new Error(`CORS policy: Origin ${origin} not allowed. Allowed origins: ${allowedOrigins.join(', ')}`), false);
       }
+
+      console.log(`❌ Blocking CORS request from: ${origin}`);
+      console.log('📋 Allowed origins:', allowedOrigins);
+      console.log('🔍 Current origin:', origin);
+
+      // Special handling for localhost requests
+      if (origin.includes('localhost')) {
+        console.log('🚨 LOCALHOST REQUEST BLOCKED! This should not happen with current config.');
+        console.log('🔧 Make sure to remove CLIENT_URL from Render environment variables');
+      }
+
+      return callback(new Error(`CORS policy: Origin ${origin} not allowed.`), false);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
