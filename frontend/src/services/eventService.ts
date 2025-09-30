@@ -5,7 +5,7 @@ import axios from "axios";
 // Resolve API root to always include "/api" path when a full origin is provided
 const resolveApiRoot = () => {
   const env = (import.meta as any).env || {};
-  const raw = env?.VITE_API_URL as string | undefined;
+  const raw = (env?.VITE_API_BASE_URL as string | undefined) || (env?.VITE_API_URL as string | undefined);
   // In development, always use Vite proxy
   if (env?.DEV) return "/api";
   // Default to Vite proxy path if not provided
