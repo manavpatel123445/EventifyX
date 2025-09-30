@@ -1,15 +1,31 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
 
-const API_ROOT = import.meta.env.VITE_API_URL || "/api";
+const resolveApiRoot = () => {
+  const env = (import.meta as any).env || {};
+  const raw = env?.VITE_API_URL as string | undefined;
+  if (env?.DEV) return "/api";
+  if (!raw) return "/api";
+
+  let base = raw.trim().replace(/\/+$/, "");
+  if (/^https?:\/\//i.test(base)) {
+    if (!/\/(api)(?:\/|$)/i.test(base)) base = `${base}/api`;
+    return base;
+  }
+  if (!base.startsWith('/')) base = `/${base}`;
+  if (!/\/(api)(?:\/|$)/i.test(base)) base = `${base}/api`;
+  return base;
+};
+
+const API_ROOT = resolveApiRoot();
 
 const paymentsAPI = axios.create({
-  baseURL: `${API_ROOT}/payments`,
+  baseURL: API_ROOT.endsWith('/') ? `${API_ROOT}payments` : `${API_ROOT}/payments`,
 });
 
 // Admin-scoped payments (some backends expose logs under /api/admin/payments)
 const adminPaymentsAPI = axios.create({
-  baseURL: `${API_ROOT}/admin/payments`,
+  baseURL: API_ROOT.endsWith('/') ? `${API_ROOT}admin/payments` : `${API_ROOT}/admin/payments`,
 });
 
 paymentsAPI.interceptors.request.use(

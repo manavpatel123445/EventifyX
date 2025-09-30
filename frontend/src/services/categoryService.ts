@@ -1,7 +1,24 @@
 import axios from "axios";
 
 // API roots
-const API_ROOT = import.meta.env.VITE_API_URL || "/api";
+const resolveApiRoot = () => {
+  const env = (import.meta as any).env || {};
+  const raw = env?.VITE_API_URL as string | undefined;
+  // In development, always use Vite proxy
+  if (env?.DEV) return "/api";
+  if (!raw) return "/api";
+
+  let base = raw.trim().replace(/\/+$/, "");
+  if (/^https?:\/\//i.test(base)) {
+    if (!/\/(api)(?:\/|$)/i.test(base)) base = `${base}/api`;
+    return base;
+  }
+  if (!base.startsWith('/')) base = `/${base}`;
+  if (!/\/(api)(?:\/|$)/i.test(base)) base = `${base}/api`;
+  return base;
+};
+
+const API_ROOT = resolveApiRoot();
 
 // Public categories (no admin required)
 const publicCategoryAPI = axios.create({

@@ -2,7 +2,36 @@
 import axios from "axios";
 
 // Create event API instance
-const API_ROOT = import.meta.env.VITE_API_URL || "/api";
+// Resolve API root to always include "/api" path when a full origin is provided
+const resolveApiRoot = () => {
+  const env = (import.meta as any).env || {};
+  const raw = env?.VITE_API_URL as string | undefined;
+  // In development, always use Vite proxy
+  if (env?.DEV) return "/api";
+  // Default to Vite proxy path if not provided
+  if (!raw) return "/api";
+
+  // Normalize and ensure trailing segments are handled
+  let base = raw.trim();
+  // Remove trailing slashes for consistent checks
+  base = base.replace(/\/+$/, "");
+
+  // If it's an origin (http/https), ensure it includes '/api'
+  if (/^https?:\/\//i.test(base)) {
+    if (!/\/(api)(?:\/|$)/i.test(base)) {
+      base = `${base}/api`;
+    }
+    return base;
+  }
+
+  // If it's a path (e.g., '/api' or '/backend/api'), ensure it starts with '/'
+  if (!base.startsWith('/')) base = `/${base}`;
+  // Ensure it contains '/api'
+  if (!/\/(api)(?:\/|$)/i.test(base)) base = `${base}/api`;
+  return base;
+};
+
+const API_ROOT = resolveApiRoot();
 const eventAPI = axios.create({
   baseURL: API_ROOT.endsWith('/') ? `${API_ROOT}events` : `${API_ROOT}/events`,
 });
