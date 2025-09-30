@@ -13,7 +13,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
 export const createCheckoutSession = async (req, res) => {
   try {
-    const { eventId, tickets, buyerDetails } = req.body;
+    const { eventId, tickets, buyerDetails, selectedDate } = req.body;
 
     if (!eventId || !Array.isArray(tickets) || tickets.length === 0) {
       return res.status(400).json({ message: "Invalid payload" });
@@ -23,6 +23,22 @@ export const createCheckoutSession = async (req, res) => {
     const event = await Event.findById(eventId);
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
+    }
+
+    // Resolve and validate selected date (if provided)
+    let effectiveDate = null;
+    if (selectedDate) {
+      try {
+        effectiveDate = new Date(selectedDate);
+        if (isNaN(effectiveDate.getTime())) throw new Error('Invalid date');
+      } catch {
+        return res.status(400).json({ message: "Invalid selectedDate" });
+      }
+      const start = new Date(event.startDate);
+      const end = new Date(event.endDate);
+      if (effectiveDate < start || effectiveDate > end) {
+        return res.status(404).json({ message: "Date not found for this event" });
+      }
     }
 
     // Build line items
@@ -50,38 +66,56 @@ export const createCheckoutSession = async (req, res) => {
         eventId,
         buyerName: buyerDetails?.name || "",
         buyerEmail: buyerDetails?.email || "",
-        // store a compact representation of tickets for webhook
-        tickets: JSON.stringify(tickets.map(t => ({ type: t.type || 'regular', price: t.price, quantity: t.quantity }))),
+        // store a compact representation of tickets for webhook (type normalized)
+        tickets: JSON.stringify(
+          tickets.map(t => ({
+            type: (t.type || 'regular').toLowerCase(),
+            price: t.price,
+            quantity: t.quantity,
+          }))
+        ),
       },
     });
 
     // Create a pending Payment record (holds tickets temporarily)
     const amountTotal = tickets.reduce((sum, t) => sum + (Number(t.price) * Number(t.quantity || 1)), 0);
 
-    // Check ticket availability before creating session
+    // Check ticket availability before creating session (date-aware)
     for (const ticket of tickets) {
-      const event = await Event.findById(eventId);
-      const ticketType = ticket.type || 'regular';
+      const freshEvent = await Event.findById(eventId);
+      const ticketType = (ticket.type || 'regular').toLowerCase();
 
-      // Find matching ticket pricing
-      const ticketPricing = Array.isArray(event.ticketPricing)
-        ? event.ticketPricing.find(t => t.type === ticketType)
-        : null;
+      // If a specific date is provided and event has per-date availability, validate against that
+      let availableQuantity;
+      let pricingForType = null;
 
-      if (!ticketPricing) {
-        return res.status(400).json({
-          message: `Invalid ticket type: ${ticketType}`
-        });
+      if (effectiveDate && Array.isArray(freshEvent.eventDates) && freshEvent.eventDates.length > 0) {
+        const targetED = freshEvent.eventDates.find(ed => new Date(ed.date).toDateString() === effectiveDate.toDateString());
+        if (targetED && Array.isArray(targetED.ticketAvailability) && targetED.ticketAvailability.length > 0) {
+          const datePricing = targetED.ticketAvailability.find(t => (t.type || '').toLowerCase() === ticketType);
+          if (!datePricing) {
+            return res.status(400).json({ message: `Invalid ticket type for selected date: ${ticketType}` });
+          }
+          pricingForType = datePricing;
+          availableQuantity = (datePricing.quantity || 0) - (datePricing.sold || 0);
+        }
       }
 
-      // Check if enough tickets are available
-      const requestedQuantity = Number(ticket.quantity) || 1;
-      const availableQuantity = ticketPricing.quantity - (ticketPricing.sold || 0);
+      // Fallback to global pricing
+      if (availableQuantity === undefined) {
+        const globalPricing = Array.isArray(freshEvent.ticketPricing)
+          ? freshEvent.ticketPricing.find(t => (t.type || '').toLowerCase() === ticketType)
+          : null;
+        if (!globalPricing) {
+          return res.status(400).json({ message: `Invalid ticket type: ${ticketType}` });
+        }
+        pricingForType = globalPricing;
+        availableQuantity = (globalPricing.quantity || 0) - (globalPricing.sold || 0);
+      }
 
+      const requestedQuantity = Number(ticket.quantity) || 1;
       if (requestedQuantity > availableQuantity) {
-        return res.status(400).json({
-          message: `Only ${availableQuantity} ${ticketType} tickets available`
-        });
+        return res.status(400).json({ message: `Only ${availableQuantity} ${ticketType} tickets available` });
       }
     }
 
@@ -97,7 +131,8 @@ export const createCheckoutSession = async (req, res) => {
       reservedAt: new Date(),
       metadata: {
         buyerDetails,
-        reservedTickets: tickets // Store what we're reserving
+        reservedTickets: tickets, // Store what we're reserving
+        selectedDate: effectiveDate ? effectiveDate.toISOString() : null
       },
     });
 
@@ -136,16 +171,42 @@ export const stripeWebhook = async (req, res) => {
         // Update event inventory (permanently remove sold tickets)
         const event = await Event.findById(payment.event);
         const reservedTickets = payment.metadata?.reservedTickets || [];
+        const selectedDateISO = payment.metadata?.selectedDate || null;
+        // Track which ticket types had their sold counters updated already (per-date or global)
+        const updatedTypes = new Set();
 
         for (const reservedTicket of reservedTickets) {
           const ticketType = reservedTicket.type || 'regular';
-          const ticketPricing = Array.isArray(event.ticketPricing)
-            ? event.ticketPricing.find(t => t.type === ticketType)
-            : null;
+          const qty = Number(reservedTicket.quantity) || 1;
 
-          if (ticketPricing) {
-            ticketPricing.sold = (ticketPricing.sold || 0) + (Number(reservedTicket.quantity) || 1);
-            console.log(`🎫 Sold ${reservedTicket.quantity} ${ticketType} tickets`);
+          let updated = false;
+          // If a selected date exists and event has per-date availability, update that bucket
+          if (selectedDateISO && Array.isArray(event.eventDates) && event.eventDates.length > 0) {
+            const selectedDate = new Date(selectedDateISO);
+            const targetED = event.eventDates.find(ed => new Date(ed.date).toDateString() === selectedDate.toDateString());
+            if (targetED && Array.isArray(targetED.ticketAvailability) && targetED.ticketAvailability.length > 0) {
+              const datePricing = targetED.ticketAvailability.find(t => (t.type || '').toLowerCase() === ticketType);
+              if (datePricing) {
+                datePricing.sold = (datePricing.sold || 0) + qty;
+                updated = true;
+                console.log(`🎫 Sold ${qty} ${ticketType} tickets for date ${selectedDate.toDateString()}`);
+              }
+            }
+          }
+
+          // Fallback to global pricing
+          if (!updated) {
+            const ticketPricing = Array.isArray(event.ticketPricing)
+              ? event.ticketPricing.find(t => (t.type || '').toLowerCase() === ticketType)
+              : null;
+            if (ticketPricing) {
+              ticketPricing.sold = (ticketPricing.sold || 0) + qty;
+              console.log(`🎫 Sold ${qty} ${ticketType} tickets (global inventory)`);
+            }
+          }
+
+          if (updated) {
+            updatedTypes.add((ticketType || 'regular').toLowerCase());
           }
         }
 
@@ -215,18 +276,35 @@ export const stripeWebhook = async (req, res) => {
             createdTickets.push(ticketDoc._id);
           }
 
-          // Update Event sold counters
+          // Update Event sold counters if not already updated above, and do it date-aware
           try {
-            await Event.updateOne(
-              { _id: payment.event, "ticketPricing.type": t.type?.toLowerCase() || "regular" },
-              { 
-                $inc: { 
-                  "ticketPricing.$.sold": Number(t.quantity) || 1, 
-                  totalBookings: Number(t.quantity) || 1, 
-                  totalRevenue: (Number(t.price) || 0) * (Number(t.quantity) || 1) 
-                } 
+            const qty = Number(t.quantity) || 1;
+            if (!inventoryUpdated) {
+              if (selectedDateISO) {
+                const selectedDate = new Date(selectedDateISO);
+                const edIndex = event.eventDates?.findIndex(ed => new Date(ed.date).toDateString() === selectedDate.toDateString()) ?? -1;
+                if (edIndex >= 0) {
+                  const taIndex = event.eventDates[edIndex].ticketAvailability?.findIndex(ta => ta.type === (t.type || 'regular')) ?? -1;
+                  if (taIndex >= 0) {
+                    event.eventDates[edIndex].ticketAvailability[taIndex].sold = (event.eventDates[edIndex].ticketAvailability[taIndex].sold || 0) + qty;
+                    inventoryUpdated = true;
+                  }
+                }
               }
-            );
+              if (!inventoryUpdated) {
+                await Event.updateOne(
+                  { _id: payment.event, "ticketPricing.type": t.type?.toLowerCase() || "regular" },
+                  { 
+                    $inc: { 
+                      "ticketPricing.$.sold": qty, 
+                      totalBookings: qty, 
+                      totalRevenue: (Number(t.price) || 0) * qty 
+                    } 
+                  }
+                );
+                inventoryUpdated = true;
+              }
+            }
           } catch (updateErr) {
             console.error("Error updating event ticket counters:", updateErr);
             // Continue processing tickets even if counter update fails

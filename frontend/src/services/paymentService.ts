@@ -101,11 +101,17 @@ export const getAdminPaymentLogs = async (params: PaymentLogsParams = {}): Promi
   return data;
 };
 
-export const createCheckoutSession = async (eventId: string, tickets: any[], buyerDetails: any) => {
+export const createCheckoutSession = async (
+  eventId: string,
+  tickets: any[],
+  buyerDetails: any,
+  selectedDate?: string
+) => {
   const { data } = await paymentsAPI.post("/create-checkout-session", {
     eventId,
     tickets,
     buyerDetails,
+    selectedDate,
   });
   return data;
 };

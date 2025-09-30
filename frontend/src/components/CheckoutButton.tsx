@@ -22,12 +22,14 @@ interface CheckoutProps {
   tickets: { type: string; price: number; quantity: number }[];
   eventId: string;
   buyerDetails: { name: string; email: string };
+  selectedDate?: string; // ISO date string (e.g., '2025-09-30')
 }
 
 const CheckoutButton: React.FC<CheckoutProps> = ({
   tickets,
   eventId,
   buyerDetails,
+  selectedDate,
 }) => {
   const handleCheckout = async () => {
     const stripeOrPromise = getStripe();
@@ -37,7 +39,7 @@ const CheckoutButton: React.FC<CheckoutProps> = ({
     }
 
     try {
-      const data = await createCheckoutSession(eventId, tickets, buyerDetails);
+      const data = await createCheckoutSession(eventId, tickets, buyerDetails, selectedDate);
       const stripe = await stripeOrPromise;
       if (stripe) {
         await stripe.redirectToCheckout({ sessionId: data.id });

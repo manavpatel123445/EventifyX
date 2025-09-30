@@ -11,7 +11,7 @@ export default defineConfig({
 
   server: {
     proxy: {
-      '/api': 'https://eventifyx.onrender.com',
+      '/api': 'http://localhost:3000',
     },
     headers: {
       'Content-Security-Policy': [
