@@ -269,8 +269,10 @@ const CheckoutSuccessPage: React.FC = () => {
         <div className="space-y-6">
           <h2 className="text-2xl font-semibold text-foreground">Your Tickets ({tickets.length})</h2>
           
-          {tickets.map((ticket, index) => (
-            <div key={ticket._id} className="bg-card border border-border rounded-lg p-6">
+          {tickets.map((ticket, index) => {
+            const key = (ticket as any)?._id ?? `${sessionId || 'session'}-${index}`;
+            return (
+            <div key={key} className="bg-card border border-border rounded-lg p-6">
               <div className="flex flex-col lg:flex-row gap-6">
                 {/* QR Code */}
                 <div className="flex-shrink-0 text-center">
@@ -338,7 +340,8 @@ const CheckoutSuccessPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Total Summary */}

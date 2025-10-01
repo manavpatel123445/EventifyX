@@ -558,6 +558,7 @@ const CheckoutPage: React.FC = () => {
                 tickets={tickets.filter((t) => t.quantity > 0)}
                 eventId={eventId}
                 buyerDetails={buyerDetails}
+                selectedDate={selectedDate}
               />
             ) : (
               <button

@@ -271,43 +271,15 @@ export const stripeWebhook = async (req, res) => {
               }
             };
 
+            // Attach eventDate if purchase was for a specific date
+            const selectedDateISO = payment.metadata?.selectedDate || null;
+            if (selectedDateISO) {
+              ticketData.eventDate = new Date(selectedDateISO);
+            }
+
             // Validate ticket data against schema
             const ticketDoc = await Ticket.create(ticketData);
             createdTickets.push(ticketDoc._id);
-          }
-
-          // Update Event sold counters if not already updated above, and do it date-aware
-          try {
-            const qty = Number(t.quantity) || 1;
-            if (!inventoryUpdated) {
-              if (selectedDateISO) {
-                const selectedDate = new Date(selectedDateISO);
-                const edIndex = event.eventDates?.findIndex(ed => new Date(ed.date).toDateString() === selectedDate.toDateString()) ?? -1;
-                if (edIndex >= 0) {
-                  const taIndex = event.eventDates[edIndex].ticketAvailability?.findIndex(ta => ta.type === (t.type || 'regular')) ?? -1;
-                  if (taIndex >= 0) {
-                    event.eventDates[edIndex].ticketAvailability[taIndex].sold = (event.eventDates[edIndex].ticketAvailability[taIndex].sold || 0) + qty;
-                    inventoryUpdated = true;
-                  }
-                }
-              }
-              if (!inventoryUpdated) {
-                await Event.updateOne(
-                  { _id: payment.event, "ticketPricing.type": t.type?.toLowerCase() || "regular" },
-                  { 
-                    $inc: { 
-                      "ticketPricing.$.sold": qty, 
-                      totalBookings: qty, 
-                      totalRevenue: (Number(t.price) || 0) * qty 
-                    } 
-                  }
-                );
-                inventoryUpdated = true;
-              }
-            }
-          } catch (updateErr) {
-            console.error("Error updating event ticket counters:", updateErr);
-            // Continue processing tickets even if counter update fails
           }
         }
 
@@ -453,23 +425,61 @@ export const getTicketsBySession = async (req, res) => {
           const createdTickets = [];
           for (const t of ticketsMeta) {
             for (let i = 0; i < (Number(t.quantity) || 1); i++) {
+              // Generate unique ticket ID
               const ticketId = `${payment._id}_${t.type || "regular"}_${i + 1}`;
               const qrData = { ticketId, eventId: payment.event?.toString(), userId: payment.user?.toString(), type: t.type || 'regular', price: Number(t.price) || 0, timestamp: new Date().toISOString() };
               const qrCodeDataURL = await QRCode.toDataURL(JSON.stringify(qrData), { width: 200, margin: 2, color: { dark: '#000000', light: '#FFFFFF' } });
-              const ticketDoc = await Ticket.create({ user: payment.user, event: payment.event, payment: payment._id, type: t.type || 'regular', price: Number(t.price) || 0, status: 'active', qrCode: qrCodeDataURL, seatNumber: `${t.type || 'regular'}-${i + 1}`, metadata: { ticketId, qrData } });
+              const selectedDateISO2 = payment.metadata?.selectedDate || null;
+              const ticketDoc = await Ticket.create({ 
+                user: payment.user, 
+                event: payment.event, 
+                payment: payment._id, 
+                type: t.type || 'regular', 
+                price: Number(t.price) || 0, 
+                status: 'active', 
+                qrCode: qrCodeDataURL, 
+                seatNumber: `${t.type || 'regular'}-${i + 1}`, 
+                metadata: { ticketId, qrData },
+                eventDate: selectedDateISO2 ? new Date(selectedDateISO2) : undefined
+              });
               createdTickets.push(ticketDoc._id);
             }
-            // Update Event sold counters and revenue
-            await Event.updateOne(
-              { _id: payment.event, "ticketPricing.type": t.type || "regular" },
-              { $inc: { "ticketPricing.$.sold": Number(t.quantity) || 1, totalBookings: Number(t.quantity) || 1, totalRevenue: (Number(t.price) || 0) * (Number(t.quantity) || 1) } }
-            );
+            // Update Event sold counters and revenue (date-aware) per ticket type
+            try {
+              const qty = Number(t.quantity) || 1;
+              const typeKey = (t.type || 'regular').toLowerCase();
+              const ev = await Event.findById(payment.event);
+              const selectedDateISO = payment.metadata?.selectedDate || null;
+              let updated = false;
+              if (selectedDateISO && Array.isArray(ev.eventDates) && ev.eventDates.length > 0) {
+                const selectedDate = new Date(selectedDateISO);
+                const targetED = ev.eventDates.find(ed => new Date(ed.date).toDateString() === selectedDate.toDateString());
+                if (targetED && Array.isArray(targetED.ticketAvailability)) {
+                  const datePricing = targetED.ticketAvailability.find(ta => (ta.type || '').toLowerCase() === typeKey);
+                  if (datePricing) {
+                    datePricing.sold = (datePricing.sold || 0) + qty;
+                    updated = true;
+                  }
+                }
+              }
+              if (!updated) {
+                const tp = Array.isArray(ev.ticketPricing) ? ev.ticketPricing.find(p => (p.type || '').toLowerCase() === typeKey) : null;
+                if (tp) {
+                  tp.sold = (tp.sold || 0) + qty;
+                }
+              }
+              ev.totalBookings = (ev.totalBookings || 0) + qty;
+              ev.totalRevenue = (ev.totalRevenue || 0) + ((Number(t.price) || 0) * qty);
+              await ev.save();
+            } catch (updateErr) {
+              console.error('Error updating event counters (session confirm):', updateErr);
+            }
           }
           // Mark payment succeeded if not already
           if (payment.status !== 'succeeded') {
             payment.status = 'succeeded';
           }
-          payment.tickets = createdTickets.map(t => t._id);
+          payment.tickets = createdTickets;
           await payment.save();
           return res.json(createdTickets);
         }
