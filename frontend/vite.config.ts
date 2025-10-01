@@ -11,15 +11,15 @@ export default defineConfig({
 
   server: {
     proxy: {
-      '/api': 'https://eventifyx.onrender.com',
+      '/api': 'http://localhost:3000',
     },
     headers: {
       'Content-Security-Policy': [
         "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https:;",
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://r.stripe.com https://api.stripe.com https://checkout.stripe.com https://*.stripe.com;",
-        "connect-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:3000 https://eventifyx.onrender.com https://js.stripe.com https://r.stripe.com https://api.stripe.com https://checkout.stripe.com https://*.stripe.com wss://*.stripe.com ws://*.stripe.com;",
+        "connect-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:3000 https://eventifyx.onrender.com https://js.stripe.com https://r.stripe.com https://api.stripe.com https://checkout.stripe.com https://*.stripe.com wss://*.stripe.com ws://*.stripe.com https://api.cloudinary.com https://res.cloudinary.com;",
         "frame-src 'self' 'unsafe-inline' https://js.stripe.com https://checkout.stripe.com https://r.stripe.com https://*.stripe.com;",
-        "img-src 'self' 'unsafe-inline' data: https: blob:;",
+        "img-src 'self' 'unsafe-inline' data: https: blob: https://res.cloudinary.com https://images.unsplash.com;",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.stripe.com;",
         "font-src 'self' 'unsafe-inline' https://fonts.gstatic.com https://*.stripe.com;",
         "frame-ancestors 'self';",

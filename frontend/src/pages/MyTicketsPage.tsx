@@ -11,6 +11,7 @@ interface Ticket {
   status: string;
   qrCode: string;
   seatNumber: string;
+  eventDate?: string; // Specific date when the ticket is valid for multi-date events
   event: {
     _id: string;
     title: string;
@@ -306,7 +307,7 @@ const MyTicketsPage: React.FC = () => {
     ctx.font = '16px Arial';
     ctx.fillStyle = '#4b5563';
     ctx.textAlign = 'center';
-    ctx.fillText(ticket.event?.date ? new Date(ticket.event.date).toLocaleDateString() : 'Date not specified', 400, 120);
+    ctx.fillText(ticket.event?.date ? new Date(ticket.eventDate || ticket.event.date).toLocaleDateString() : 'Date not specified', 400, 120);
     ctx.fillText(ticket.event?.location || 'Venue not specified', 400, 145);
 
     // Divider
@@ -488,7 +489,7 @@ const MyTicketsPage: React.FC = () => {
                     </button>
                     <div className="flex items-center text-gray-600 text-sm mb-2">
                       <Calendar className="w-4 h-4 mr-1" />
-                      <span>{new Date(ticket.event?.date || new Date()).toLocaleDateString()}</span>
+                      <span>{new Date(ticket.eventDate || ticket.event?.date || new Date()).toLocaleDateString()}</span>
                       <MapPin className="w-4 h-4 ml-3 mr-1" />
                       <span>{ticket.event?.location || 'Venue'}</span>
                     </div>
