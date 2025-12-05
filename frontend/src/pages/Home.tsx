@@ -1,13 +1,13 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import Footer from "../components/Footer";
-import Navbar from "../components/Navbar";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { getAllEvents, type Event } from "../services/eventService";
 import { formatINR } from "../utils/currency";
 import { getAllCategories } from "../services/categoryService";
+// Lazy load Navbar and Footer
+const Navbar = React.lazy(() => import("../components/Navbar"));
+const Footer = React.lazy(() => import("../components/Footer"));
 
 interface Category {
   _id: string;
@@ -51,17 +51,13 @@ const Home = () => {
   } = useQuery({
     queryKey: ['events', 'active', { limit: 9 }],
     queryFn: async () => {
-      console.log('🔍 Fetching events with TanStack Query...');
-      // No status passed so backend returns active (upcoming + ongoing)
       const response = await getAllEvents({ limit: 9 });
-      console.log('📡 Events API Response:', response);
       return response;
     },
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     refetchOnWindowFocus: false,
     retry: (failureCount, error) => {
-      // Retry up to 2 times, but not for 4xx errors
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
         if (typeof status === 'number' && status >= 400 && status < 500) {
@@ -79,9 +75,7 @@ const Home = () => {
   } = useQuery({
     queryKey: ['categories', 'active'],
     queryFn: async () => {
-      console.log('📢 Fetching categories with TanStack Query...');
       const response = await getAllCategories();
-      console.log('📢 Categories API Response:', response);
       return response;
     },
     staleTime: 10 * 60 * 1000, // Consider data fresh for 10 minutes (categories change less frequently)
@@ -103,7 +97,6 @@ const Home = () => {
       eventsData = eventsResponse?.events || [];
     }
     
-    console.log('📊 Found', eventsData.length, 'events');
     return eventsData;
   })();
 
@@ -125,7 +118,6 @@ const Home = () => {
       !cat.status || cat.status === 'active'
     );
     
-    console.log('📢 Active categories:', activeCategories.length);
     return activeCategories;
   })();
 
@@ -142,7 +134,9 @@ const Home = () => {
 
   return (
     <>
-      <Navbar />
+      <Suspense fallback={<div>Loading Navbar...</div>}>
+        <Navbar />
+      </Suspense>
       
       {/* Enhanced Hero Section */}
       <section
@@ -359,6 +353,7 @@ const Home = () => {
                         src={event.images?.[0] || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=400&q=80"}
                         alt={event.title}
                         className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
                       />
                       <div className="absolute top-3 left-3">
                         <span className="bg-red-500/90 text-white px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
@@ -589,7 +584,9 @@ const Home = () => {
           </div>
         </section>
       </div>
-      <Footer />
+      <Suspense fallback={<div>Loading Footer...</div>}>
+        <Footer />
+      </Suspense>
     </>
   );
 };

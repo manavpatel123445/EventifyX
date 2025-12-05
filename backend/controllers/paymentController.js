@@ -126,7 +126,7 @@ export const createCheckoutSession = async (req, res) => {
       tickets: [],
       stripeSessionId: session.id,
       amount: amountTotal,
-      currency: "inr",
+      currency: "ind",
       status: "reserved", // Changed from "pending" to "reserved"
       reservedAt: new Date(),
       metadata: {
@@ -160,58 +160,73 @@ export const stripeWebhook = async (req, res) => {
   try {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
+      console.log('🎉 Webhook received checkout.session.completed for session:', session.id);
 
       // Mark payment succeeded and create tickets
       const payment = await Payment.findOne({ stripeSessionId: session.id });
-      if (payment && payment.status === "reserved") {
-        payment.status = "succeeded";
-        payment.stripePaymentIntentId = session.payment_intent;
-        payment.completedAt = new Date();
+      if (payment) {
+        console.log('Found payment:', payment._id, 'status:', payment.status);
+        if (payment.status === "reserved" || payment.status === "pending") {
+          console.log('Processing payment for tickets...');
+          payment.status = "succeeded";
+          payment.stripePaymentIntentId = session.payment_intent;
+          payment.completedAt = new Date();
 
-        // Update event inventory (permanently remove sold tickets)
-        const event = await Event.findById(payment.event);
-        const reservedTickets = payment.metadata?.reservedTickets || [];
-        const selectedDateISO = payment.metadata?.selectedDate || null;
-        // Track which ticket types had their sold counters updated already (per-date or global)
-        const updatedTypes = new Set();
+          // Update event inventory (permanently remove sold tickets)
+          const event = await Event.findById(payment.event);
+          const reservedTickets = payment.metadata?.reservedTickets || [];
+          const selectedDateISO = payment.metadata?.selectedDate || null;
+          // Track which ticket types had their sold counters updated already (per-date or global)
+          const updatedTypes = new Set();
 
-        for (const reservedTicket of reservedTickets) {
-          const ticketType = reservedTicket.type || 'regular';
-          const qty = Number(reservedTicket.quantity) || 1;
+          for (const reservedTicket of reservedTickets) {
+            const ticketType = reservedTicket.type || 'regular';
+            const qty = Number(reservedTicket.quantity) || 1;
+            const price = Number(reservedTicket.price) || 0;
 
-          let updated = false;
-          // If a selected date exists and event has per-date availability, update that bucket
-          if (selectedDateISO && Array.isArray(event.eventDates) && event.eventDates.length > 0) {
-            const selectedDate = new Date(selectedDateISO);
-            const targetED = event.eventDates.find(ed => new Date(ed.date).toDateString() === selectedDate.toDateString());
-            if (targetED && Array.isArray(targetED.ticketAvailability) && targetED.ticketAvailability.length > 0) {
-              const datePricing = targetED.ticketAvailability.find(t => (t.type || '').toLowerCase() === ticketType);
-              if (datePricing) {
-                datePricing.sold = (datePricing.sold || 0) + qty;
-                updated = true;
-                console.log(`🎫 Sold ${qty} ${ticketType} tickets for date ${selectedDate.toDateString()}`);
+            let updated = false;
+            // If a selected date exists and event has per-date availability, update that bucket
+            if (selectedDateISO && Array.isArray(event.eventDates) && event.eventDates.length > 0) {
+              const selectedDate = new Date(selectedDateISO);
+              const targetED = event.eventDates.find(ed => new Date(ed.date).toDateString() === selectedDate.toDateString());
+              if (targetED && Array.isArray(targetED.ticketAvailability) && targetED.ticketAvailability.length > 0) {
+                const datePricing = targetED.ticketAvailability.find(t => (t.type || '').toLowerCase() === ticketType);
+                if (datePricing) {
+                  datePricing.sold = (datePricing.sold || 0) + qty;
+                  updated = true;
+                  console.log(`🎫 Sold ${qty} ${ticketType} tickets for date ${selectedDate.toDateString()}`);
+                }
               }
             }
-          }
 
-          // Fallback to global pricing
-          if (!updated) {
-            const ticketPricing = Array.isArray(event.ticketPricing)
-              ? event.ticketPricing.find(t => (t.type || '').toLowerCase() === ticketType)
-              : null;
-            if (ticketPricing) {
-              ticketPricing.sold = (ticketPricing.sold || 0) + qty;
-              console.log(`🎫 Sold ${qty} ${ticketType} tickets (global inventory)`);
+            // Fallback to global pricing
+            if (!updated) {
+              const ticketPricing = Array.isArray(event.ticketPricing)
+                ? event.ticketPricing.find(t => (t.type || '').toLowerCase() === ticketType)
+                : null;
+              if (ticketPricing) {
+                ticketPricing.sold = (ticketPricing.sold || 0) + qty;
+                console.log(`🎫 Sold ${qty} ${ticketType} tickets (global inventory)`);
+              }
             }
-          }
 
-          if (updated) {
-            updatedTypes.add((ticketType || 'regular').toLowerCase());
-          }
+            if (updated) {
+              updatedTypes.add((ticketType || 'regular').toLowerCase());
+            }
+
+            // Update total revenue and bookings for this ticket purchase
+          event.totalBookings = (event.totalBookings || 0) + qty;
+          event.totalRevenue = (event.totalRevenue || 0) + (price * qty);
+          console.log(`💰 Updated event ${event._id}: bookings +${qty}, revenue +₹${price * qty}`);
         }
 
-        await event.save();
-        console.log(`📦 Event ${event._id} inventory updated after successful payment`);
+        try {
+          await event.save();
+          console.log(`📦 Event ${event._id} inventory updated after successful payment`);
+        } catch (saveErr) {
+          console.error(`❌ Failed to save event ${event._id}:`, saveErr);
+          // Continue with ticket creation even if event save fails
+        }
 
         const createdTickets = [];
         try {
@@ -290,9 +305,14 @@ export const stripeWebhook = async (req, res) => {
         
         // Populate the payment with ticket details before saving
         await payment.populate('tickets');
+        console.log('✅ Webhook processing completed successfully for payment:', payment._id);
+      } else {
+        console.log('⚠️ Payment not in processable state:', payment?.status);
       }
+    } else {
+      console.log('⚠️ Payment not found for session:', session.id);
     }
-
+  }
     res.json({ received: true });
   } catch (err) {
     console.error("Webhook handling error:", err);
@@ -444,36 +464,6 @@ export const getTicketsBySession = async (req, res) => {
               });
               createdTickets.push(ticketDoc._id);
             }
-            // Update Event sold counters and revenue (date-aware) per ticket type
-            try {
-              const qty = Number(t.quantity) || 1;
-              const typeKey = (t.type || 'regular').toLowerCase();
-              const ev = await Event.findById(payment.event);
-              const selectedDateISO = payment.metadata?.selectedDate || null;
-              let updated = false;
-              if (selectedDateISO && Array.isArray(ev.eventDates) && ev.eventDates.length > 0) {
-                const selectedDate = new Date(selectedDateISO);
-                const targetED = ev.eventDates.find(ed => new Date(ed.date).toDateString() === selectedDate.toDateString());
-                if (targetED && Array.isArray(targetED.ticketAvailability)) {
-                  const datePricing = targetED.ticketAvailability.find(ta => (ta.type || '').toLowerCase() === typeKey);
-                  if (datePricing) {
-                    datePricing.sold = (datePricing.sold || 0) + qty;
-                    updated = true;
-                  }
-                }
-              }
-              if (!updated) {
-                const tp = Array.isArray(ev.ticketPricing) ? ev.ticketPricing.find(p => (p.type || '').toLowerCase() === typeKey) : null;
-                if (tp) {
-                  tp.sold = (tp.sold || 0) + qty;
-                }
-              }
-              ev.totalBookings = (ev.totalBookings || 0) + qty;
-              ev.totalRevenue = (ev.totalRevenue || 0) + ((Number(t.price) || 0) * qty);
-              await ev.save();
-            } catch (updateErr) {
-              console.error('Error updating event counters (session confirm):', updateErr);
-            }
           }
           // Mark payment succeeded if not already
           if (payment.status !== 'succeeded') {
@@ -534,15 +524,11 @@ export const getPaymentLogs = async (req, res, next) => {
     if (transactionId) filters.transactionId = transactionId;
     if (status) filters.status = status;
 
-    // If managerOnly, restrict to events of the current manager
+    // If managerOnly, show all payments for managers (they can filter by their events in the UI)
     if (managerOnly === 'true' && req.user?.role === 'event_manager') {
-      const managerEventIds = await Event.find({ eventManager: req.user._id }).distinct('_id');
-      if (filters.event) {
-        // If specific eventId provided, ensure it's within manager's events
-        filters.event = managerEventIds.includes(filters.event) ? filters.event : null;
-      } else {
-        filters.event = { $in: managerEventIds };
-      }
+      console.log('Manager accessing payment logs - showing all payments for manager view');
+      // For managers, we'll show all payments but they can filter by their events in the frontend
+      // This allows them to see payments for their events while also debugging issues
     }
 
     const pageNum = Math.max(1, parseInt(page, 10) || 1);

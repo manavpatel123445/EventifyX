@@ -17,7 +17,8 @@ const Eventdetail: React.FC = () => {
     data: eventData,
     isLoading,
     isError,
-    error
+    error,
+    refetch: refetchEvent
   } = useQuery({
     queryKey: ["event", id],
     queryFn: async () => {
@@ -34,7 +35,8 @@ const Eventdetail: React.FC = () => {
   // Query for date-specific tickets when a date is selected
   const {
     data: dateTicketsData,
-    isLoading: dateTicketsLoading
+    isLoading: dateTicketsLoading,
+    refetch: refetchDateTickets
   } = useQuery<DateSpecificTicketsResponse>({
     queryKey: ["dateTickets", id, selectedDate],
     queryFn: async () => {
@@ -76,15 +78,25 @@ const Eventdetail: React.FC = () => {
       }));
   }, [event]);
 
-  // Auto-select first available date for multi-day events
+  // Refresh event data when returning from successful checkout
   useEffect(() => {
-    if (event?.eventDates && event.eventDates.length > 0 && !selectedDate) {
-      const firstActiveDate = event.eventDates.find(date => date.isActive);
-      if (firstActiveDate) {
-        setSelectedDate(firstActiveDate.date);
+    const handleFocus = () => {
+      // Check if we just came back from checkout
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('refreshed') === 'true') {
+        console.log('Refreshing event data after checkout...');
+        refetchEvent();
+        if (selectedDate) {
+          refetchDateTickets();
+        }
+        // Clean up the URL
+        navigate(window.location.pathname, { replace: true });
       }
-    }
-  }, [event, selectedDate]);
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [refetchEvent, refetchDateTickets, selectedDate, navigate]);
 
   const banner = useMemo(() => {
     if (event && Array.isArray(event.images) && event.images.length > 0) return event.images[0];
@@ -386,8 +398,8 @@ const Eventdetail: React.FC = () => {
 
                     // For multi-day events, include the selected date
                     const checkoutUrl = selectedDate
-                      ? `/checkout?eventId=${event._id}&date=${selectedDate}`
-                      : `/checkout?eventId=${event._id}`;
+                      ? `/checkout?eventId=${event._id}&date=${selectedDate}&returnTo=${encodeURIComponent(window.location.pathname + '?refreshed=true')}`
+                      : `/checkout?eventId=${event._id}&returnTo=${encodeURIComponent(window.location.pathname + '?refreshed=true')}`;
                     navigate(checkoutUrl);
                   }}
                   disabled={(() => {
