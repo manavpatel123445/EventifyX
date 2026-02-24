@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getMyEventRequests, type EventRequest } from "../services/eventService";
 import { getRequestsForManagedEvents } from "../services/eventService";
 import Navbar from "../components/Navbar";
-import { Clock, CheckCircle, XCircle, Calendar, MapPin, DollarSign, Eye } from "lucide-react";
+import { Clock, CheckCircle, XCircle, Calendar, MapPin, DollarSign } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
@@ -20,15 +20,6 @@ const MyEventRequests: React.FC = () => {
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
-  const handleAccept = async (requestId: string) => {
-    try {
-      await import('../services/eventService').then(({ approveEventRequest }) => approveEventRequest(requestId));
-      toast.success('Event request approved!');
-      refetch();
-    } catch (err) {
-      toast.error('Failed to approve event request');
-    }
-  };
 
   if (isLoading) {
     return (
@@ -233,42 +224,7 @@ const MyEventRequests: React.FC = () => {
                     )}
 
                     {/* Status-specific Actions */}
-                    <div className="flex items-center justify-between border-t border-gray-100 pt-4">
-                      <div className="text-sm text-gray-500">
-                        {request.status === 'pending' && (
-                          <button
-                            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-sm font-medium"
-                            onClick={() => handleAccept(request._id)}
-                          >
-                            Accept
-                          </button>
-                        )}
-                        {request.status === 'approved' && request.approvedEvent && (
-                          <Link
-                            to={`/events/${(typeof request.approvedEvent === 'string' ? request.approvedEvent : (request as any).approvedEvent?._id) || ''}`}
-                            className="flex items-center text-green-600 hover:text-green-700"
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View Live Event
-                          </Link>
-                        )}
-                        {request.status === 'rejected' && (
-                          <span className="flex items-center text-red-600">
-                            <XCircle className="h-4 w-4 mr-1" />
-                            Request was rejected
-                          </span>
-                        )}
-                      </div>
-
-                      {request.status === 'approved' && request.approvedEvent && (
-                        <Link
-                          to={`/manager/events/${(typeof request.approvedEvent === 'string' ? request.approvedEvent : (request as any).approvedEvent?._id) || ''}`}
-                          className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition text-sm font-medium"
-                        >
-                          Manage Event
-                        </Link>
-                      )}
-                    </div>
+                    
                   </div>
                 </div>
               ))}

@@ -1,11 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useMutation } from "@tanstack/react-query";
 import { loginUser } from "../services/authService";
 import { loginSuccess, setError, setStatus } from "../app/slices/authslice";
-import Navbar from "../components/Navbar";
+// Lazy load Navbar
+const Navbar = React.lazy(() => import("../components/Navbar"));
 import { Input } from "../lib/Input";
 import toast from "react-hot-toast";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
@@ -82,7 +82,9 @@ const Loginpage: React.FC = () => {
 
   return (
     <>
-      <Navbar />
+      <Suspense fallback={<div>Loading Navbar...</div>}>
+        <Navbar />
+      </Suspense>
       <div className="h-150  flex items-center justify-center bg-gray-50">
         <div className="grid grid-cols-1 md:grid-cols-2 bg-white shadow-lg rounded-2xl overflow-hidden w-full max-w-4xl">
           {/* Left Banner */}
@@ -91,6 +93,7 @@ const Loginpage: React.FC = () => {
               src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d"
               alt="EventifyX banner"
               className="w-full h-full object-cover"
+              loading="lazy"
             />
           </div>
 

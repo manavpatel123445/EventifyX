@@ -2,8 +2,24 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import axios from "axios";
 
-const API_ROOT = import.meta.env.VITE_API_BASE_URL || "/api";
-const API = axios.create({ baseURL: `${API_ROOT}/manager-requests` });
+const resolveApiRoot = () => {
+  const env = (import.meta as any).env || {};
+  const raw = env?.VITE_API_URL as string | undefined;
+  if (env?.DEV) return "/api";
+  if (!raw) return "/api";
+
+  let base = raw.trim().replace(/\/+$/, "");
+  if (/^https?:\/\//i.test(base)) {
+    if (!/\/(api)(?:\/|$)/i.test(base)) base = `${base}/api`;
+    return base;
+  }
+  if (!base.startsWith('/')) base = `/${base}`;
+  if (!/\/(api)(?:\/|$)/i.test(base)) base = `${base}/api`;
+  return base;
+};
+
+const API_ROOT = resolveApiRoot();
+const API = axios.create({ baseURL: API_ROOT.endsWith('/') ? `${API_ROOT}manager-requests` : `${API_ROOT}/manager-requests` });
 
 // Add authorization header to all requests
 API.interceptors.request.use((config) => {
@@ -24,7 +40,7 @@ API.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem("refreshToken") || sessionStorage.getItem("refreshToken");
         if (!refreshToken) throw new Error("No refresh token");
-        const { data } = await axios.post(`${API_ROOT}/auth/refresh`, { refreshToken });
+        const { data } = await axios.post((API_ROOT.endsWith('/') ? `${API_ROOT}auth/refresh` : `${API_ROOT}/auth/refresh`), { refreshToken });
         const newAccess = data?.accessToken;
         if (!newAccess) throw new Error("No access token in refresh response");
         // Persist and retry

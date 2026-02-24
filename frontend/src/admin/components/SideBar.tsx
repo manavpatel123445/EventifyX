@@ -7,7 +7,8 @@ import {
   LogOut,
   User,
   ChevronRight,
-  Shield
+  Shield,
+  CreditCard
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -27,6 +28,11 @@ const SideBar: React.FC = () => {
       name: "Events", 
       path: "/admin/events", 
       icon: <Calendar className="w-5 h-5" /> 
+    },
+    { 
+      name: "Payments", 
+      path: "/admin/payments", 
+      icon: <CreditCard className="w-5 h-5" /> 
     },
     
     { 

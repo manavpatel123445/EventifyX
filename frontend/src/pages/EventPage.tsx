@@ -47,7 +47,7 @@ const EventPage = () => {
         const activeEvents = data.events.filter(event => {
           const end = event?.endDate ? new Date(event.endDate) : (event?.startDate ? new Date(event.startDate) : null);
           if (!end) return true; // if no dates, keep it
-          return end >= now && event.status !== 'cancelled';
+          return end >= now && event.status !== 'cancelled' && event.isPublic !== false && event.isDeleted !== true && event.eventManager?.status !== 'blocked';
         });
         setEvents(activeEvents);
         setTotalPages(data.pagination.pages);
@@ -255,10 +255,15 @@ const EventPage = () => {
                           {(() => {
                             const sd = new Date(event.startDate);
                             const ed = event.endDate ? new Date(event.endDate) : null;
-                            if (ed && sd.toDateString() !== ed.toDateString()) {
-                              return `${formatDate(event.startDate)} – ${formatDate(event.endDate as string)}`;
+                            const isSameDate = ed && sd.toDateString() === ed.toDateString();
+
+                            if (isSameDate) {
+                              // Same date - show single date with time range
+                              return `${formatDate(event.startDate)} • ${formatTime(event.startTime)}${event.endTime ? ` – ${formatTime(event.endTime)}` : ''}`;
+                            } else {
+                              // Different dates - show date range
+                              return `${formatDate(event.startDate)}${event.endDate ? ` – ${formatDate(event.endDate as string)}` : ''}`;
                             }
-                            return formatDate(event.startDate);
                           })()}
                         </span>
                       </div>
@@ -271,12 +276,6 @@ const EventPage = () => {
                       <div className="flex items-center text-sm text-gray-500 mb-2">
                         <span className="mr-1">📍</span>
                         <span>{`${event.venue?.city || 'TBD'}${event.venue?.state ? `, ${event.venue.state}` : ''}`}</span>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-500 mb-3">
-                        <span className="mr-1">⏰</span>
-                        <span>
-                          {formatTime(event.startTime)}{event.endTime ? ` – ${formatTime(event.endTime)}` : ''}
-                        </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="text-sm font-medium text-green-600">

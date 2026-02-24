@@ -7,7 +7,7 @@ import {
   User,
   LogOut,
   ChevronRight,
- 
+  CreditCard
 } from "lucide-react";
 
 const ManagerSideBar: React.FC = () => {
@@ -28,6 +28,11 @@ const ManagerSideBar: React.FC = () => {
       name: "Revenue", 
       path: "/manager/sale-revenue", 
       icon: <PieChart className="w-5 h-5" /> 
+    },
+    {
+      name: "Payments",
+      path: "/manager/payments",
+      icon: <CreditCard className="w-5 h-5" />
     },
     { 
       name: "Profile", 

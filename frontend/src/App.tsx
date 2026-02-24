@@ -30,6 +30,9 @@ import CheckoutSuccessPage from './pages/CheckoutSuccessPage';
 import MyTicketsPage from './pages/MyTicketsPage';
 import RevenueAnalyticsPage from './admin/Pages/RevenueAnalyticsPage';
 import SaleRevanue from './EventManager/Page/SaleRevanue';
+import AdminPaymentLogsPage from './admin/Pages/PaymentLogsPage';
+import ManagerPaymentLogsPage from './manager/Pages/PaymentLogsPage';
+
 
 
 const queryClient = new QueryClient();
@@ -56,7 +59,7 @@ function App() {
             <Route path="/myEventRequests" element={<RoleProtectedRoute allowedRoles={['user', 'event_manager']}><MyEventRequests /></RoleProtectedRoute>} />
             <Route path="/profile" element={<RoleProtectedRoute allowedRoles={["user", "event_manager"]}><ProfilePage /></RoleProtectedRoute>} />
             <Route path="/my-tickets" element={<RoleProtectedRoute allowedRoles={['user', 'event_manager']}><MyTicketsPage /></RoleProtectedRoute>} />
-
+          
             {/* Event Manager Request Route */}
             <Route
               path="/request-manager-role"
@@ -97,6 +100,11 @@ function App() {
                 <RevenueAnalyticsPage />
               </RoleProtectedRoute>
             } />
+             <Route path="/admin/payments" element={
+              <RoleProtectedRoute allowedRoles={['admin']}>
+                <AdminPaymentLogsPage/>
+              </RoleProtectedRoute>
+            } />
             <Route path="/admin/profile" element={
               <RoleProtectedRoute allowedRoles={['admin']}>
                 <AdminProfilePage />
@@ -117,6 +125,11 @@ function App() {
             <Route path="/manager/sale-revenue" element={
               <RoleProtectedRoute allowedRoles={['event_manager']}>
                 <SaleRevanue/>
+              </RoleProtectedRoute>
+            } />
+            <Route path="/manager/payments" element={
+              <RoleProtectedRoute allowedRoles={['event_manager']}>
+                <ManagerPaymentLogsPage />
               </RoleProtectedRoute>
             } />
             

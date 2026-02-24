@@ -12,26 +12,67 @@ import eventManagerRequestRouter from "../routers/eventManagerRequestRoutes.js";
 import paymentRouter from "../routers/paymentRoutes.js";
 import uploadRouter from "../routers/uploadRoutes.js";
 import { stripeWebhook } from "../controllers/paymentController.js";
-// Load environment variables
 dotenv.config();
 db();
 
 const app = express();
 
-// CORS with credentials support
-const allowedOrigin = process.env.CLIENT_URL || "http://localhost:5173";
+// CORS with credentials support - FORCE ALLOW LOCALHOST
+const allowedOrigins = [
+  // FORCE ALLOW local development - always include these
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://localhost:5174",
+  "https://eventify-x-wqka-git-01-ad-156d02-manav-patels-projects-dc745a7f.vercel.app",
+  "https://eventify-x-wqka-bce6q4ghn-manav-patels-projects-dc745a7f.vercel.app/",
+  "https://eventify-x-wqka.vercel.app",
+  "https://eventifyx.onrender.com",
+
+  
+];
+
+console.log('🌐 Final Allowed CORS Origins:', allowedOrigins);
+
 app.use(
   cors({
-    origin: allowedOrigin,
+    origin: function (origin, callback) {
+      // Allow requests with no origin (mobile apps, Postman, curl, etc.)
+      if (!origin) {
+        console.log('✅ Allowing request with no origin (mobile/curl/Postman)');
+        return callback(null, true);
+      }
+
+      // Check if origin is explicitly allowed or is a Vercel preview domain
+      const isAllowed =
+        allowedOrigins.includes(origin) ||
+        (typeof origin === 'string' && origin.endsWith('.vercel.app'));
+
+      if (isAllowed) {
+        console.log(`✅ Allowing CORS request from: ${origin}`);
+        return callback(null, true);
+      }
+
+      console.log(`❌ Blocking CORS request from: ${origin}`);
+      console.log('📋 Allowed origins:', allowedOrigins);
+      console.log('🔍 Current origin:', origin);
+
+      // Special handling for localhost requests
+      if (origin.includes('localhost')) {
+        console.log('🚨 LOCALHOST REQUEST BLOCKED! This should not happen with current config.');
+        console.log('🔧 Make sure to remove CLIENT_URL from Render environment variables');
+      }
+
+      return callback(new Error(`CORS policy: Origin ${origin} not allowed.`), false);
+    },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+    optionsSuccessStatus: 200, // Support legacy browsers
   })
 );
 
 // Stripe webhook must use raw body AND be registered before express.json()
 app.post("/api/payments/webhook", express.raw({ type: "application/json" }), stripeWebhook);
-
 app.use(express.json());
 
 // Middleware to remove Permissions-Policy header from response
