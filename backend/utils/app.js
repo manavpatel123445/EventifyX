@@ -19,10 +19,36 @@ db();
 const app = express();
 
 // CORS with credentials support
-const allowedOrigin = process.env.CLIENT_URL || "http://localhost:5173";
+const configuredOrigins = [
+  process.env.CLIENT_URL,
+  process.env.FRONTEND_URL,
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+  ...(process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim())
+    : []),
+].filter(Boolean);
+
+const allowedOrigins = Array.from(
+  new Set(["http://localhost:5173", ...configuredOrigins])
+);
+
 app.use(
   cors({
-    origin: allowedOrigin,
+    origin: (origin, callback) => {
+      // Allow server-to-server and tools without Origin header
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      const isExplicitlyAllowed = allowedOrigins.includes(origin);
+      const isVercelPreview = origin.endsWith(".vercel.app");
+
+      if (isExplicitlyAllowed || isVercelPreview) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
