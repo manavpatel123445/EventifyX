@@ -102,14 +102,14 @@ const ManagerDashboard: React.FC = () => {
   }, [events]);
 
   return (
-    <div className="flex bg-gray-50 min-h-screen">
+    <div className="flex bg-gray-50 dark:bg-[#1B1D2A] min-h-screen">
       {/* Sidebar */}
       <ManagerSideBar />
 
       {/* Main Dashboard */}
       <div className="flex-1 p-8 space-y-8">
         {/* Header */}
-        <h1 className="text-2xl font-bold text-gray-800">Manager Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Manager Dashboard</h1>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -117,32 +117,32 @@ const ManagerDashboard: React.FC = () => {
             {
               label: "Total Events",
               value: isLoading ? "…" : totalEvents,
-              icon: <Calendar className="w-8 h-8 text-red-500" />,
+              icon: <Calendar className="w-8 h-8 text-red-500 dark:text-red-400" />,
             },
             {
               label: "Tickets Sold",
               value: isLoading ? "…" : ticketsSold,
-              icon: <Ticket className="w-8 h-8 text-blue-500" />,
+              icon: <Ticket className="w-8 h-8 text-blue-500 dark:text-blue-400" />,
             },
             {
               label: "Total Revenue",
               value: isLoading ? "…" : `₹${revenue.toLocaleString()}`,
-              icon: <IndianRupee className="w-8 h-8 text-green-500" />,
+              icon: <IndianRupee className="w-8 h-8 text-green-500 dark:text-green-400" />,
             },
             {
               label: "Upcoming Events",
               value: isLoading ? "…" : upcomingEvents,
-              icon: <TrendingUp className="w-8 h-8 text-purple-500" />,
+              icon: <TrendingUp className="w-8 h-8 text-purple-500 dark:text-purple-400" />,
             },
           ].map((item, i) => (
             <div
               key={i}
-              className="bg-white shadow-md rounded-2xl p-6 flex items-center space-x-4"
+              className="bg-white dark:bg-[#212530] shadow-md rounded-2xl p-6 flex items-center space-x-4"
             >
               {item.icon}
               <div>
-                <p className="text-gray-500 text-sm">{item.label}</p>
-                <h3 className="text-xl font-semibold text-gray-800">
+                <p className="text-gray-500 dark:text-gray-400 text-sm">{item.label}</p>
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
                   {item.value}
                 </h3>
               </div>
@@ -153,24 +153,24 @@ const ManagerDashboard: React.FC = () => {
         {/* Content: My Events on top, Charts below */}
         <div className="space-y-6">
           {/* Events Table */}
-          <div className="bg-white shadow-md rounded-2xl p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
+          <div className="bg-white dark:bg-[#212530] shadow-md rounded-2xl p-6">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
               My Events
             </h2>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700/50">
+                <thead className="bg-gray-50 dark:bg-gray-800/50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tickets Sold</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Title</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Category</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date & Time</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Location</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tickets Sold</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Revenue</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-[#212530] divide-y divide-gray-200 dark:divide-gray-700/50">
                   {events.map((event, _i) => {
                     const sold = typeof event.totalBookings === "number"
                       ? event.totalBookings
@@ -179,36 +179,36 @@ const ManagerDashboard: React.FC = () => {
                       ? event.totalRevenue
                       : event.ticketPricing?.reduce((a, t) => a + t.price * (t.sold ?? 0), 0) ?? 0;
                     return (
-                      <tr key={event._id} className="hover:bg-gray-50">
+                      <tr key={event._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{capitalizeFirstLetter(event.title)}</div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">{capitalizeFirstLetter(event.title)}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{event.category?.name ? capitalizeFirstLetter(event.category.name) : "-"}</div>
+                          <div className="text-sm text-gray-900 dark:text-white">{event.category?.name ? capitalizeFirstLetter(event.category.name) : "-"}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {event.startDate ? (
                             <div className="flex flex-col space-y-1">
-                              <div className="text-sm font-medium text-gray-900">
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">
                                 {new Date(event.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                               </div>
-                              <div className="text-xs text-gray-500">
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
                                 {new Date(`2000-01-01T${event.startTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(`2000-01-01T${event.endTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                               </div>
                             </div>
                           ) : '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{event.venue?.city ?? ""}</div>
+                          <div className="text-sm text-gray-900 dark:text-white">{event.venue?.city ?? ""}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{sold.toLocaleString()}</div>
+                          <div className="text-sm text-gray-900 dark:text-white">{sold.toLocaleString()}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">₹{rev.toLocaleString()}</div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">₹{rev.toLocaleString()}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                          <span className="px-3 py-1 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
                             {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
                           </span>
                         </td>
@@ -217,7 +217,7 @@ const ManagerDashboard: React.FC = () => {
                   })}
                   {events.length === 0 && (
                     <tr>
-                      <td className="px-6 py-4 text-center text-gray-500" colSpan={7}>
+                      <td className="px-6 py-4 text-center text-gray-500 dark:text-gray-400" colSpan={7}>
                         {isLoading ? "Loading events..." : "No events yet"}
                       </td>
                     </tr>
@@ -231,19 +231,19 @@ const ManagerDashboard: React.FC = () => {
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="flex items-center px-3 py-1 rounded border disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     <ChevronLeft className="w-4 h-4 mr-1" /> Previous
                   </button>
                   
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
                     Page {page} of {totalPages}
                   </div>
                   
                   <button
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                     disabled={page >= totalPages}
-                    className="flex items-center px-3 py-1 rounded border disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     Next <ChevronRight className="w-4 h-4 ml-1" />
                   </button>
@@ -255,16 +255,16 @@ const ManagerDashboard: React.FC = () => {
           {/* Charts Row (below table) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Tickets Sold Chart */}
-            <div className="bg-white shadow-md rounded-2xl p-6">
+            <div className="bg-white dark:bg-[#212530] shadow-md rounded-2xl p-6">
               <div className="flex justify-between items-center mb-2">
-                <h2 className="text-lg font-semibold text-gray-800">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
                   Tickets Sold Over Time
                 </h2>
                 <span className="text-green-600 text-sm font-semibold">
                   {ticketsSoldData.length > 1 ? "+" : ""}
                 </span>
               </div>
-              <p className="text-gray-500 text-xs mb-4">
+              <p className="text-gray-500 dark:text-gray-400 text-xs mb-4">
                 Last periods
               </p>
               <ResponsiveContainer width="100%" height={180}>
@@ -285,16 +285,16 @@ const ManagerDashboard: React.FC = () => {
             </div>
 
             {/* Revenue Chart */}
-            <div className="bg-white shadow-md rounded-2xl p-6">
+            <div className="bg-white dark:bg-[#212530] shadow-md rounded-2xl p-6">
               <div className="flex justify-between items-center mb-2">
-                <h2 className="text-lg font-semibold text-gray-800">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
                   Revenue Breakdown
                 </h2>
                 <span className="text-green-600 text-sm font-semibold">
                   {revenueBreakdownData.length} events
                 </span>
               </div>
-              <p className="text-gray-500 text-xs mb-4">
+              <p className="text-gray-500 dark:text-gray-400 text-xs mb-4">
                 Recent events
               </p>
               <ResponsiveContainer width="100%" height={180}>

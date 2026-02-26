@@ -11,7 +11,6 @@ interface Ticket {
   status: string;
   qrCode: string;
   seatNumber: string;
-  eventDate?: string; // Specific date when the ticket is valid for multi-date events
   event: {
     _id: string;
     title: string;
@@ -109,15 +108,11 @@ const MyTicketsPage: React.FC = () => {
   const normalizeTicket = (t: any): Ticket => {
     const ev = t?.event || {};
     const payment = t?.payment || {};
-    // Determine if ticket is expired based on event date/endDate
-    const endDateStr = (ev?.endDate || ev?.date || ev?.startDate || '').toString();
-    const endDate = endDateStr ? new Date(endDateStr) : null;
-    const isExpired = endDate ? (new Date() > endDate) : false;
     return {
       _id: String(t?._id || ''),
       type: String(t?.type || 'regular'),
       price: Number(t?.price || 0),
-      status: isExpired ? 'expired' : String(t?.status || 'active'),
+      status: String(t?.status || 'active'),
       qrCode: String(t?.qrCode || ''),
       seatNumber: String(t?.seatNumber || ''),
       event: {
@@ -264,11 +259,6 @@ const MyTicketsPage: React.FC = () => {
   }, [sessionId, tickets]);
 
   const downloadTicket = (ticket: Ticket) => {
-    // Prevent download for expired tickets
-    if (ticket.status === 'expired') {
-      alert('This ticket has expired and cannot be downloaded.');
-      return;
-    }
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -307,7 +297,7 @@ const MyTicketsPage: React.FC = () => {
     ctx.font = '16px Arial';
     ctx.fillStyle = '#4b5563';
     ctx.textAlign = 'center';
-    ctx.fillText(ticket.event?.date ? new Date(ticket.eventDate || ticket.event.date).toLocaleDateString() : 'Date not specified', 400, 120);
+    ctx.fillText(ticket.event?.date ? new Date(ticket.event.date).toLocaleDateString() : 'Date not specified', 400, 120);
     ctx.fillText(ticket.event?.location || 'Venue not specified', 400, 145);
 
     // Divider
@@ -342,7 +332,7 @@ const MyTicketsPage: React.FC = () => {
       const details = [
         { label: 'Type', value: ticket.type?.toUpperCase() || 'GENERAL' },
         { label: 'Seat', value: ticket.seatNumber || 'GENERAL ADMISSION' },
-        { label: 'Price', value: `₹${ticket.price?.toFixed(2) || '0.00'}` },
+        { label: 'Price', value: `$${ticket.price?.toFixed(2) || '0.00'}` },
         { label: 'Status', value: ticket.status?.toUpperCase() || 'ACTIVE' },
         { label: 'Ticket ID', value: `#${ticket._id.slice(-8).toUpperCase()}` }
       ];
@@ -459,6 +449,9 @@ const MyTicketsPage: React.FC = () => {
             <div key={ticket._id} className="relative overflow-hidden bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-shadow duration-300">
               {/* Ticket Styling Elements */}
               <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-blue-500 to-purple-600"></div>
+              <div className="absolute top-4 -right-10 w-20 h-8 bg-yellow-400 transform rotate-45 flex items-center justify-center">
+                <span className="text-xs font-bold text-gray-800">ADMIT ONE</span>
+              </div>
               
               <div className="flex flex-col md:flex-row">
                 {/* Left Section - Event Image */}
@@ -489,7 +482,7 @@ const MyTicketsPage: React.FC = () => {
                     </button>
                     <div className="flex items-center text-gray-600 text-sm mb-2">
                       <Calendar className="w-4 h-4 mr-1" />
-                      <span>{new Date(ticket.eventDate || ticket.event?.date || new Date()).toLocaleDateString()}</span>
+                      <span>{new Date(ticket.event?.date || new Date()).toLocaleDateString()}</span>
                       <MapPin className="w-4 h-4 ml-3 mr-1" />
                       <span>{ticket.event?.location || 'Venue'}</span>
                     </div>
@@ -516,7 +509,6 @@ const MyTicketsPage: React.FC = () => {
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         ticket.status === 'active' ? 'bg-green-100 text-green-800' :
                         ticket.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
-                        ticket.status === 'expired' ? 'bg-red-100 text-red-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
                         {ticket.status === 'processing' ? (
@@ -540,10 +532,10 @@ const MyTicketsPage: React.FC = () => {
                       <button 
                         onClick={() => downloadTicket(ticket)}
                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={ticket.status === 'processing' || ticket.status === 'expired'}
+                        disabled={ticket.status === 'processing'}
                       >
                         <Download className="w-4 h-4 mr-2" />
-                        {ticket.status === 'processing' ? 'Processing...' : ticket.status === 'expired' ? 'Expired' : 'Download'}
+                        {ticket.status === 'processing' ? 'Processing...' : 'Download'}
                       </button>
                       <button className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

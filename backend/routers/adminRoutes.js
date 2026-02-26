@@ -23,7 +23,6 @@ import {
 } from "../controllers/adminController.js";
 
 import { protect, authorize } from "../middlewares/authMiddleware.js";
-import { getPaymentLogs } from "../controllers/paymentController.js";
 
 const router = express.Router();
 
@@ -91,11 +90,5 @@ router.put("/categories/:categoryId", updateCategory);
 // Delete category
 // DELETE /api/admin/categories/:categoryId
 router.delete("/categories/:categoryId", deleteCategory);
-
-// =============================================================================
-// PAYMENTS LOGS (Admin)
-// =============================================================================
-// GET /api/admin/payments/logs
-router.get("/payments/logs", getPaymentLogs);
 
 export default router;

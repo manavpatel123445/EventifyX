@@ -51,71 +51,71 @@ const AdminDashboard: React.FC = () => {
 
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-[#1B1D2A]">
       <SideBar />
       <div className="flex-1 p-6 space-y-8 overflow-x-auto">
         {/* Header */}
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white shadow rounded-xl p-6 flex items-center space-x-4">
-            <Users className="text-red-500 w-8 h-8" />
+          <div className="bg-white dark:bg-[#212530] shadow rounded-xl p-6 flex items-center space-x-4">
+            <Users className="text-red-500 dark:text-red-400 w-8 h-8" />
             <div>
-              <p className="text-gray-500">Total Users</p>
-              <h3 className="text-2xl font-bold">{loadingStats ? "…" : stats?.users?.total ?? 0}</h3>
+              <p className="text-gray-500 dark:text-gray-400">Total Users</p>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{loadingStats ? "…" : stats?.users?.total ?? 0}</h3>
             </div>
           </div>
-          <div className="bg-white shadow rounded-xl p-6 flex items-center space-x-4">
-            <Calendar className="text-green-500 w-8 h-8" />
+          <div className="bg-white dark:bg-[#212530] shadow rounded-xl p-6 flex items-center space-x-4">
+            <Calendar className="text-green-500 dark:text-green-400 w-8 h-8" />
             <div>
-              <p className="text-gray-500">Total Events</p>
-              <h3 className="text-2xl font-bold">{loadingStats ? "…" : stats?.events?.total ?? 0}</h3>
+              <p className="text-gray-500 dark:text-gray-400">Total Events</p>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{loadingStats ? "…" : stats?.events?.total ?? 0}</h3>
             </div>
           </div>
-          <div className="bg-white shadow rounded-xl p-6 flex items-center space-x-4">
-            <ClipboardList className="text-blue-500 w-8 h-8" />
+          <div className="bg-white dark:bg-[#212530] shadow rounded-xl p-6 flex items-center space-x-4">
+            <ClipboardList className="text-blue-500 dark:text-blue-400 w-8 h-8" />
             <div>
-              <p className="text-gray-500">Event Requests</p>
-              <h3 className="text-2xl font-bold">{loadingStats ? "…" : stats?.requests?.pending ?? 0}</h3>
+              <p className="text-gray-500 dark:text-gray-400">Event Requests</p>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{loadingStats ? "…" : stats?.requests?.pending ?? 0}</h3>
             </div>
           </div>
-          <div className="bg-white shadow rounded-xl p-6 flex items-center space-x-4">
-            <IndianRupee className="text-yellow-500 w-8 h-8" />
+          <div className="bg-white dark:bg-[#212530] shadow rounded-xl p-6 flex items-center space-x-4">
+            <IndianRupee className="text-yellow-500 dark:text-yellow-400 w-8 h-8" />
             <div>
-              <p className="text-gray-500">Revenue</p>
-              <h3 className="text-2xl font-bold">{loadingStats ? "…" : `₹${(stats?.revenue?.totalRevenue ?? 0).toLocaleString()}`}</h3>
+              <p className="text-gray-500 dark:text-gray-400">Revenue</p>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{loadingStats ? "…" : `₹${(stats?.revenue?.totalRevenue ?? 0).toLocaleString()}`}</h3>
             </div>
           </div>
         </div>
 
         {/* Event Management */}
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Event Management</h2>
+        <div className="bg-white dark:bg-[#212530] rounded-xl shadow p-6">
+          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Event Management</h2>
           <table className="w-full border-collapse">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-800/50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event Title</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Event Title</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date & Time</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Location</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loadingEvents && (
-                <tr><td className="px-4 py-3 text-center" colSpan={5}>Loading events…</td></tr>
+                <tr><td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400" colSpan={5}>Loading events…</td></tr>
               )}
               {!loadingEvents && events.length === 0 && (
-                <tr><td className="px-4 py-3 text-center" colSpan={5}>No events found</td></tr>
+                <tr><td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400" colSpan={5}>No events found</td></tr>
               )}
               {!loadingEvents && events.map((event: any) => (
-                <tr key={event._id} className="border-t">
-                  <td className="px-4 py-3">{event.title ? capitalizeFirstLetter(event.title) : 'Untitled Event'}</td>
+                <tr key={event._id} className="border-t border-gray-100 dark:border-gray-700/50">
+                  <td className="px-4 py-3 text-gray-900 dark:text-white">{event.title ? capitalizeFirstLetter(event.title) : 'Untitled Event'}</td>
                   <td className="px-4 py-3">
                     {event.startDate ? (
                       <div className="flex flex-col space-y-1">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
                           {(() => {
                             try {
                               return new Date(event.startDate).toLocaleDateString('en-GB', {
@@ -128,23 +128,12 @@ const AdminDashboard: React.FC = () => {
                             }
                           })()}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
                           {(() => {
                             try {
                               const startTime = event.startTime || '00:00';
                               const endTime = event.endTime || '23:59';
-
-                              // Convert 24-hour to 12-hour format with AM/PM
-                              const formatTime = (time24: string) => {
-                                if (!time24 || time24 === '00:00') return '12:00 AM';
-                                const [hours, minutes] = time24.split(':');
-                                const hour24 = parseInt(hours, 10);
-                                const period = hour24 >= 12 ? 'PM' : 'AM';
-                                const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
-                                return `${hour12}:${minutes} ${period}`;
-                              };
-
-                              return `${formatTime(startTime)} - ${formatTime(endTime)}`;
+                              return `${startTime} - ${endTime}`;
                             } catch {
                               return '-';
                             }
@@ -181,15 +170,15 @@ const AdminDashboard: React.FC = () => {
                         if (!event.endDate || isNaN(endDate.getTime())) {
                           // If no end date or invalid date, use original status
                           const fallbackColorClass = {
-                            upcoming: 'bg-green-100 text-green-700',
-                            ongoing: 'bg-yellow-100 text-yellow-700',
-                            completed: 'bg-blue-100 text-blue-700',
-                            cancelled: 'bg-red-100 text-red-700',
-                            active: 'bg-green-100 text-green-700',
-                            pending: 'bg-yellow-100 text-yellow-700',
-                            approved: 'bg-green-100 text-green-700',
-                            rejected: 'bg-red-100 text-red-700',
-                          }[currentStatus?.toLowerCase()] || 'bg-gray-100 text-gray-700';
+                            upcoming: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400',
+                            ongoing: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400',
+                            completed: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
+                            cancelled: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400',
+                            active: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400',
+                            pending: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400',
+                            approved: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400',
+                            rejected: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400',
+                          }[currentStatus?.toLowerCase()] || 'bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300';
 
                           return (
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${fallbackColorClass}`}>
@@ -205,19 +194,19 @@ const AdminDashboard: React.FC = () => {
 
                         // More robust status color mapping with case-insensitive keys
                         const statusColorClass = {
-                          upcoming: 'bg-green-100 text-green-700',
-                          ongoing: 'bg-yellow-100 text-yellow-700',
-                          completed: 'bg-blue-100 text-blue-700',
-                          cancelled: 'bg-red-100 text-red-700',
-                          active: 'bg-green-100 text-green-700',
-                          pending: 'bg-yellow-100 text-yellow-700',
-                          approved: 'bg-green-100 text-green-700',
-                          rejected: 'bg-red-100 text-red-700',
-                          Upcoming: 'bg-green-100 text-green-700',
-                          Ongoing: 'bg-yellow-100 text-yellow-700',
-                          Completed: 'bg-blue-100 text-blue-700',
-                          Cancelled: 'bg-red-100 text-red-700',
-                        }[currentStatus] || 'bg-gray-100 text-gray-700';
+                          upcoming: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400',
+                          ongoing: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400',
+                          completed: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
+                          cancelled: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400',
+                          active: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400',
+                          pending: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400',
+                          approved: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400',
+                          rejected: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400',
+                          Upcoming: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400',
+                          Ongoing: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400',
+                          Completed: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
+                          Cancelled: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400',
+                        }[currentStatus] || 'bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300';
 
                         return (
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColorClass}`}>
@@ -230,15 +219,15 @@ const AdminDashboard: React.FC = () => {
                         type StatusKey = 'upcoming' | 'ongoing' | 'completed' | 'cancelled' | 'active' | 'pending' | 'approved' | 'rejected';
                         const statusKey = errorStatus?.toLowerCase() as StatusKey;
                         const errorColorClass = {
-                          upcoming: 'bg-green-100 text-green-700',
-                          ongoing: 'bg-yellow-100 text-yellow-700',
-                          completed: 'bg-blue-100 text-blue-700',
-                          cancelled: 'bg-red-100 text-red-700',
-                          active: 'bg-green-100 text-green-700',
-                          pending: 'bg-yellow-100 text-yellow-700',
-                          approved: 'bg-green-100 text-green-700',
-                          rejected: 'bg-red-100 text-red-700',
-                        }[statusKey] || 'bg-gray-100 text-gray-700';
+                          upcoming: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400',
+                          ongoing: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400',
+                          completed: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
+                          cancelled: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400',
+                          active: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400',
+                          pending: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400',
+                          approved: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400',
+                          rejected: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400',
+                        }[statusKey] || 'bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300';
 
                         return (
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${errorColorClass}`}>
@@ -251,7 +240,7 @@ const AdminDashboard: React.FC = () => {
                   <td className="px-4 py-3">
                     <button
                       onClick={() => setViewEvent(event)}
-                      className="px-3 py-1 rounded border text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
                       View
                     </button>
@@ -267,19 +256,19 @@ const AdminDashboard: React.FC = () => {
               <button
                 onClick={() => setEventsPage(p => Math.max(1, p - 1))}
                 disabled={eventsPage === 1}
-                className="flex items-center px-3 py-1 rounded border disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 <ChevronLeft className="w-4 h-4 mr-1" /> Previous
               </button>
               
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
                 Page {eventsPage} of {totalEventsPages}
               </div>
               
               <button
                 onClick={() => setEventsPage(p => Math.min(totalEventsPages, p + 1))}
                 disabled={eventsPage >= totalEventsPages}
-                className="flex items-center px-3 py-1 rounded border disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 Next <ChevronRight className="w-4 h-4 ml-1" />
               </button>

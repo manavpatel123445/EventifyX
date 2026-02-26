@@ -58,8 +58,7 @@ const sampleEvent: Event = {
   slug: "tech-conference-2024",
   tags: ["technology", "conference", "networking", "workshops"],
   createdAt: "2024-01-15T00:00:00.000Z",
-  updatedAt: "2024-11-01T00:00:00.000Z",
-  isDeleted: false
+  updatedAt: "2024-11-01T00:00:00.000Z"
 };
 
 const EventViewDemo: React.FC = () => {

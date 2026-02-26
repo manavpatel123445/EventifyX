@@ -1,15 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ImageUpload from "../components/ImageUpload";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { fetchCategories } from "../services/categoryService";
-import { createEventRequest,type EventRequestData } from "../services/eventService";
+import { createEventRequest, type EventRequestData } from "../services/eventService";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Calendar, MapPin, Users, DollarSign, Tag, FileText, Send } from "lucide-react";
+import { Calendar, MapPin, Users, DollarSign, Tag, FileText, Send, Check } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 
 
 // CategorySelect component using TanStack Query
@@ -28,8 +29,8 @@ const CategorySelect: React.FC<CategorySelectProps> = ({ value, onChange, error 
   return (
     <div>
       <select
-        className={`mt-1 w-full rounded-lg border px-3 py-2 text-gray-700 focus:border-red-500 focus:ring focus:ring-red-300 ${
-          error ? "border-red-500" : ""
+        className={`mt-1 w-full rounded-lg border px-3 py-2 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring focus:ring-red-300 dark:focus:ring-red-900 ${
+          error ? "border-red-500 dark:border-red-500" : ""
         }`}
         name="category"
         value={value}
@@ -53,7 +54,8 @@ const CategorySelect: React.FC<CategorySelectProps> = ({ value, onChange, error 
 
 const CreateEventPage: React.FC = () => {
   const navigate = useNavigate();
-  
+  const { theme } = useTheme();
+
   // Form state
   const [formData, setFormData] = useState({
     title: "",
@@ -77,6 +79,23 @@ const CreateEventPage: React.FC = () => {
   const [images, setImages] = useState<string[]>([]);
   const [singleDay, setSingleDay] = useState<boolean>(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Progress bar: compute completion for each step
+  const steps = useMemo(() => {
+    const step1 = Boolean(formData.title.trim() && formData.category && formData.description.trim());
+    const step2 = Boolean(
+      formData.startDate && formData.endDate && formData.startTime && formData.endTime &&
+      formData.venueName.trim() && formData.venueAddress.trim() && formData.city.trim() && formData.state.trim() &&
+      formData.ticketPrice && parseFloat(formData.ticketPrice) >= 0 &&
+      formData.ticketQuantity && parseInt(formData.ticketQuantity) >= 1
+    );
+    const step3 = images.length >= 1;
+    return [
+      { name: "Basic Information", completed: step1 },
+      { name: "Event Details", completed: step2 },
+      { name: "Images", completed: step3 },
+    ];
+  }, [formData, images]);
 
   // Create event request mutation
   const createEventMutation = useMutation({
@@ -200,29 +219,75 @@ const CreateEventPage: React.FC = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-[#1B1D2A] py-8">
         <div className="max-w-4xl mx-auto px-6">
-          <div className="bg-white rounded-2xl shadow-lg p-8">
+          <div className="bg-white dark:bg-[#212530] rounded-2xl shadow-lg p-8">
             {/* Header */}
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Event Request</h1>
-              <p className="text-gray-600">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Create Event Request</h1>
+              <p className="text-gray-600 dark:text-gray-400">
                 Submit your event for admin approval. Once approved, you'll become an Event Manager!
               </p>
             </div>
 
+            {/* Progress Bar - updates when details are filled */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between">
+                {steps.map((step, index) => (
+                  <React.Fragment key={step.name}>
+                    <div className="flex flex-col items-center">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
+                          step.completed
+                            ? "bg-red-500 dark:bg-red-600 text-white"
+                            : theme === "dark"
+                            ? "bg-gray-700 text-gray-400"
+                            : "bg-gray-200 text-gray-600"
+                        }`}
+                      >
+                        {step.completed ? <Check className="w-5 h-5" /> : index + 1}
+                      </div>
+                      <span
+                        className={`mt-2 text-sm font-medium ${
+                          step.completed
+                            ? "text-red-500 dark:text-red-400"
+                            : theme === "dark"
+                            ? "text-gray-400"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        {step.name}
+                      </span>
+                    </div>
+                    {index < steps.length - 1 && (
+                      <div
+                        className={`flex-1 h-1 mx-2 rounded transition-all ${
+                          step.completed
+                            ? "bg-red-500 dark:bg-red-600"
+                            : theme === "dark"
+                            ? "bg-gray-700"
+                            : "bg-gray-200"
+                        }`}
+                        style={{ minWidth: "40px" }}
+                      />
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Basic Information */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                  <FileText className="w-5 h-5 mr-2 text-red-500" />
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
+                <h3 className="flex items-center text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  <FileText className="w-5 h-5 mr-2 text-red-500 dark:text-red-400" />
                   Basic Information
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Event Title */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Event Title *
                     </label>
                     <input
@@ -230,8 +295,8 @@ const CreateEventPage: React.FC = () => {
                       value={formData.title}
                       onChange={(e) => handleInputChange("title", e.target.value)}
                       placeholder="Enter event title"
-                      className={`w-full rounded-lg border px-4 py-3 text-gray-700 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition ${
-                        errors.title ? "border-red-500 bg-red-50" : ""
+                      className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${
+                        errors.title ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""
                       }`}
                       maxLength={100}
                     />
@@ -240,7 +305,7 @@ const CreateEventPage: React.FC = () => {
 
                   {/* Category */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Event Category *
                     </label>
                     <CategorySelect
@@ -253,7 +318,7 @@ const CreateEventPage: React.FC = () => {
 
                 {/* Description */}
                 <div className="mt-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Description *
                   </label>
                   <textarea
@@ -261,32 +326,32 @@ const CreateEventPage: React.FC = () => {
                     onChange={(e) => handleInputChange("description", e.target.value)}
                     placeholder="Describe your event in detail"
                     rows={4}
-                    className={`w-full rounded-lg border px-4 py-3 text-gray-700 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition resize-none ${errors.description ? "border-red-500 bg-red-50" : ""}`}
+                    className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition resize-none ${errors.description ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
                     maxLength={2000}
                   />
                   {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
-                  <p className="text-xs text-gray-500 mt-1">{formData.description.length}/2000 characters</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{formData.description.length}/2000 characters</p>
                 </div>
               </div>
 
               {/* Date & Time */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                  <Calendar className="w-5 h-5 mr-2 text-red-500" />
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
+                <h3 className="flex items-center text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  <Calendar className="w-5 h-5 mr-2 text-red-500 dark:text-red-400" />
                   Date & Time
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Start Date */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Start Date *
                     </label>
                     <input
                       type="date"
                       value={formData.startDate}
                       onChange={(e) => handleInputChange("startDate", e.target.value)}
-                      className={`w-full rounded-lg border px-4 py-3 text-gray-700 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition ${errors.startDate ? "border-red-500 bg-red-50" : ""}`}
+                      className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.startDate ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
                       min={new Date().toISOString().split('T')[0]}
                     />
                     {errors.startDate && <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>}
@@ -294,7 +359,7 @@ const CreateEventPage: React.FC = () => {
 
                   {/* Single-day toggle and End Date */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       End Date *
                     </label>
                    
@@ -302,12 +367,12 @@ const CreateEventPage: React.FC = () => {
                       type="date"
                       value={formData.endDate}
                       onChange={(e) => handleInputChange("endDate", e.target.value)}
-                      className={`w-full rounded-lg border px-4 py-3 text-gray-700 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition ${errors.endDate ? "border-red-500 bg-red-50" : ""}`}
+                      className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.endDate ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
                       min={formData.startDate || new Date().toISOString().split('T')[0]}
                       disabled={singleDay}
                     />
                      <div className="flex items-center justify-between mb-2">
-                      <label className="inline-flex items-center gap-3 text-sm text-gray-700 select-none">
+                      <label className="inline-flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300 select-none">
                         <input
                           type="checkbox"
                           className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
@@ -326,36 +391,36 @@ const CreateEventPage: React.FC = () => {
                     </div>
                     {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
                     {singleDay ? (
-                      <p className="text-xs text-gray-500 mt-1">End date follows Start date automatically for single-day events.</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">End date follows Start date automatically for single-day events.</p>
                     ) : (
-                      <p className="text-xs text-gray-400 mt-1">Turn on single-day to auto-set End date to Start date.</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Turn on single-day to auto-set End date to Start date.</p>
                     )}
                   </div>
 
                   {/* Start Time */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Start Time *
                     </label>
                     <input
                       type="time"
                       value={formData.startTime}
                       onChange={(e) => handleInputChange("startTime", e.target.value)}
-                      className={`w-full rounded-lg border px-4 py-3 text-gray-700 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition ${errors.startTime ? "border-red-500 bg-red-50" : ""}`}
+                      className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.startTime ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
                     />
                     {errors.startTime && <p className="text-red-500 text-sm mt-1">{errors.startTime}</p>}
                   </div>
 
                   {/* End Time */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       End Time *
                     </label>
                     <input
                       type="time"
                       value={formData.endTime}
                       onChange={(e) => handleInputChange("endTime", e.target.value)}
-                      className={`w-full rounded-lg border px-4 py-3 text-gray-700 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition ${errors.endTime ? "border-red-500 bg-red-50" : ""}`}
+                      className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.endTime ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
                     />
                     {errors.endTime && <p className="text-red-500 text-sm mt-1">{errors.endTime}</p>}
                   </div>
@@ -365,16 +430,16 @@ const CreateEventPage: React.FC = () => {
               </div>
 
               {/* Venue Information */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                  <MapPin className="w-5 h-5 mr-2 text-red-500" />
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
+                <h3 className="flex items-center text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  <MapPin className="w-5 h-5 mr-2 text-red-500 dark:text-red-400" />
                   Venue Information
                 </h3>
                 
                 <div className="space-y-6">
                   {/* Venue Name */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Venue Name *
                     </label>
                     <input
@@ -382,14 +447,14 @@ const CreateEventPage: React.FC = () => {
                       value={formData.venueName}
                       onChange={(e) => handleInputChange("venueName", e.target.value)}
                       placeholder="Enter venue name"
-                      className={`w-full rounded-lg border px-4 py-3 text-gray-700 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition ${errors.venueName ? "border-red-500 bg-red-50" : ""}`}
+                      className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.venueName ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
                     />
                     {errors.venueName && <p className="text-red-500 text-sm mt-1">{errors.venueName}</p>}
                   </div>
 
                   {/* Venue Address */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Venue Address *
                     </label>
                     <input
@@ -397,7 +462,7 @@ const CreateEventPage: React.FC = () => {
                       value={formData.venueAddress}
                       onChange={(e) => handleInputChange("venueAddress", e.target.value)}
                       placeholder="Enter full venue address"
-                      className={`w-full rounded-lg border px-4 py-3 text-gray-700 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition ${errors.venueAddress ? "border-red-500 bg-red-50" : ""}`}
+                      className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.venueAddress ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
                     />
                     {errors.venueAddress && <p className="text-red-500 text-sm mt-1">{errors.venueAddress}</p>}
                   </div>
@@ -405,7 +470,7 @@ const CreateEventPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* City */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         City *
                       </label>
                       <input
@@ -413,14 +478,14 @@ const CreateEventPage: React.FC = () => {
                         value={formData.city}
                         onChange={(e) => handleInputChange("city", e.target.value)}
                         placeholder="Enter city"
-                        className={`w-full rounded-lg border px-4 py-3 text-gray-700 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition ${errors.city ? "border-red-500 bg-red-50" : ""}`}
+                        className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.city ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
                       />
                       {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
                     </div>
 
                     {/* State */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         State *
                       </label>
                       <input
@@ -428,7 +493,7 @@ const CreateEventPage: React.FC = () => {
                         value={formData.state}
                         onChange={(e) => handleInputChange("state", e.target.value)}
                         placeholder="Enter state"
-                        className={`w-full rounded-lg border px-4 py-3 text-gray-700 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition ${errors.state ? "border-red-500 bg-red-50" : ""}`}
+                        className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.state ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
                       />
                       {errors.state && <p className="text-red-500 text-sm mt-1">{errors.state}</p>}
                     </div>
@@ -437,22 +502,22 @@ const CreateEventPage: React.FC = () => {
               </div>
 
               {/* Ticket Information */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                  <DollarSign className="w-5 h-5 mr-2 text-red-500" />
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
+                <h3 className="flex items-center text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  <DollarSign className="w-5 h-5 mr-2 text-red-500 dark:text-red-400" />
                   Ticket Information
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Ticket Type */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Ticket Type
                     </label>
                     <select
                       value={formData.ticketType}
                       onChange={(e) => handleInputChange("ticketType", e.target.value)}
-                      className="w-full rounded-lg border px-4 py-3 text-gray-700 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition"
+                      className="w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition"
                     >
                       <option value="regular">Regular</option>
                       <option value="vip">VIP</option>
@@ -462,7 +527,7 @@ const CreateEventPage: React.FC = () => {
 
                   {/* Ticket Price */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Ticket Price (₹) *
                     </label>
                     <input
@@ -470,7 +535,7 @@ const CreateEventPage: React.FC = () => {
                       value={formData.ticketPrice}
                       onChange={(e) => handleInputChange("ticketPrice", e.target.value)}
                       placeholder="0.00"
-                      className={`w-full rounded-lg border px-4 py-3 text-gray-700 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition ${errors.ticketPrice ? "border-red-500 bg-red-50" : ""}`}
+                      className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.ticketPrice ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
                       min="0"
                       step="0.01"
                     />
@@ -479,7 +544,7 @@ const CreateEventPage: React.FC = () => {
 
                   {/* Ticket Quantity */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Available Tickets *
                     </label>
                     <input
@@ -487,7 +552,7 @@ const CreateEventPage: React.FC = () => {
                       value={formData.ticketQuantity}
                       onChange={(e) => handleInputChange("ticketQuantity", e.target.value)}
                       placeholder="Enter quantity"
-                      className={`w-full rounded-lg border px-4 py-3 text-gray-700 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition ${errors.ticketQuantity ? "border-red-500 bg-red-50" : ""}`}
+                      className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.ticketQuantity ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
                       min="1"
                     />
                     {errors.ticketQuantity && <p className="text-red-500 text-sm mt-1">{errors.ticketQuantity}</p>}
@@ -496,9 +561,9 @@ const CreateEventPage: React.FC = () => {
               </div>
 
               {/* Event Images */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                  <Tag className="w-5 h-5 mr-2 text-red-500" />
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
+                <h3 className="flex items-center text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  <Tag className="w-5 h-5 mr-2 text-red-500 dark:text-red-400" />
                   Event Images
                 </h3>
                 
@@ -516,7 +581,7 @@ const CreateEventPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={createEventMutation.isPending}
-                  className="flex items-center justify-center px-8 py-4 bg-red-500 text-white text-lg font-semibold rounded-lg shadow-lg hover:bg-red-600 focus:ring-4 focus:ring-red-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed min-w-[200px]"
+                  className="flex items-center justify-center px-8 py-4 bg-red-500 dark:bg-red-600 text-white text-lg font-semibold rounded-lg shadow-lg hover:bg-red-600 dark:hover:bg-red-700 focus:ring-4 focus:ring-red-200 dark:focus:ring-red-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed min-w-[200px]"
                 >
                   {createEventMutation.isPending ? (
                     <>
@@ -533,16 +598,16 @@ const CreateEventPage: React.FC = () => {
               </div>
 
               {/* Info Note */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-lg p-4">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
-                    <Users className="h-5 w-5 text-blue-500 mt-0.5" />
+                    <Users className="h-5 w-5 text-blue-500 dark:text-blue-400 mt-0.5" />
                   </div>
                   <div className="ml-3">
-                    <h4 className="text-sm font-medium text-blue-900">
+                    <h4 className="text-sm font-medium text-blue-900 dark:text-blue-200">
                       What happens next?
                     </h4>
-                    <div className="mt-1 text-sm text-blue-700">
+                    <div className="mt-1 text-sm text-blue-700 dark:text-blue-300">
                       <p>
                         Your event request will be reviewed by our admin team. Once approved, you'll automatically become an Event Manager and your event will be published on our platform.
                       </p>

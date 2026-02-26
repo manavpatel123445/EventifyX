@@ -27,19 +27,24 @@ router.get("/tickets/session/:sessionId", optionalAuth, getTicketsBySession);
 router.get("/logs", protect, authorize("event_manager", "admin"), getPaymentLogs);
 
 // Cleanup expired reservations (admin only)
-router.post("/cleanup-reservations", protect, authorize("admin"), async (req, res) => {
-  try {
-    const cleanedCount = await cleanupExpiredReservations();
-    res.json({
-      success: true,
-      message: `Cleaned up ${cleanedCount} expired reservations`
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to cleanup reservations"
-    });
+router.post(
+  "/cleanup-reservations",
+  protect,
+  authorize("admin"),
+  async (req, res) => {
+    try {
+      const cleanedCount = await cleanupExpiredReservations();
+      res.json({
+        success: true,
+        message: `Cleaned up ${cleanedCount} expired reservations`,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: "Failed to cleanup reservations",
+      });
+    }
   }
-});
+);
 
 export default router;

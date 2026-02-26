@@ -38,14 +38,8 @@ const paymentSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "reserved", "succeeded", "failed", "refunded", "cancelled", "expired"],
+      enum: ["pending", "succeeded", "failed", "refunded", "cancelled"],
       default: "pending",
-    },
-    reservedAt: {
-      type: Date,
-    },
-    expiredAt: {
-      type: Date,
     },
     receiptUrl: {
       type: String,

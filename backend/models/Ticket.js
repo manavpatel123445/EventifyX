@@ -12,11 +12,6 @@ const ticketSchema = new mongoose.Schema(
       ref: "Event",
       required: true,
     },
-    // Specific date for multi-day events
-    eventDate: {
-      type: Date,
-      required: false, // Only required for multi-day events
-    },
     payment: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Payment",

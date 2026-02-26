@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getMyEventRequests, type EventRequest } from "../services/eventService";
 import { getRequestsForManagedEvents } from "../services/eventService";
 import Navbar from "../components/Navbar";
-import { Clock, CheckCircle, XCircle, Calendar, MapPin, DollarSign } from "lucide-react";
+import { Clock, CheckCircle, XCircle, Calendar, MapPin, DollarSign, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
@@ -19,7 +19,6 @@ const MyEventRequests: React.FC = () => {
     queryFn: () => viewManaged ? getRequestsForManagedEvents() : getMyEventRequests(),  
     refetchInterval: 30000, // Refetch every 30 seconds
   });
-
 
   if (isLoading) {
     return (
@@ -224,7 +223,28 @@ const MyEventRequests: React.FC = () => {
                     )}
 
                     {/* Status-specific Actions */}
-                    
+                    <div className="flex items-center justify-between border-t border-gray-100 pt-4">
+                      <div className="text-sm font-medium">
+                        {request.status === 'pending' ? (
+                          <span className="text-green-600">
+                            Open
+                          </span>
+                        ) : (
+                          <span className="text-red-600">
+                            Closed
+                          </span>
+                        )}
+                      </div>
+
+                      {request.status === 'approved' && request.approvedEvent && (
+                        <Link
+                          to={`/manager/events/${(typeof request.approvedEvent === 'string' ? request.approvedEvent : (request as any).approvedEvent?._id) || ''}`}
+                          className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition text-sm font-medium"
+                        >
+                          Manage Event
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

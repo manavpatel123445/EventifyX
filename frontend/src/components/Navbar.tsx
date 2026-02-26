@@ -1,11 +1,13 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { ChevronDown, User, LogOut, Shield, BarChart3, Calendar, Ticket } from "lucide-react";
+import { ChevronDown, User, LogOut, Shield, BarChart3, Calendar, Ticket, Moon, Sun } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 import { ROLES, ROLE_DISPLAY_NAMES, ROLE_COLORS, hasRole, capitalizeFirstLetter } from "../utils/roles";
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   
   // Check for token in both localStorage and sessionStorage
   const checkAuthStatus = () => {
@@ -96,34 +98,50 @@ const Navbar: React.FC = () => {
 
 
   return (
-    <nav className="bg-white shadow-md">
+    <nav className="bg-white dark:bg-gray-900 shadow-md transition-colors">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         
         {/* Logo */}
-        <Link to="/" className="text-2xl font-bold text-red-500">
-          EventifyX
+        <Link to="/" className="flex items-center">
+          <img
+            src="/EventifyXlogo.png"
+            alt="EventifyX logo"
+            className="h-12 w-12 md:h-14 md:w-14 object-contain"
+          />
         </Link>
 
 
         {/* Nav Links */}
-        <div className="hidden md:flex items-center space-x-8 text-gray-700 font-medium">
-          <Link to="/" className="hover:text-red-500 transition">
+        <div className="hidden md:flex items-center space-x-8 text-gray-700 dark:text-gray-300 font-medium">
+          <Link to="/" className="hover:text-red-500 dark:hover:text-red-400 transition">
             Home
           </Link>
-             <Link to="/events" className="hover:text-red-500 transition">
+             <Link to="/events" className="hover:text-red-500 dark:hover:text-red-400 transition">
             Events
           </Link>
           
-          <Link to="/create-event" className="hover:text-red-500 transition">
+          <Link to="/create-event" className="hover:text-red-500 dark:hover:text-red-400 transition">
             Create Events
           </Link>
-          <Link to="/contact" className="hover:text-red-500 transition">
+          <Link to="/contact" className="hover:text-red-500 dark:hover:text-red-400 transition">
             Contact Us
           </Link>
         </div>
 
-        {/* Right Side Buttons */}
+        {/* Right Side: Theme Toggle + Profile */}
         <div className="flex items-center space-x-4">
+          {/* Dark/Light mode toggle - Moon icon */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+          >
+            {theme === "light" ? (
+              <Moon className="w-5 h-5" />
+            ) : (
+              <Sun className="w-5 h-5" />
+            )}
+          </button>
           {isLoggedIn && currentUser ? (
             <div className="relative">
               <button
@@ -131,13 +149,13 @@ const Navbar: React.FC = () => {
                   e.stopPropagation();
                   setShowDropdown(!showDropdown);
                 }}
-                className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:text-red-500 transition"
+                className="flex items-center space-x-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 transition"
               >
                 {avatarUrl ? (
                   <img
                     src={avatarUrl}
                     alt={currentUser.name || 'User'}
-                    className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                    className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-600"
                   />
                 ) : (
                   <div className="w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
@@ -149,10 +167,10 @@ const Navbar: React.FC = () => {
               </button>
               
               {showDropdown && (
-                <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50">
-                  <div className="px-4 py-2 border-b border-gray-100">
-                    <p className="text-sm font-medium text-gray-900">{capitalizeFirstLetter(currentUser.name)}</p>
-                    <p className="text-xs text-gray-500">{currentUser.email}</p>
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-2 z-50">
+                  <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{capitalizeFirstLetter(currentUser.name)}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{currentUser.email}</p>
                     {userRole && (
                       <span 
                         className={`inline-block mt-1 px-2 py-1 rounded-full text-xs font-medium 
@@ -168,7 +186,7 @@ const Navbar: React.FC = () => {
                   {hasRole(userRole, ROLES.ADMIN) && (
                     <Link
                       to="/admin"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                       onClick={() => setShowDropdown(false)}
                     >
                       <Shield className="w-4 h-4 mr-2" />
@@ -181,7 +199,7 @@ const Navbar: React.FC = () => {
                   {hasRole(userRole, ROLES.EVENT_MANAGER) && (
                     <Link
                       to="/manager"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                       onClick={() => setShowDropdown(false)}
                     >
                       <BarChart3 className="w-4 h-4 mr-2" />
@@ -196,7 +214,7 @@ const Navbar: React.FC = () => {
                   {hasRole(userRole, ROLES.EVENT_MANAGER) && (
                     <Link
                       to="/create-event"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                       onClick={() => setShowDropdown(false)}
                     >
                       <Calendar className="w-4 h-4 mr-2" />
@@ -206,7 +224,7 @@ const Navbar: React.FC = () => {
                   {hasRole(userRole, ROLES.EVENT_MANAGER) && (
                     <Link
                       to="/my-events"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                       onClick={() => setShowDropdown(false)}
                     >
                       <Calendar className="w-4 h-4 mr-2" />
@@ -216,7 +234,7 @@ const Navbar: React.FC = () => {
                   
                   <Link
                       to="/my-tickets"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                       onClick={() => setShowDropdown(false)}
                     >
                       <Ticket className="w-4 h-4 mr-2" />
@@ -225,7 +243,7 @@ const Navbar: React.FC = () => {
                   
                   <Link
                     to="/profile"
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                     onClick={() => setShowDropdown(false)}
                   >
                     <User className="w-4 h-4 mr-2" />
@@ -234,13 +252,13 @@ const Navbar: React.FC = () => {
                   
                   {/* Event Manager Request - Only for regular users */}
                   
-                  <div className="border-t border-gray-100 mt-2 pt-2">
+                  <div className="border-t border-gray-100 dark:border-gray-700 mt-2 pt-2">
                     <button
                       onClick={() => {
                         setShowDropdown(false);
                         handleLogout();
                       }}
-                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
+                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
                     >
                       <LogOut className="w-4 h-4 mr-2" />
                       Logout
@@ -253,13 +271,13 @@ const Navbar: React.FC = () => {
             <>
               <Link
                 to="/login"
-                className="px-4 py-2 text-red-500 border border-red-500 rounded-lg hover:bg-red-50 transition"
+                className="px-4 py-2 text-red-500 dark:text-red-400 border border-red-500 dark:border-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition"
               >
                 Login
               </Link>
               <Link
                 to="/register"
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                className="px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700 transition"
               >
                 Sign Up
               </Link>

@@ -97,14 +97,14 @@ const AdminProfilePage: React.FC = () => {
   if (isLoading) {
     return (
       <>
-        <div className="min-h-screen bg-gray-50 py-6 flex">
-          <aside className="w-64 bg-white border-r">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#1B1D2A] py-6 flex">
+          <aside className="w-64 border-r border-transparent dark:border-gray-700/50">
             <SideBar />
           </aside>
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading profile...</p>
+              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading profile...</p>
             </div>
           </div>
         </div>
@@ -115,15 +115,15 @@ const AdminProfilePage: React.FC = () => {
   if (isError) {
     return (
       <>
-        <div className="min-h-screen bg-gray-50 py-6 flex">
-          <aside className="w-64 bg-white border-r">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#1B1D2A] py-6 flex">
+          <aside className="w-64 border-r border-transparent dark:border-gray-700/50">
             <SideBar />
           </aside>
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <div className="text-5xl mb-3">⚠️</div>
-              <p className="text-gray-700 mb-2">Failed to load profile</p>
-              <p className="text-gray-500 text-sm mb-4">{(error as any)?.message || "Please try again."}</p>
+              <p className="text-gray-700 dark:text-gray-300 mb-2">Failed to load profile</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">{(error as any)?.message || "Please try again."}</p>
               <button
                 onClick={() => refetch()}
                 className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
@@ -140,11 +140,11 @@ const AdminProfilePage: React.FC = () => {
   return (
     <>
 
-      <div className="min-h-screen bg-gray-50 py-6 flex">
-        <aside className="w-64 bg-white border-r">
+      <div className="min-h-screen bg-gray-50 dark:bg-[#1B1D2A] py-6 flex">
+        <aside className="w-64 border-r border-transparent dark:border-gray-700/50">
         <SideBar/>
       </aside>
-        <div className="flex-1 min-w-0 bg-white p-8">
+        <div className="flex-1 min-w-0 bg-white dark:bg-[#212530] p-8">
           {/* Header */}
           <div className="flex flex-col items-start text-left mb-8">
             <div className="relative">
@@ -172,8 +172,8 @@ const AdminProfilePage: React.FC = () => {
                 />
               </label>
             </div>
-            <h2 className="text-2xl font-bold mt-4">{profile?.name ? capitalizeFirstLetter(profile.name) : "Admin"}</h2>
-            <p className="text-gray-600 flex items-center gap-2">
+            <h2 className="text-2xl font-bold mt-4 text-gray-900 dark:text-white">{profile?.name ? capitalizeFirstLetter(profile.name) : "Admin"}</h2>
+            <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
               <Shield className="w-4 h-4 text-red-500" />
               {profile?.role || "admin"}
             </p>

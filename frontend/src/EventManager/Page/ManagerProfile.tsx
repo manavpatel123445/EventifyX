@@ -107,14 +107,14 @@ const ManagerProfile: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-6 px-4 flex">
-        <aside className="w-64 bg-white border-r">
+      <div className="min-h-screen bg-gray-50 dark:bg-[#1B1D2A] py-6 px-4 flex">
+        <aside className="w-64 border-r border-transparent dark:border-gray-700/50">
           <ManagerSideBar />
         </aside>
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading profile...</p>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading profile...</p>
           </div>
         </div>
       </div>
@@ -123,16 +123,16 @@ const ManagerProfile: React.FC = () => {
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-gray-50 py-6 px-4 flex">
-        <aside className="w-64 bg-white border-r">
+      <div className="min-h-screen bg-gray-50 dark:bg-[#1B1D2A] py-6 px-4 flex">
+        <aside className="w-64 border-r border-transparent dark:border-gray-700/50">
           <ManagerSideBar />
         </aside>
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="text-5xl mb-3">⚠️</div>
-            <p className="text-gray-700 mb-2">Failed to load profile</p>
-            <p className="text-gray-500 text-sm mb-4">{(error as any)?.message || 'Please try again.'}</p>
-            <button onClick={() => refetch()} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Retry</button>
+            <p className="text-gray-700 dark:text-gray-300 mb-2">Failed to load profile</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">{(error as any)?.message || 'Please try again.'}</p>
+            <button onClick={() => refetch()} className="px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700">Retry</button>
           </div>
         </div>
       </div>
@@ -140,18 +140,18 @@ const ManagerProfile: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6 flex">
-      <aside className="w-64 bg-white border-r">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#1B1D2A] py-6 flex">
+      <aside className="w-64 border-r border-transparent dark:border-gray-700/50">
         <ManagerSideBar />
       </aside>
-      <div className="flex-1 min-w-0 bg-white p-8">
+      <div className="flex-1 min-w-0 bg-white dark:bg-[#212530] p-8">
         {/* Header */}
         <div className="flex flex-col items-center text-center mb-8">
           <div className="relative">
             <img
               src={formData.avatar || profile?.profileImage || ''}
               alt="Manager Avatar"
-              className="w-32 h-32 rounded-full border-4 border-gray-200"
+              className="w-32 h-32 rounded-full border-4 border-gray-200 dark:border-gray-600"
             />
             <label className="absolute bottom-2 right-2 bg-red-500 p-2 rounded-full cursor-pointer">
               <Camera className="w-5 h-5 text-white" />
@@ -165,8 +165,8 @@ const ManagerProfile: React.FC = () => {
               />
             </label>
           </div>
-          <h2 className="text-2xl font-bold mt-4">{profile?.name ? capitalizeFirstLetter(profile.name) : 'Event Manager'}</h2>
-          <p className="text-gray-600 flex items-center gap-2">
+          <h2 className="text-2xl font-bold mt-4 text-gray-900 dark:text-white">{profile?.name ? capitalizeFirstLetter(profile.name) : 'Event Manager'}</h2>
+          <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
             <Shield className="w-4 h-4 text-red-500" />
             {profile?.role || 'event_manager'}
           </p>
@@ -175,31 +175,31 @@ const ManagerProfile: React.FC = () => {
         {/* Profile form */}
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
-            <label className="flex items-center gap-2 text-gray-700 mb-1">
+            <label className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
               <User className="w-4 h-4" /> Name
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none"
             />
           </div>
 
           <div>
-            <label className="flex items-center gap-2 text-gray-700 mb-1">
+            <label className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
               <Mail className="w-4 h-4" /> Email
             </label>
             <input
               type="email"
               value={profile?.email || ''}
               disabled
-              className="w-full px-4 py-2 border rounded-lg bg-gray-100 text-gray-500"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
             />
           </div>
 
           <div className="lg:col-span-2">
-            <label className="flex items-center gap-2 text-gray-700 mb-1">
+            <label className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
               </svg>
@@ -208,14 +208,14 @@ const ManagerProfile: React.FC = () => {
             <textarea
               value={formData.description}
               onChange={(e) => handleChange('description', e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none min-h-[100px]"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none min-h-[100px]"
               placeholder="Tell us about yourself..."
             />
           </div>
 
           {/* Phone */}
           <div>
-            <label className="flex items-center gap-2 text-gray-700 mb-1">
+            <label className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
               <Phone className="w-4 h-4" /> Phone Number
             </label>
             <input
@@ -223,25 +223,25 @@ const ManagerProfile: React.FC = () => {
               value={formData.phone}
               onChange={(e) => handleChange('phone', e.target.value)}
               placeholder="+911234567890"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none"
             />
           </div>
 
           {/* Birth Date */}
           <div>
-            <label className="text-gray-700 mb-1 block">Birth Date</label>
+            <label className="text-gray-700 dark:text-gray-300 mb-1 block">Birth Date</label>
             <input
               type="date"
               value={formData.birthDate}
               onChange={(e) => handleChange('birthDate', e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none"
               max={new Date().toISOString().split('T')[0]}
             />
           </div>
 
           <div className="grid md:grid-cols-2 gap-4 lg:col-span-2">
             <div>
-              <label className="flex items-center gap-2 text-gray-700 mb-1">
+              <label className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
                 <Lock className="w-4 h-4" /> Current Password
               </label>
               <input
@@ -249,29 +249,29 @@ const ManagerProfile: React.FC = () => {
                 value={formData.currentPassword}
                 onChange={(e) => handleChange('currentPassword', e.target.value)}
                 placeholder="Enter current password"
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none"
               />
             </div>
             <div>
-              <label className="text-gray-700 mb-1 block">New Password</label>
+              <label className="text-gray-700 dark:text-gray-300 mb-1 block">New Password</label>
               <input
                 type="password"
                 value={formData.newPassword}
                 onChange={(e) => handleChange('newPassword', e.target.value)}
                 placeholder="Enter new password"
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none"
               />
             </div>
           </div>
 
           <div>
-            <p className="text-sm text-gray-500">Joined on: {profile?.createdAt ? new Date(profile.createdAt).toDateString() : '—'}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Joined on: {profile?.createdAt ? new Date(profile.createdAt).toDateString() : '—'}</p>
           </div>
 
           <button
             type="submit"
             disabled={updateProfileMutation.isPending || changePasswordMutation.isPending}
-            className="w-full lg:w-auto bg-red-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-600 transition disabled:opacity-50"
+            className="w-full lg:w-auto bg-red-500 dark:bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-600 dark:hover:bg-red-700 transition disabled:opacity-50"
           >
             {updateProfileMutation.isPending || changePasswordMutation.isPending ? 'Updating...' : 'Update Profile'}
           </button>

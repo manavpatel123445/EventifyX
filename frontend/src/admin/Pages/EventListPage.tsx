@@ -78,35 +78,35 @@ const EventListPage: React.FC = () => {
   });
 
   return (
-    <div className="flex">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-[#0F1117]">
       <SideBar />
-      <div className="flex-1 p-8 bg-gray-50 min-h-screen">
-        <h1 className="text-2xl font-bold mb-6">Event Requests</h1>
+      <div className="flex-1 p-8">
+        <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Event Requests</h1>
         <div className="flex gap-4 mb-6">
           <button
-            className="bg-red-500 text-white px-4 py-2 rounded"
+            className="bg-red-500 dark:bg-red-600 text-white px-4 py-2 rounded hover:bg-red-600 dark:hover:bg-red-700"
             onClick={() => setEventModalOpen(true)}
           >
             + Create Event
           </button>
           <button
-            className="bg-blue-500 text-white px-4 py-2 rounded"
+            className="bg-blue-500 dark:bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-600 dark:hover:bg-blue-700"
             onClick={() => setCategoryModalOpen(true)}
           >
             + Create Category
           </button>
         </div>
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-white dark:bg-[#1F2933] rounded-xl shadow p-6 border border-gray-200 dark:border-[#374151]">
           {loadingReq ? (
-            <div className="text-center py-8">Loading requests...</div>
+            <div className="text-center py-8 text-gray-600 dark:text-gray-400">Loading requests...</div>
           ) : errorReq ? (
-            <div className="text-center text-red-500 py-8">Failed to fetch requests</div>
+            <div className="text-center text-red-500 dark:text-red-400 py-8">Failed to fetch requests</div>
           ) : requests.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">No event requests found.</div>
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">No event requests found.</div>
           ) : (
             <>
               <table className="w-full text-left">
-                <thead className="bg-gray-100">
+                <thead className="bg-gray-100 dark:bg-[#111827]">
                   <tr>
                     <th className="px-4 py-2">Event Title</th>
                     <th className="px-4 py-2">Requester</th>
@@ -119,23 +119,29 @@ const EventListPage: React.FC = () => {
                 </thead>
                 <tbody>
                   {requests.map((req: any) => (
-                    <tr key={req._id} className="border-b">
-                      <td className="px-4 py-2">{req.title}</td>
-                      <td className="px-4 py-2">{req.requestedBy?.name ? capitalizeFirstLetter(req.requestedBy.name) : "-"}</td>
-                      <td className="px-4 py-2">{req.category?.name ? capitalizeFirstLetter(req.category.name) : "-"}</td>
+                    <tr key={req._id} className="border-b border-gray-200 dark:border-[#374151]">
+                      <td className="px-4 py-2 text-gray-900 dark:text-gray-100">{req.title}</td>
+                      <td className="px-4 py-2 text-gray-900 dark:text-gray-100">{req.requestedBy?.name ? capitalizeFirstLetter(req.requestedBy.name) : "-"}</td>
+                      <td className="px-4 py-2 text-gray-900 dark:text-gray-100">{req.category?.name ? capitalizeFirstLetter(req.category.name) : "-"}</td>
                       <td className="py-2">
                         <div className="flex flex-col space-y-1">
-                              <div className="text-sm font-medium text-gray-900">
+                              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                                 {new Date(req.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })} - {new Date(req.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                               </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
                             {new Date(`2000-01-01T${req.startTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(`2000-01-01T${req.endTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-2">{typeof req.venue === "object" ? req.venue.name || JSON.stringify(req.venue) : req.venue}</td>
-                      <td className="px-4 py-2">
-                        <span className={`px-3 py-1 rounded-full text-sm ${req.status === "approved" ? "bg-green-100 text-green-700" : req.status === "rejected" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}`}>
+                      <td className="px-4 py-2 text-gray-900 dark:text-gray-100">
+                        <span className={`px-3 py-1 rounded-full text-sm ${
+                          req.status === "approved"
+                            ? "bg-emerald-900 text-emerald-300"
+                            : req.status === "rejected"
+                            ? "bg-red-900 text-red-300"
+                            : "bg-yellow-900 text-yellow-300"
+                        }`}>
                           {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
                         </span>
                       </td>
@@ -187,8 +193,8 @@ const EventListPage: React.FC = () => {
         </div>
 
         {/* Revenue and Sales Summary */}
-        <div className="bg-white rounded-xl shadow p-6 mt-6">
-          <h2 className="text-xl font-semibold mb-4">Revenue & Sales Summary</h2>
+        <div className="bg-white dark:bg-[#1F2933] rounded-xl shadow p-6 mt-6 border border-gray-200 dark:border-[#374151]">
+          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-50">Revenue & Sales Summary</h2>
           {loadingEvt ? (
             <div className="text-center py-8">Loading sales data...</div>
           ) : errorEvt ? (
@@ -198,9 +204,9 @@ const EventListPage: React.FC = () => {
           ) : (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="text-gray-600 text-sm font-medium">Total Revenue</h3>
-                  <p className="text-2xl font-bold">
+                <div className="bg-blue-50 dark:bg-blue-900/40 p-4 rounded-lg">
+                  <h3 className="text-gray-600 dark:text-gray-300 text-sm font-medium">Total Revenue</h3>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">
                   ₹{events.reduce((total: number, event: any) => {
                       return total + (event.ticketPricing?.reduce((sum: number, ticket: any) => {
                         return sum + ((ticket.sold || 0) * (ticket.price || 0));
@@ -208,9 +214,9 @@ const EventListPage: React.FC = () => {
                     }, 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h3 className="text-gray-600 text-sm font-medium">Total Tickets Sold</h3>
-                  <p className="text-2xl font-bold">
+                <div className="bg-green-50 dark:bg-emerald-900/40 p-4 rounded-lg">
+                  <h3 className="text-gray-600 dark:text-gray-300 text-sm font-medium">Total Tickets Sold</h3>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">
                     {events.reduce((total: number, event: any) => {
                       return total + (event.ticketPricing?.reduce((sum: number, ticket: any) => {
                         return sum + (ticket.sold || 0);
@@ -218,13 +224,13 @@ const EventListPage: React.FC = () => {
                     }, 0).toLocaleString()}
                   </p>
                 </div>
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <h3 className="text-gray-600 text-sm font-medium">Total Events</h3>
-                  <p className="text-2xl font-bold">{events.length}</p>
+                <div className="bg-purple-50 dark:bg-purple-900/40 p-4 rounded-lg">
+                  <h3 className="text-gray-600 dark:text-gray-300 text-sm font-medium">Total Events</h3>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">{events.length}</p>
                 </div>
-                <div className="bg-amber-50 p-4 rounded-lg">
-                  <h3 className="text-gray-600 text-sm font-medium">Admin Income (20%)</h3>
-                  <p className="text-2xl font-bold">
+                <div className="bg-amber-50 dark:bg-amber-900/40 p-4 rounded-lg">
+                  <h3 className="text-gray-600 dark:text-gray-300 text-sm font-medium">Admin Income (20%)</h3>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">
                   ₹{events.reduce((total: number, event: any) => {
                       const revenue = (event.ticketPricing?.reduce((sum: number, ticket: any) => {
                         return sum + ((ticket.sold || 0) * (ticket.price || 0));
@@ -235,9 +241,9 @@ const EventListPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="overflow-x-auto rounded-lg border border-gray-200">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+              <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-[#374151]">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-[#374151]">
+                  <thead className="bg-gray-50 dark:bg-[#111827]">
                     <tr>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tickets</th>
@@ -247,7 +253,7 @@ const EventListPage: React.FC = () => {
                       <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-[#1F2933] divide-y divide-gray-200 dark:divide-[#374151]">
                     {events.length > 0 ? (
                       events.map((event: any) => {
                         // Safely calculate ticket metrics
@@ -264,31 +270,31 @@ const EventListPage: React.FC = () => {
                         }, { sold: 0, revenue: 0, capacity: 0 });
 
                         return (
-                          <tr key={event._id} className="hover:bg-gray-50">
+                          <tr key={event._id} className="hover:bg-gray-50 dark:hover:bg-[#111827]">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
                                 <div>
-                                  <div className="text-sm font-medium text-gray-900">
+                                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                                     {event.title ? capitalizeFirstLetter(event.title) : 'Untitled Event'}
                                   </div>
-                                  <div className="text-sm text-gray-500">
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">
                                     {event.category?.name ? capitalizeFirstLetter(event.category.name) : event.category || 'No category'}
                                   </div>
                                 </div>
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">
+                              <div className="text-sm text-gray-900 dark:text-gray-100">
                                 {ticketMetrics.sold.toLocaleString()}
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">
+                              <div className="text-sm text-gray-900 dark:text-gray-100">
                                 {ticketMetrics.capacity.toLocaleString()}
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">
+                              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                               ₹{ticketMetrics.revenue.toLocaleString('en-US', { 
                                   minimumFractionDigits: 2, 
                                   maximumFractionDigits: 2 
@@ -296,7 +302,7 @@ const EventListPage: React.FC = () => {
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900 text-amber-700">
+                              <div className="text-sm font-medium text-amber-700 dark:text-amber-300">
                               ₹{(ticketMetrics.revenue * 0.20).toLocaleString('en-US', {
                                   minimumFractionDigits: 2,
                                   maximumFractionDigits: 2,
@@ -306,7 +312,7 @@ const EventListPage: React.FC = () => {
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
                               <button 
                                 onClick={() => setViewEvent(event)}
-                                className="text-blue-600 hover:text-blue-900 hover:underline"
+                                className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 hover:underline"
                               >
                                 View
                               </button>
@@ -317,7 +323,7 @@ const EventListPage: React.FC = () => {
                                   }
                                 }}
                                 disabled={softDeleteMutation.isPending}
-                                className="text-red-600 hover:text-red-800 hover:underline disabled:opacity-50"
+                                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:underline disabled:opacity-50"
                               >
                                 {softDeleteMutation.isPending ? 'Deleting...' : 'Delete'}
                               </button>
@@ -327,7 +333,7 @@ const EventListPage: React.FC = () => {
                       })
                     ) : (
                       <tr>
-                        <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                        <td colSpan={5} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
                           No events found
                         </td>
                       </tr>
@@ -338,7 +344,7 @@ const EventListPage: React.FC = () => {
               
               {/* Pagination */}
               <div className="flex justify-between items-center p-4">
-                <span className="text-sm text-gray-500">Page {evtPage} of {evtPages}</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">Page {evtPage} of {evtPages}</span>
                 <div className="space-x-2">
                   <button 
                     className="px-3 py-1 border rounded disabled:opacity-50" 

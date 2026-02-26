@@ -102,10 +102,10 @@ const UserListPage: React.FC = () => {
 
   if (isLoading && !isRefetching) {
     return (
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen bg-gray-50 dark:bg-[#1B1D2A]">
         <SideBar />
         <div className="flex-1 p-8">
-          <h1 className="text-2xl font-bold mb-6">Users</h1>
+          <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Users</h1>
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
           </div>
@@ -115,97 +115,106 @@ const UserListPage: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="w-64 bg-white border-r">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-[#1B1D2A]">
+      <aside className="w-64 border-r border-transparent dark:border-gray-700/50">
         <SideBar />
       </aside>
       <div className="flex-1 p-6 space-y-6">
         {/* Search + Filters */}
         <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">User Management</h1>
           <div className="relative w-1/3">
-            <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+            <Search className="absolute left-3 top-2.5 text-gray-400 dark:text-gray-500" size={18} />
             <input
               type="text"
-              placeholder="Search users..."
+              placeholder="Search users by name or email..."
               value={search}
               onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-              className="w-full pl-10 pr-4 py-2 border rounded-xl focus:ring focus:ring-primary focus:outline-none"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-[#212530] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring focus:ring-primary focus:outline-none"
             />
           </div>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
+          <Card className="bg-white dark:bg-[#212530] border-0 shadow dark:shadow-none">
             <CardContent className="p-4 flex items-center gap-4">
-              <Users className="text-blue-500" />
+              <Users className="text-blue-500 dark:text-blue-400" />
               <div>
-                <p className="text-gray-500">Total Users</p>
-                <h3 className="text-xl font-bold">{totalUsers}</h3>
+                <p className="text-gray-500 dark:text-gray-400">Total Users</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{totalUsers}</h3>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-white dark:bg-[#212530] border-0 shadow dark:shadow-none">
             <CardContent className="p-4 flex items-center gap-4">
-              <UserCheck className="text-green-500" />
+              <UserCheck className="text-green-500 dark:text-green-400" />
               <div>
-                <p className="text-gray-500">Active Users</p>
-                <h3 className="text-xl font-bold">{stats.active}</h3>
+                <p className="text-gray-500 dark:text-gray-400">Active Users</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{stats.active}</h3>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-white dark:bg-[#212530] border-0 shadow dark:shadow-none">
             <CardContent className="p-4 flex items-center gap-4">
-              <UserCog className="text-yellow-500" />
+              <UserCog className="text-yellow-500 dark:text-yellow-400" />
               <div>
-                <p className="text-gray-500">Pending Managers</p>
-                <h3 className="text-xl font-bold">{pendingManagers}</h3>
+                <p className="text-gray-500 dark:text-gray-400">Pending Managers</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{pendingManagers}</h3>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-white dark:bg-[#212530] border-0 shadow dark:shadow-none">
             <CardContent className="p-4 flex items-center gap-4">
-              <UserX className="text-red-500" />
+              <UserX className="text-red-500 dark:text-red-400" />
               <div>
-                <p className="text-gray-500">Suspended Users</p>
-                <h3 className="text-xl font-bold">{stats.blocked}</h3>
+                <p className="text-gray-500 dark:text-gray-400">Suspended Users</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{stats.blocked}</h3>
               </div>
             </CardContent>
           </Card>
         </div>
 
       {/* User Table */}
-      <div className="bg-white shadow rounded-xl overflow-hidden">
+      <div className="bg-white dark:bg-[#212530] shadow rounded-xl overflow-hidden">
         <table className="w-full text-left">
-          <thead className="bg-gray-100">
+          <thead className="bg-gray-100 dark:bg-gray-800/50">
             <tr>
-              <th className="px-4 py-3">User</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Role</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Actions</th>
+              <th className="px-4 py-3 text-gray-700 dark:text-gray-300">User</th>
+              <th className="px-4 py-3 text-gray-700 dark:text-gray-300">Email Address</th>
+              <th className="px-4 py-3 text-gray-700 dark:text-gray-300">Role</th>
+              <th className="px-4 py-3 text-gray-700 dark:text-gray-300">Status</th>
+              <th className="px-4 py-3 text-gray-700 dark:text-gray-300">Actions</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={5} className="px-4 py-6 text-center">Loading...</td></tr>
+              <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-600 dark:text-gray-400">Loading...</td></tr>
             ) : displayUsers.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-6 text-center">No users found</td></tr>
+              <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-600 dark:text-gray-400">No users found</td></tr>
             ) : displayUsers.map((user) => (
-              <tr key={user._id} className="border-b hover:bg-gray-50">
-                <td className="px-4 py-3 flex items-center gap-2">
+              <tr key={user._id} className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                <td className="px-4 py-3 flex items-center gap-2 text-gray-900 dark:text-white">
                             {capitalizeFirstLetter(user.name)}
                 </td>
-                <td className="px-4 py-3">{user.email}</td>
-                <td className="px-4 py-3">{user.role}</td>
+                <td className="px-4 py-3 text-gray-900 dark:text-white">{user.email}</td>
+                <td className="px-4 py-3">
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    user.role === "admin" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300"
+                    : user.role === "event_manager" ? "bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300"
+                    : "bg-gray-100 dark:bg-gray-700/50 text-gray-800 dark:text-gray-300"
+                  }`}>
+                    {user.role?.replace('_', ' ')}
+                  </span>
+                </td>
                 <td className="px-4 py-3">
                   <span
                     className={`px-3 py-1 rounded-full text-sm ${
                       user.status === "active"
-                        ? "bg-green-100 text-green-700"
+                        ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400"
                         : user.status === "blocked"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-yellow-100 text-yellow-700"
+                        ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400"
+                        : "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400"
                     }`}
                   >
                     {user.status?.charAt(0).toUpperCase() + user.status?.slice(1)}
@@ -214,7 +223,7 @@ const UserListPage: React.FC = () => {
                 <td className="px-4 py-3 space-x-2">
                   <Button 
                     variant="link" 
-                    className="text-blue-600" 
+                    className="text-blue-600 dark:text-blue-400" 
                     onClick={() => {
                       setSelectedUser(user);
                       setIsViewModalOpen(true);
@@ -225,7 +234,7 @@ const UserListPage: React.FC = () => {
                   {user.status === "active" ? (
                     <Button 
                       variant="link" 
-                      className="text-yellow-600" 
+                      className="text-yellow-600 dark:text-yellow-400" 
                       disabled={updateStatusMutation.isPending} 
                       onClick={() => updateStatusMutation.mutate({ userId: user._id, status: "blocked" })}
                     >
@@ -234,7 +243,7 @@ const UserListPage: React.FC = () => {
                   ) : (
                     <Button 
                       variant="link" 
-                      className="text-green-600" 
+                      className="text-green-600 dark:text-green-400" 
                       disabled={updateStatusMutation.isPending} 
                       onClick={() => updateStatusMutation.mutate({ userId: user._id, status: "active" })}
                     >
@@ -243,7 +252,7 @@ const UserListPage: React.FC = () => {
                   )}
                   <Button 
                     variant="link" 
-                    className="text-red-600" 
+                    className="text-red-600 dark:text-red-400" 
                     disabled={deleteMutation.isPending} 
                     onClick={() => {
                       if (window.confirm(`Are you sure you want to delete ${capitalizeFirstLetter(user.name)}?`)) {
@@ -261,7 +270,7 @@ const UserListPage: React.FC = () => {
 
         {/* Pagination */}
         <div className="flex justify-between items-center p-4">
-          <span className="text-sm text-gray-500">Page {page} of {pages}</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">Page {page} of {pages}</span>
           <div className="space-x-2">
             <Button variant="outline" size="sm" disabled={page<=1} onClick={() => setPage(p=>Math.max(1,p-1))}>Previous</Button>
             <Button variant="outline" size="sm" disabled={page>=pages} onClick={() => setPage(p=>p+1)}>Next</Button>

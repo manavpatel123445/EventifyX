@@ -45,7 +45,10 @@ const ManagerEventList = () => {
     },
   })
 
-  const events: Event[] = useMemo(() => Array.isArray(eventsData?.events) ? eventsData.events : [], [eventsData])
+  const events: Event[] = useMemo(
+    () => (eventsData?.events ?? []) as Event[],
+    [eventsData]
+  )
   const totalPages = eventsData?.pagination?.pages ?? 1
   const requests: any[] = useMemo(() => Array.isArray(requestsData) ? requestsData : [], [requestsData])
 
@@ -98,20 +101,20 @@ const ManagerEventList = () => {
   }
 
   return (
-    <div className="flex bg-gray-50 min-h-screen">
+    <div className="flex bg-gray-50 dark:bg-[#1B1D2A] min-h-screen">
       <ManagerSideBar/>
       <div className="flex-1 p-8 space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">My Events</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Events</h1>
           <div className="flex items-center gap-2">
             <button
-              className="bg-blue-500 text-white px-4 py-2 rounded shadow hover:bg-blue-600 transition"
+              className="bg-blue-500 dark:bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-600 dark:hover:bg-blue-700 transition"
               onClick={() => setCategoryModalOpen(true)}
             >
               + Create Category
             </button>
             <button
-              className="bg-red-500 text-white px-4 py-2 rounded shadow hover:bg-red-600 transition"
+              className="bg-red-500 dark:bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-600 dark:hover:bg-red-700 transition"
               onClick={() => setCreateOpen(true)}
             >
               + Create Event
@@ -119,11 +122,11 @@ const ManagerEventList = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow p-6">
+        <div className="bg-white dark:bg-[#212530] rounded-2xl shadow p-6">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-gray-100 text-left text-sm text-gray-600">
+                <tr className="bg-gray-100 dark:bg-gray-800/50 text-left text-sm text-gray-600 dark:text-gray-400">
                   <th className="px-4 py-3">Title</th>
                   <th className="px-4 py-3">Category</th>
                   <th className="px-4 py-3">Date/Time</th>
@@ -148,18 +151,18 @@ const ManagerEventList = () => {
                   }
 
                   const statusColorClass = {
-                    upcoming: 'bg-green-100 text-green-700',
-                    ongoing: 'bg-blue-100 text-blue-700',
-                    completed: 'bg-gray-100 text-gray-700',
-                    cancelled: 'bg-red-100 text-red-700',
-                  }[currentStatus] || 'bg-gray-100 text-gray-700';
+                    upcoming: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400',
+                    ongoing: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
+                    completed: 'bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300',
+                    cancelled: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400',
+                  }[currentStatus] || 'bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300';
 
                   return (
-                    <tr key={ev._id} className={`text-sm ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                      <td className="px-4 py-3 font-medium">{capitalizeFirstLetter(ev.title)}</td>
-                      <td className="px-4 py-3">{ev.category?.name ? capitalizeFirstLetter(ev.category.name) : '-'}</td>
-                      <td className="px-4 py-3">{new Date(ev.startDate).toLocaleDateString()} {ev.startTime}</td>
-                      <td className="px-4 py-3">{ev.venue?.city ?? ''}</td>
+                    <tr key={ev._id} className={`text-sm ${i % 2 === 0 ? 'bg-white dark:bg-[#212530]' : 'bg-gray-50 dark:bg-gray-800/30'} border-b border-gray-100 dark:border-gray-700/50`}>
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{capitalizeFirstLetter(ev.title)}</td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">{ev.category?.name ? capitalizeFirstLetter(ev.category.name) : '-'}</td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">{new Date(ev.startDate).toLocaleDateString()} {ev.startTime}</td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">{ev.venue?.city ?? ''}</td>
                       <td className="px-4 py-3">{sold}</td>
                       <td className="px-4 py-3">₹{revenue.toLocaleString()}</td>
                       <td className="px-4 py-3">
@@ -171,15 +174,15 @@ const ManagerEventList = () => {
                         <div className="flex gap-2 justify-end">
                           <button 
                             onClick={() => setViewEvent(ev)} 
-                            className="px-3 py-1 rounded border text-gray-700 hover:bg-gray-50"
+                            className="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                           >
                             View
                           </button>
-                          <button onClick={() => setEditEvent(ev)} className="px-3 py-1 rounded border text-blue-600 hover:bg-blue-50">Update</button>
+                          <button onClick={() => setEditEvent(ev)} className="px-3 py-1 rounded border border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20">Update</button>
                           <button
                             onClick={() => handleCancelClick(ev)}
                             disabled={cancelMutation.isPending || ev.status !== 'upcoming'}
-                            className="px-3 py-1 rounded border text-red-600 hover:bg-red-50 disabled:opacity-50"
+                            className="px-3 py-1 rounded border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
                           >
                             Cancel
                           </button>
@@ -190,7 +193,7 @@ const ManagerEventList = () => {
                 })}
                 {events.length === 0 && (
                   <tr>
-                    <td className="px-4 py-6 text-center text-gray-400" colSpan={8}>
+                    <td className="px-4 py-6 text-center text-gray-400 dark:text-gray-500" colSpan={8}>
                       {isLoading ? 'Loading events...' : 'No events yet'}
                     </td>
                   </tr>
@@ -204,19 +207,19 @@ const ManagerEventList = () => {
                 <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="flex items-center px-3 py-1 rounded border disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   <ChevronLeft className="w-4 h-4 mr-1" /> Previous
                 </button>
                 
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
                   Page {page} of {totalPages}
                 </div>
                 
                 <button
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
-                  className="flex items-center px-3 py-1 rounded border disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   Next <ChevronRight className="w-4 h-4 ml-1" />
                 </button>
@@ -226,12 +229,12 @@ const ManagerEventList = () => {
         </div>
 
         {/* Requests for managed events */}
-        <div className="bg-white rounded-2xl shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Requests Linked To Your Events</h2>
+        <div className="bg-white dark:bg-[#212530] rounded-2xl shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Requests Linked To Your Events</h2>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-gray-100 text-left text-sm text-gray-600">
+                <tr className="bg-gray-100 dark:bg-gray-800/50 text-left text-sm text-gray-600 dark:text-gray-400">
                   <th className="px-4 py-3">Event</th>
                   <th className="px-4 py-3">Requested By</th>
                   <th className="px-4 py-3">Status</th>
@@ -241,14 +244,14 @@ const ManagerEventList = () => {
               </thead>
               <tbody>
                 {requests.map((req, i) => (
-                  <tr key={req._id || i} className={`text-sm ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                    <td className="px-4 py-3">{req.approvedEvent?.title ? capitalizeFirstLetter(req.approvedEvent.title) : '-'}</td>
-                    <td className="px-4 py-3">{req.requestedBy?.name ? capitalizeFirstLetter(req.requestedBy.name) : '-'}</td>
+                  <tr key={req._id || i} className={`text-sm ${i % 2 === 0 ? 'bg-white dark:bg-[#212530]' : 'bg-gray-50 dark:bg-gray-800/30'} border-b border-gray-100 dark:border-gray-700/50`}>
+                    <td className="px-4 py-3 text-gray-900 dark:text-white">{req.approvedEvent?.title ? capitalizeFirstLetter(req.approvedEvent.title) : '-'}</td>
+                    <td className="px-4 py-3 text-gray-900 dark:text-white">{req.requestedBy?.name ? capitalizeFirstLetter(req.requestedBy.name) : '-'}</td>
                     <td className="px-4 py-3">
-                      <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">{req.status}</span>
+                      <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 rounded-full text-xs font-medium">{req.status}</span>
                     </td>
-                    <td className="px-4 py-3">{req.reviewedBy?.name ? capitalizeFirstLetter(req.reviewedBy.name) : '-'}</td>
-                    <td className="px-4 py-3">{req.reviewedAt ? new Date(req.reviewedAt).toLocaleString() : '-'}</td>
+                    <td className="px-4 py-3 text-gray-900 dark:text-white">{req.reviewedBy?.name ? capitalizeFirstLetter(req.reviewedBy.name) : '-'}</td>
+                    <td className="px-4 py-3 text-gray-900 dark:text-white">{req.reviewedAt ? new Date(req.reviewedAt).toLocaleString() : '-'}</td>
                   </tr>
                 ))}
                 {requests.length === 0 && (
@@ -266,18 +269,18 @@ const ManagerEventList = () => {
 
       {/* Cancel Event Dialog */}
       {showCancelDialog && selectedEvent && (
-        <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Request Event Cancellation</h2>
-            <p className="mb-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-[#212530] rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Request Event Cancellation</h2>
+            <p className="mb-4 text-gray-700 dark:text-gray-300">
               You are about to request cancellation for: <strong>{capitalizeFirstLetter(selectedEvent.title)}</strong>
             </p>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Reason for cancellation (required):
               </label>
               <textarea
-                className="w-full border rounded p-2 min-h-[100px]"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded p-2 min-h-[100px] bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 placeholder="Please provide a reason for cancellation..."
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
@@ -290,7 +293,7 @@ const ManagerEventList = () => {
                   setSelectedEvent(null)
                   setCancelReason('')
                 }}
-                className="px-4 py-2 border rounded hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                 disabled={cancelMutation.isPending || requestCancelMutation.isPending}
               >
                 Cancel
@@ -298,7 +301,7 @@ const ManagerEventList = () => {
               <button
                 onClick={handleCancelRequest}
                 disabled={!cancelReason.trim() || cancelMutation.isPending || requestCancelMutation.isPending}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
+                className="px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded hover:bg-red-600 dark:hover:bg-red-700 disabled:opacity-50"
               >
                 {cancelMutation.isPending || requestCancelMutation.isPending ? 'Submitting...' : 'Submit Request'}
               </button>

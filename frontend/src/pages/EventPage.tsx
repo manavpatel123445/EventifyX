@@ -47,7 +47,7 @@ const EventPage = () => {
         const activeEvents = data.events.filter(event => {
           const end = event?.endDate ? new Date(event.endDate) : (event?.startDate ? new Date(event.startDate) : null);
           if (!end) return true; // if no dates, keep it
-          return end >= now && event.status !== 'cancelled' && event.isPublic !== false && event.isDeleted !== true && event.eventManager?.status !== 'blocked';
+          return end >= now && event.status !== 'cancelled';
         });
         setEvents(activeEvents);
         setTotalPages(data.pagination.pages);
@@ -135,9 +135,9 @@ const EventPage = () => {
   return (
     <>
       <Navbar />
-      <div className="bg-gray-50 min-h-screen font-poppins">
+      <div className="bg-gray-50 dark:bg-[#1B1D2A] min-h-screen font-poppins">
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white py-16">
+        <div className="bg-gradient-to-r from-red-500 to-pink-500 dark:from-red-600 dark:to-pink-600 text-white py-16">
           <div className="max-w-7xl mx-auto px-6 text-center">
             <h1 className="text-4xl md:text-6xl font-bold mb-4">
               Discover Amazing Events
@@ -147,15 +147,15 @@ const EventPage = () => {
             </p>
             
             {/* Search Bar */}
-            <div className="max-w-2xl mx-auto bg-white rounded-full p-2 flex items-center shadow-lg">
+            <div className="max-w-2xl mx-auto bg-white dark:bg-[#212530] rounded-full p-2 flex items-center shadow-lg">
               <input
                 type="text"
                 placeholder="Search events..."
                 value={searchTerm}
                 onChange={handleSearchChange}
-                className="flex-1 px-4 py-3 text-gray-800 rounded-full focus:outline-none"
+                className="flex-1 px-4 py-3 text-gray-800 dark:text-white bg-transparent rounded-full focus:outline-none placeholder-gray-500 dark:placeholder-gray-400"
               />
-              <button className="bg-red-500 text-white px-6 py-3 rounded-full hover:bg-red-600 transition">
+              <button className="bg-red-500 dark:bg-red-600 text-white px-6 py-3 rounded-full hover:bg-red-600 dark:hover:bg-red-700 transition">
                 Search
               </button>
             </div>
@@ -164,16 +164,16 @@ const EventPage = () => {
 
         {/* Filters */}
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+          <div className="bg-white dark:bg-[#212530] rounded-lg shadow-sm p-6 mb-8">
             <div className="grid md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Category
                 </label>
                 <select
                   value={selectedCategory}
                   onChange={handleCategoryChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   <option value="">All Categories</option>
                   {categoriesLoading ? (
@@ -189,7 +189,7 @@ const EventPage = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   City
                 </label>
                 <input
@@ -197,7 +197,7 @@ const EventPage = () => {
                   placeholder="Enter city"
                   value={selectedCity}
                   onChange={handleCityChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
               
@@ -209,7 +209,7 @@ const EventPage = () => {
                     setSelectedCity("");
                     setCurrentPage(1);
                   }}
-                  className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                  className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
                 >
                   Clear Filters
                 </button>
@@ -220,8 +220,8 @@ const EventPage = () => {
           {/* Loading State */}
           {loading && (
             <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
-              <span className="ml-3 text-gray-600">Loading events...</span>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 dark:border-red-400"></div>
+              <span className="ml-3 text-gray-600 dark:text-gray-400">Loading events...</span>
             </div>
           )}
 
@@ -233,7 +233,7 @@ const EventPage = () => {
                   <Link
                     key={event._id}
                     to={`/events/${event._id}`}
-                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden"
+                    className="bg-white dark:bg-[#212530] rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden"
                   >
                     <div className="aspect-w-16 aspect-h-9">
                       <img
@@ -248,42 +248,43 @@ const EventPage = () => {
                     </div>
                     <div className="p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-red-500 font-medium">
+                        <span className="text-sm text-red-500 dark:text-red-400 font-medium">
                           {event.category?.name || 'General'}
                         </span>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
                           {(() => {
                             const sd = new Date(event.startDate);
                             const ed = event.endDate ? new Date(event.endDate) : null;
-                            const isSameDate = ed && sd.toDateString() === ed.toDateString();
-
-                            if (isSameDate) {
-                              // Same date - show single date with time range
-                              return `${formatDate(event.startDate)} • ${formatTime(event.startTime)}${event.endTime ? ` – ${formatTime(event.endTime)}` : ''}`;
-                            } else {
-                              // Different dates - show date range
-                              return `${formatDate(event.startDate)}${event.endDate ? ` – ${formatDate(event.endDate as string)}` : ''}`;
+                            if (ed && sd.toDateString() !== ed.toDateString()) {
+                              return `${formatDate(event.startDate)} – ${formatDate(event.endDate as string)}`;
                             }
+                            return formatDate(event.startDate);
                           })()}
                         </span>
                       </div>
-                      <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                      <h3 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
                         {event.title}
                       </h3>
-                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">
                         {event.description}
                       </p>
-                      <div className="flex items-center text-sm text-gray-500 mb-2">
+                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
                         <span className="mr-1">📍</span>
                         <span>{`${event.venue?.city || 'TBD'}${event.venue?.state ? `, ${event.venue.state}` : ''}`}</span>
                       </div>
+                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
+                        <span className="mr-1">⏰</span>
+                        <span>
+                          {formatTime(event.startTime)}{event.endTime ? ` – ${formatTime(event.endTime)}` : ''}
+                        </span>
+                      </div>
                       <div className="flex items-center justify-between">
-                        <div className="text-sm font-medium text-green-600">
+                        <div className="text-sm font-medium text-green-600 dark:text-green-400">
                           {event.ticketPricing?.length
                             ? `From ₹${Math.min(...event.ticketPricing.map(t => t.price)).toLocaleString('en-IN')}`
                             : 'Free'}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
                           {event.eventManager?.name || 'Organizer'}
                         </div>
                       </div>
@@ -296,10 +297,10 @@ const EventPage = () => {
               {events.length === 0 && (
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">🎪</div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                  <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
                     No events found
                   </h3>
-                  <p className="text-gray-600 mb-4">
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
                     Try adjusting your search criteria or check back later for new events.
                   </p>
                   <button
@@ -309,7 +310,7 @@ const EventPage = () => {
                       setSelectedCity("");
                       setCurrentPage(1);
                     }}
-                    className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                    className="px-6 py-3 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700 transition"
                   >
                     Show All Events
                   </button>
@@ -323,7 +324,7 @@ const EventPage = () => {
                     <button
                       onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                       disabled={currentPage === 1}
-                      className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
                       Previous
                     </button>
@@ -336,8 +337,8 @@ const EventPage = () => {
                           onClick={() => setCurrentPage(pageNum)}
                           className={`px-4 py-2 border rounded-lg ${
                             currentPage === pageNum
-                              ? "bg-red-500 text-white border-red-500"
-                              : "border-gray-300 hover:bg-gray-50"
+                              ? "bg-red-500 dark:bg-red-600 text-white border-red-500 dark:border-red-600"
+                              : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                           }`}
                         >
                           {pageNum}
@@ -348,7 +349,7 @@ const EventPage = () => {
                     <button
                       onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                       disabled={currentPage === totalPages}
-                      className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
                       Next
                     </button>

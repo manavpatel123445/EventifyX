@@ -158,9 +158,6 @@ const PaymentLogModal: React.FC<PaymentLogModalProps> = ({ isOpen, onClose, paym
               </div>
             </div>
           )}
-
-          {/* Raw Data */}
-          
         </div>
       </div>
     </div>
@@ -168,3 +165,4 @@ const PaymentLogModal: React.FC<PaymentLogModalProps> = ({ isOpen, onClose, paym
 };
 
 export default PaymentLogModal;
+
