@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Download, Calendar, MapPin } from 'lucide-react';
 import  Footer  from '../components/Footer';
 import  Navbar  from '../components/Navbar';
+import { resolveApiRoot } from '../services/apiRoot';
 
 interface Ticket {
   _id: string;
@@ -42,7 +43,7 @@ const MyTicketsPage: React.FC = () => {
   const [pageSize, setPageSize] = useState<number>(6);
 
   const sessionId = searchParams.get('session_id');
-  const API_ROOT = import.meta.env.VITE_API_BASE_URL || '';
+  const API_ROOT = resolveApiRoot();
 
   // Unique event options from tickets
   const eventOptions = useMemo(() => {
@@ -145,7 +146,7 @@ const MyTicketsPage: React.FC = () => {
       const fetchMyTicketsWithFallbacks = async (): Promise<Ticket[]> => {
         const bases = [API_ROOT || ''];
         const paths = [
-          '/api/payments/tickets'
+          '/payments/tickets'
         ];
         const errors: string[] = [];
         for (const base of bases) {
@@ -191,14 +192,14 @@ const MyTicketsPage: React.FC = () => {
 
       try {
         // Try to fetch tickets by session; if not yet created, poll briefly
-        const response = await fetch(`${API_ROOT}/api/payments/tickets/session/${sessionId}`, { headers });
+        const response = await fetch(`${API_ROOT}/payments/tickets/session/${sessionId}`, { headers });
         
         if (!response.ok) {
           // Poll up to ~10s while webhook processes
           const start = Date.now();
           while (Date.now() - start < 10000) {
             await new Promise(r => setTimeout(r, 1500));
-            const r2 = await fetch(`${API_ROOT}/api/payments/tickets/session/${sessionId}`, { headers });
+            const r2 = await fetch(`${API_ROOT}/payments/tickets/session/${sessionId}`, { headers });
             if (r2.ok) {
               const d2 = await r2.json();
               setTickets(Array.isArray(d2) ? d2.map(normalizeTicket) : []);
@@ -241,7 +242,7 @@ const MyTicketsPage: React.FC = () => {
       try {
         const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
         const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-        const r = await fetch(`${API_ROOT}/api/payments/tickets/session/${sessionId}`, { headers });
+        const r = await fetch(`${API_ROOT}/payments/tickets/session/${sessionId}`, { headers });
         if (r.ok) {
           const data = await r.json();
           if (Array.isArray(data) && data.length > 0) {

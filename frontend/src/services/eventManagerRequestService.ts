@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import axios from "axios";
+import { resolveApiRoot } from "./apiRoot";
 
-const API_ROOT = import.meta.env.VITE_API_BASE_URL || "/api";
+const API_ROOT = resolveApiRoot();
 const API = axios.create({ baseURL: `${API_ROOT}/manager-requests` });
 
 // Add authorization header to all requests

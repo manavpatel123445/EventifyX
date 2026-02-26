@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, Download, Calendar, MapPin, User, CreditCard } from 'lucide-react';
+import { resolveApiRoot } from '../services/apiRoot';
 
 interface Ticket {
   _id: string;
@@ -35,6 +36,7 @@ const CheckoutSuccessPage: React.FC = () => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const API_ROOT = resolveApiRoot();
 
   const sessionId = searchParams.get('session_id');
 
@@ -77,14 +79,14 @@ const CheckoutSuccessPage: React.FC = () => {
 
       try {
         // Try to fetch tickets by session; if not yet created, poll briefly
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/tickets/session/${sessionId}`);
+        const response = await fetch(`${API_ROOT}/payments/tickets/session/${sessionId}`);
         
         if (!response.ok) {
           // Poll up to ~10s while webhook processes
           const start = Date.now();
           while (Date.now() - start < 10000) {
             await new Promise(r => setTimeout(r, 1500));
-            const r2 = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/tickets/session/${sessionId}`);
+            const r2 = await fetch(`${API_ROOT}/payments/tickets/session/${sessionId}`);
             if (r2.ok) {
               const d2 = await r2.json();
               setTickets(d2);
@@ -123,7 +125,7 @@ const CheckoutSuccessPage: React.FC = () => {
 
     const interval = setInterval(async () => {
       try {
-        const r = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/tickets/session/${sessionId}`);
+        const r = await fetch(`${API_ROOT}/payments/tickets/session/${sessionId}`);
         if (r.ok) {
           const data = await r.json();
           if (Array.isArray(data) && data.length > 0) {

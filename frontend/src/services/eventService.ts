@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
 import type { ReactNode } from "react";
+import { resolveApiRoot } from "./apiRoot";
 
 // Create event API instance
-const API_ROOT = import.meta.env.VITE_API_BASE_URL || "/api";
+const API_ROOT = resolveApiRoot();
 const eventAPI = axios.create({ 
   baseURL: `${API_ROOT}/events`,
 });
