@@ -1,6 +1,7 @@
 import axios from "axios";
+import { resolveApiRoot } from "./apiRoot";
 
-const API_ROOT = import.meta.env.VITE_API_BASE_URL || "/api";
+const API_ROOT = resolveApiRoot();
 
 // Public categories API (no auth required) - for Home page, filters, etc.
 const publicCategoryAPI = axios.create({

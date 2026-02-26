@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { getRevenueAnalytics, getManagerRevenue } from '../../services/adminService';
+import { resolveApiRoot } from '../../services/apiRoot';
 import useAuth from '../../hooks/useAuth';
 import { DatePickerWithRange } from '../../components/ui/date-range-picker';
 import { capitalizeFirstLetter } from '../../utils/roles';
@@ -100,7 +101,7 @@ const RevenueAnalyticsPage: React.FC = () => {
       setIsExporting(true);
       const format = 'csv'; // or 'xlsx' if you want Excel format
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/admin/analytics/export/revenue?` + 
+        `${resolveApiRoot()}/admin/analytics/export/revenue?` + 
         `startDate=${formatDate(dateRange?.from || startOfMonth(new Date()))}&` +
         `endDate=${formatDate(dateRange?.to || endOfMonth(new Date()))}`,
         {

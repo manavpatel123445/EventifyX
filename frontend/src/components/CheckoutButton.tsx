@@ -1,4 +1,5 @@
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
+import { resolveApiRoot } from "../services/apiRoot";
 
 let stripePromise: Promise<Stripe | null> | null = null;
 
@@ -32,7 +33,7 @@ const CheckoutButton: React.FC<CheckoutProps> = ({
       return;
     }
 
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/create-checkout-session`, {
+    const res = await fetch(`${resolveApiRoot()}/payments/create-checkout-session`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
