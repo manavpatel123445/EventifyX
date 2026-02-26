@@ -1,16 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getPaymentLogs, type PaymentLogsParams, type PaymentLogsResponse } from '../../services/paymentService';
-import PaymentLogModal from '../../admin/components/PaymentLogModal'
+import PaymentLogModal from '../../admin/components/PaymentLogModal';
 import ManagerSideBar from '../../EventManager/components/ManagerSidebar';
 
 const ManagerPaymentLogsPage = () => {
   // Payment Logs Table State
   const [paymentLogsPage, setPaymentLogsPage] = useState<number>(1);
   const [paymentLogsLimit, setPaymentLogsLimit] = useState<number>(10);
-
-  
- 
 
   const [eventId] = useState<string>("");
   const [userId] = useState<string>("");
@@ -35,11 +32,8 @@ const ManagerPaymentLogsPage = () => {
     status,
     sortBy: 'createdAt',
     sortOrder: 'desc',
-    managerOnly: true  // This ensures managers only see their own events' payments
+    managerOnly: true  // managers only see their own events' payments
   }), [paymentLogsPage, paymentLogsLimit, eventId, userId, transactionId, userName, eventName, status]);
-
-  // Revenue & Sales Table Query Parameters
-  // Note: revenueParams is currently unused but kept for future implementation when revenue table needs separate query
 
   const queryClient = useQueryClient();
 
@@ -66,16 +60,14 @@ const ManagerPaymentLogsPage = () => {
       userName,
       eventName
     });
-    setPaymentLogsPage(1); // Reset payment logs to first page when searching
-    // Reset revenue to first page when searching
+    setPaymentLogsPage(1);
     queryClient.invalidateQueries({ queryKey: ['paymentLogs'] });
     refetch();
   };
 
   // Handle filters
   const handleFilterChange = () => {
-    setPaymentLogsPage(1); // Reset payment logs to first page when filtering
-    // Reset revenue to first page when filtering
+    setPaymentLogsPage(1);
     queryClient.invalidateQueries({ queryKey: ['paymentLogs'] });
     refetch();
   };
@@ -99,10 +91,8 @@ const ManagerPaymentLogsPage = () => {
   }
 
   return (
-   
     <div className="flex min-h-screen">
-   
-      <ManagerSideBar/>
+      <ManagerSideBar />
       <div className="flex-1 p-6 space-y-8 overflow-x-auto">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">My Events Payment Logs</h1>
@@ -138,7 +128,6 @@ const ManagerPaymentLogsPage = () => {
         {/* Filters */}
         <div className="bg-white p-4 rounded-md border mb-4">
           <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
-            
             <select className="border rounded px-3 py-2 w-full md:w-auto" value={status} onChange={(e) => { setPaymentLogsPage(1); setStatus(e.target.value); handleFilterChange(); }}>
               <option value="">All Statuses</option>
               <option value="succeeded">Completed</option>
@@ -160,9 +149,7 @@ const ManagerPaymentLogsPage = () => {
                   const searchValue = e.target.value;
                   setSearch(searchValue);
                   setPaymentLogsPage(1);
-               
 
-                  // Update the appropriate search field based on search type
                   if (searchType === 'transactionId') {
                     setTransactionId(searchValue);
                     setUserName('');
@@ -189,7 +176,6 @@ const ManagerPaymentLogsPage = () => {
                   setUserName('');
                   setEventName('');
                   setPaymentLogsPage(1);
-                  
                   queryClient.invalidateQueries({ queryKey: ['paymentLogs'] });
                 }}
                 className="px-3 py-2 text-sm border rounded-md bg-gray-100 hover:bg-gray-200"
@@ -215,7 +201,6 @@ const ManagerPaymentLogsPage = () => {
                 <th className="px-4 py-2 text-left">Status</th>
                 <th className="px-4 py-2 text-right">Amount</th>
                 <th className="px-4 py-2 text-right">Sold Tickets</th>
-              
                 <th className="px-4 py-2 text-left">User/User ID</th>
                 <th className="px-4 py-2 text-left">Event/Event ID</th>
                 <th className="px-4 py-2 text-right">Actions</th>
@@ -241,7 +226,6 @@ const ManagerPaymentLogsPage = () => {
                     </td>
                     <td className="px-4 py-2 text-right">₹{(log.amount ?? 0).toFixed(2)}</td>
                     <td className="px-4 py-2 text-right">{Array.isArray(log.tickets) ? log.tickets.length : 0}</td>
-                   
                     <td className="px-4 py-2">
                       <div className="text-sm font-medium text-gray-900">
                         {u?.name || 'Unknown User'}
@@ -356,8 +340,7 @@ const ManagerPaymentLogsPage = () => {
           </div>
         </div>
 
-        {/* Revenue & Sales Summary Table */}
-        
+        {/* Revenue & Sales Summary Table (reserved for future use) */}
       </div>
 
       {/* Payment Log Modal */}
@@ -374,3 +357,4 @@ const ManagerPaymentLogsPage = () => {
 };
 
 export default ManagerPaymentLogsPage;
+

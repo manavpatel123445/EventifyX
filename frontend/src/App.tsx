@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
 import Home from './pages/Home';
 import EventPage from './pages/EventPage';
 import './App.css';
@@ -29,10 +30,9 @@ import EventManagerRequestPage from './pages/EventManagerRequestPage';
 import CheckoutSuccessPage from './pages/CheckoutSuccessPage';
 import MyTicketsPage from './pages/MyTicketsPage';
 import RevenueAnalyticsPage from './admin/Pages/RevenueAnalyticsPage';
-import SaleRevanue from './EventManager/Page/SaleRevanue';
 import AdminPaymentLogsPage from './admin/Pages/PaymentLogsPage';
 import ManagerPaymentLogsPage from './manager/Pages/PaymentLogsPage';
-
+import SaleRevanue from './EventManager/Page/SaleRevanue';
 
 
 const queryClient = new QueryClient();
@@ -41,6 +41,7 @@ function App() {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
         <Router>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -59,7 +60,7 @@ function App() {
             <Route path="/myEventRequests" element={<RoleProtectedRoute allowedRoles={['user', 'event_manager']}><MyEventRequests /></RoleProtectedRoute>} />
             <Route path="/profile" element={<RoleProtectedRoute allowedRoles={["user", "event_manager"]}><ProfilePage /></RoleProtectedRoute>} />
             <Route path="/my-tickets" element={<RoleProtectedRoute allowedRoles={['user', 'event_manager']}><MyTicketsPage /></RoleProtectedRoute>} />
-          
+
             {/* Event Manager Request Route */}
             <Route
               path="/request-manager-role"
@@ -100,9 +101,9 @@ function App() {
                 <RevenueAnalyticsPage />
               </RoleProtectedRoute>
             } />
-             <Route path="/admin/payments" element={
+            <Route path="/admin/payments" element={
               <RoleProtectedRoute allowedRoles={['admin']}>
-                <AdminPaymentLogsPage/>
+                <AdminPaymentLogsPage />
               </RoleProtectedRoute>
             } />
             <Route path="/admin/profile" element={
@@ -143,6 +144,7 @@ function App() {
             <Route path="*" element={<Home />} />
           </Routes>
         </Router>
+        </ThemeProvider>
         {/* Toast notifications */}
         <Toaster
           position="top-right"

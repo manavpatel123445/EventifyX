@@ -36,19 +36,7 @@ const CheckoutSuccessPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const returnTo = searchParams.get('returnTo');
-
-  useEffect(() => {
-    // If we have a return URL, redirect back to the event page after a short delay
-    if (returnTo && tickets.length > 0 && tickets[0].status !== 'processing') {
-      const timer = setTimeout(() => {
-        console.log('Redirecting back to event page:', returnTo);
-        navigate(returnTo);
-      }, 3000); // 3 second delay to let user see success message
-
-      return () => clearTimeout(timer);
-    }
-  }, [returnTo, tickets, navigate]);
+  const sessionId = searchParams.get('session_id');
 
   const buildDefaultTicket = (): Ticket => ({
     _id: `placeholder-${Date.now()}`,
@@ -255,9 +243,7 @@ const CheckoutSuccessPage: React.FC = () => {
           <p className="text-muted-foreground">
             {tickets[0]?.status === 'processing'
               ? 'Payment successful. Your tickets are being generated and will appear shortly.'
-              : returnTo
-                ? 'Payment successful! You will be redirected back to the event page shortly.'
-                : 'Your tickets have been generated and are ready to use.'}
+              : 'Your tickets have been generated and are ready to use.'}
           </p>
         </div>
 
@@ -283,10 +269,11 @@ const CheckoutSuccessPage: React.FC = () => {
         <div className="space-y-6">
           <h2 className="text-2xl font-semibold text-foreground">Your Tickets ({tickets.length})</h2>
           
-          {tickets.map((ticket, index) => {
-            const key = (ticket as any)?._id ?? `${sessionId || 'session'}-${index}`;
-            return (
-            <div key={key} className="bg-card border border-border rounded-lg p-6">
+          {tickets.map((ticket, index) => (
+            <div
+              key={ticket._id || `ticket-${index}`}
+              className="bg-card border border-border rounded-lg p-6"
+            >
               <div className="flex flex-col lg:flex-row gap-6">
                 {/* QR Code */}
                 <div className="flex-shrink-0 text-center">
@@ -354,8 +341,7 @@ const CheckoutSuccessPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            );
-          })}
+          ))}
         </div>
 
         {/* Total Summary */}
@@ -374,17 +360,9 @@ const CheckoutSuccessPage: React.FC = () => {
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-4 mt-8">
-          {returnTo && (
-            <button
-              onClick={() => navigate(returnTo)}
-              className="flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              Back to Event
-            </button>
-          )}
           <button
             onClick={() => navigate('/')}
-            className="flex-1 bg-secondary text-secondary-foreground px-6 py-3 rounded-lg hover:bg-secondary/90 transition-colors"
+            className="flex-1 bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
           >
             Back to Home
           </button>

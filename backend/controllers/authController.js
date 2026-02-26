@@ -14,9 +14,11 @@ const generateAccessToken = (user) => {
 };
 
 const generateRefreshToken = (user) => {
+	const secret = process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET;
+	if (!secret) throw new Error("REFRESH_TOKEN_SECRET or JWT_SECRET must be set");
 	return jwt.sign(
 		{ id: user._id, role: user.role },
-		process.env.REFRESH_TOKEN_SECRET,
+		secret,
 		{ expiresIn: process.env.REFRESH_TOKEN_EXPIRY || "10d" }
 	);
 };
@@ -48,6 +50,7 @@ export const register = async (req, res) => {
 			refreshToken
 		});
 	} catch (error) {
+		console.error("Register error:", error);
 		res.status(500).json({ success: false, message: "Server error" });
 	}
 };
@@ -90,6 +93,7 @@ export const login = async (req, res) => {
 			refreshToken
 		});
 	} catch (error) {
+		console.error("Login error:", error);
 		res.status(500).json({ success: false, message: "Server error" });
 	}
 };

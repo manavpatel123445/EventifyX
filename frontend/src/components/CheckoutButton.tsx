@@ -1,17 +1,13 @@
-import { loadStripe } from "@stripe/stripe-js";
-import type { Stripe } from "@stripe/stripe-js";
-import { createCheckoutSession } from "../services/paymentService";
+import { loadStripe, type Stripe } from "@stripe/stripe-js";
 
 let stripePromise: Promise<Stripe | null> | null = null;
 
 function getStripe() {
-  const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-
+  const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
   if (!key) {
     console.error("Missing VITE_STRIPE_PUBLISHABLE_KEY env variable");
     return null;
   }
-
   if (!stripePromise) {
     stripePromise = loadStripe(key);
   }
@@ -22,14 +18,12 @@ interface CheckoutProps {
   tickets: { type: string; price: number; quantity: number }[];
   eventId: string;
   buyerDetails: { name: string; email: string };
-  selectedDate?: string; // ISO date string (e.g., '2025-09-30')
 }
 
 const CheckoutButton: React.FC<CheckoutProps> = ({
   tickets,
   eventId,
   buyerDetails,
-  selectedDate,
 }) => {
   const handleCheckout = async () => {
     const stripeOrPromise = getStripe();
@@ -38,18 +32,20 @@ const CheckoutButton: React.FC<CheckoutProps> = ({
       return;
     }
 
-    try {
-      const data = await createCheckoutSession(eventId, tickets, buyerDetails, selectedDate);
-      const stripe = await stripeOrPromise;
-      if (stripe) {
-        await stripe.redirectToCheckout({ sessionId: data.id });
-      } else {
-        alert("Failed to load Stripe. Please try again.");
-      }
-    } catch (error) {
-      console.error("Checkout error:", error);
-      alert("Failed to start checkout. Please try again.");
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/create-checkout-session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ tickets, eventId, buyerDetails }),
+    });
+
+    if (!res.ok) {
+      return alert("Failed to start checkout. Please try again.");
     }
+
+    const data = await res.json();
+    const stripe = await stripeOrPromise;
+    await stripe?.redirectToCheckout({ sessionId: data.id });
   };
 
   return (

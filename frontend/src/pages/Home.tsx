@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useRef, Suspense } from "react";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import Footer from "../components/Footer";
+import Navbar from "../components/Navbar";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { getAllEvents, type Event } from "../services/eventService";
 import { formatINR } from "../utils/currency";
 import { getAllCategories } from "../services/categoryService";
-// Lazy load Navbar and Footer
-const Navbar = React.lazy(() => import("../components/Navbar"));
-const Footer = React.lazy(() => import("../components/Footer"));
 
 interface Category {
   _id: string;
@@ -51,13 +51,17 @@ const Home = () => {
   } = useQuery({
     queryKey: ['events', 'active', { limit: 9 }],
     queryFn: async () => {
+      console.log('🔍 Fetching events with TanStack Query...');
+      // No status passed so backend returns active (upcoming + ongoing)
       const response = await getAllEvents({ limit: 9 });
+      console.log('📡 Events API Response:', response);
       return response;
     },
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     refetchOnWindowFocus: false,
     retry: (failureCount, error) => {
+      // Retry up to 2 times, but not for 4xx errors
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
         if (typeof status === 'number' && status >= 400 && status < 500) {
@@ -75,7 +79,9 @@ const Home = () => {
   } = useQuery({
     queryKey: ['categories', 'active'],
     queryFn: async () => {
+      console.log('📢 Fetching categories with TanStack Query...');
       const response = await getAllCategories();
+      console.log('📢 Categories API Response:', response);
       return response;
     },
     staleTime: 10 * 60 * 1000, // Consider data fresh for 10 minutes (categories change less frequently)
@@ -97,6 +103,7 @@ const Home = () => {
       eventsData = eventsResponse?.events || [];
     }
     
+    console.log('📊 Found', eventsData.length, 'events');
     return eventsData;
   })();
 
@@ -118,6 +125,7 @@ const Home = () => {
       !cat.status || cat.status === 'active'
     );
     
+    console.log('📢 Active categories:', activeCategories.length);
     return activeCategories;
   })();
 
@@ -134,9 +142,7 @@ const Home = () => {
 
   return (
     <>
-      <Suspense fallback={<div>Loading Navbar...</div>}>
-        <Navbar />
-      </Suspense>
+      <Navbar />
       
       {/* Enhanced Hero Section */}
       <section
@@ -353,7 +359,6 @@ const Home = () => {
                         src={event.images?.[0] || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=400&q=80"}
                         alt={event.title}
                         className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
                       />
                       <div className="absolute top-3 left-3">
                         <span className="bg-red-500/90 text-white px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
@@ -371,102 +376,55 @@ const Home = () => {
                       
                       <div className="space-y-3 mb-4 flex-1">
                         <div className="bg-gray-50 p-3 rounded-lg">
-                          {(() => {
-                            const startDate = event.startDate;
-                            const endDate = event.endDate;
-                            const isSameDate = startDate && endDate &&
-                              new Date(startDate).toDateString() === new Date(endDate).toDateString();
-
-                            if (isSameDate) {
-                              // Same date - show single entry with time range
-                              return (
-                                <>
-                                  <div className="flex items-start">
-                                    <span className="text-red-500 mt-0.5 mr-2">
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                      </svg>
-                                    </span>
-                                    <div className="flex-1">
-                                      <div className="text-xs font-medium text-gray-500 mb-1">DATE & TIME</div>
-                                      <div className="text-sm text-gray-800">
-                                        {new Date(event.startDate).toLocaleDateString('en-US', {
-                                          month: 'short',
-                                          day: 'numeric',
-                                          year: 'numeric'
-                                        })}
-                                        <span className="mx-2 text-gray-300">•</span>
-                                        {new Date(`2000-01-01T${event.startTime || '00:00'}`).toLocaleTimeString('en-US', {
-                                          hour: 'numeric',
-                                          minute: '2-digit',
-                                          hour12: true
-                                        })} - {new Date(`2000-01-01T${event.endTime || '00:00'}`).toLocaleTimeString('en-US', {
-                                          hour: 'numeric',
-                                          minute: '2-digit',
-                                          hour12: true
-                                        })}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </>
-                              );
-                            } else {
-                              // Different dates - show separate start and end
-                              return (
-                                <>
-                                  <div className="flex items-start">
-                                    <span className="text-red-500 mt-0.5 mr-2">
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                      </svg>
-                                    </span>
-                                    <div className="flex-1">
-                                      <div className="text-xs font-medium text-gray-500 mb-1">START</div>
-                                      <div className="text-sm text-gray-800">
-                                        {new Date(event.startDate).toLocaleDateString('en-US', {
-                                          month: 'short',
-                                          day: 'numeric',
-                                          year: 'numeric'
-                                        })}
-                                        <span className="mx-2 text-gray-300">•</span>
-                                        {new Date(`2000-01-01T${event.startTime || '00:00'}`).toLocaleTimeString('en-US', {
-                                          hour: 'numeric',
-                                          minute: '2-digit',
-                                          hour12: true
-                                        })}
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {event.endDate && (
-                                    <div className="flex items-start mt-2 pt-2 border-t border-gray-100">
-                                      <span className="text-red-500 mt-0.5 mr-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                      </span>
-                                      <div className="flex-1">
-                                        <div className="text-xs font-medium text-gray-500 mb-1">END</div>
-                                        <div className="text-sm text-gray-800">
-                                          {new Date(event.endDate).toLocaleDateString('en-US', {
-                                            month: 'short',
-                                            day: 'numeric',
-                                            year: 'numeric'
-                                          })}
-                                          <span className="mx-2 text-gray-300">•</span>
-                                          {new Date(`2000-01-01T${event.endTime || '00:00'}`).toLocaleTimeString('en-US', {
-                                            hour: 'numeric',
-                                            minute: '2-digit',
-                                            hour12: true
-                                          })}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-                                </>
-                              );
-                            }
-                          })()}
+                          <div className="flex items-start">
+                            <span className="text-red-500 mt-0.5 mr-2">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </span>
+                            <div className="flex-1">
+                              <div className="text-xs font-medium text-gray-500 mb-1">START</div>
+                              <div className="text-sm text-gray-800">
+                                {new Date(event.startDate).toLocaleDateString('en-US', { 
+                                  month: 'short', 
+                                  day: 'numeric',
+                                  year: 'numeric'
+                                })}
+                                <span className="mx-2 text-gray-300">•</span>
+                                {new Date(`2000-01-01T${event.startTime || '00:00'}`).toLocaleTimeString('en-US', {
+                                  hour: 'numeric',
+                                  minute: '2-digit',
+                                  hour12: true
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {event.endDate && (
+                            <div className="flex items-start mt-2 pt-2 border-t border-gray-100">
+                              <span className="text-red-500 mt-0.5 mr-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </span>
+                              <div className="flex-1">
+                                <div className="text-xs font-medium text-gray-500 mb-1">END</div>
+                                <div className="text-sm text-gray-800">
+                                  {new Date(event.endDate).toLocaleDateString('en-US', { 
+                                    month: 'short', 
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  })}
+                                  <span className="mx-2 text-gray-300">•</span>
+                                  {new Date(`2000-01-01T${event.endTime || '00:00'}`).toLocaleTimeString('en-US', {
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex items-center text-sm text-gray-600">
@@ -584,9 +542,7 @@ const Home = () => {
           </div>
         </section>
       </div>
-      <Suspense fallback={<div>Loading Footer...</div>}>
-        <Footer />
-      </Suspense>
+      <Footer />
     </>
   );
 };

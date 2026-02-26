@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React from "react";
+import React, { useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
@@ -15,31 +15,18 @@ const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
   requiredRole, 
   allowedRoles 
 }) => {
-  // Check if user is authenticated
   const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
-  
-  if (!token) {
-    toast.error("Please login to access this page");
-    return <Navigate to="/login" replace />;
-  }
-
-  // Get user data
   const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
-  
-  if (!userStr) {
-    toast.error("Invalid user session. Please login again");
-    return <Navigate to="/login" replace />;
+
+  let user: { role?: string; status?: string } | null = null;
+  if (userStr) {
+    try {
+      user = JSON.parse(userStr);
+    } catch {
+      // Invalid JSON
+    }
   }
 
-  let user;
-  try {
-    user = JSON.parse(userStr);
-  } catch (error) {
-    toast.error("Invalid user session. Please login again");
-    return <Navigate to="/login" replace />;
-  }
-
-  // Resolve role: prefer stored user.role, but fall back to role from JWT payload if storage is stale
   const getTokenRole = () => {
     try {
       const raw = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
@@ -56,33 +43,44 @@ const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
   };
 
   const tokenRole = getTokenRole();
-  const userRole = (user.role || tokenRole) as "user" | "event_manager" | "admin";
+  const userRole = (user?.role || tokenRole) as "user" | "event_manager" | "admin";
 
-  // Define role hierarchy and additional access
   const roleAccess: Record<string, string[]> = {
     admin: ['admin', 'event_manager', 'user'],
     event_manager: ['event_manager', 'user'],
     user: ['user']
   };
 
-  // Get all roles the user has access to
   const userAccessRoles = roleAccess[userRole] || [];
-
   const hasRequiredRole = 
     (requiredRole && userAccessRoles.includes(requiredRole)) ||
     (allowedRoles && allowedRoles.some(role => userAccessRoles.includes(role)));
 
-  if (!hasRequiredRole) {
-    toast.error(`Access denied. You don't have permission to access this page.`);
-    return <Navigate to="/" replace />;
-  }
+  // Determine redirect reason (don't call toast during render — causes setState-in-render)
+  type RedirectReason = "no-token" | "no-user" | "access-denied" | "blocked" | null;
+  let redirectReason: RedirectReason = null;
+  let redirectTo = "/login";
 
-  // Check if user account is active
-  if (user.status === "blocked") {
-    toast.error("Your account has been blocked. Please contact support.");
-    return <Navigate to="/login" replace />;  
-  }
+  if (!token) redirectReason = "no-token";
+  else if (!userStr || !user) redirectReason = "no-user";
+  else if (!hasRequiredRole) {
+    redirectReason = "access-denied";
+    redirectTo = "/";
+  } else if (user.status === "blocked") redirectReason = "blocked";
 
+  // Defer toast to next tick to avoid "Cannot update component while rendering another"
+  useEffect(() => {
+    if (!redirectReason) return;
+    const msg =
+      redirectReason === "no-token" ? "Please login to access this page" :
+      redirectReason === "no-user" ? "Invalid user session. Please login again" :
+      redirectReason === "access-denied" ? "Access denied. You don't have permission to access this page." :
+      "Your account has been blocked. Please contact support.";
+    const t = setTimeout(() => toast.error(msg), 0);
+    return () => clearTimeout(t);
+  }, [redirectReason]);
+
+  if (redirectReason) return <Navigate to={redirectTo} replace />;
   return <>{children}</>;
 };
 

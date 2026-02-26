@@ -1,122 +1,8 @@
 import Event from "../models/Event.js";
 import EventRequest from "../models/EventRequest.js";
-import User from "../models/User.js";
-import Category from "../models/Category.js";
+import User from "../models/User.js"; 
+import Category from "../models/Category.js"; 
 import mongoose from "mongoose";
-
-// 🎫 Get Date-Specific Ticket Availability for Multi-Day Events
-export const getDateSpecificTickets = async (req, res) => {
-  try {
-    const { eventId, date } = req.params;
-    const { userId } = req.query;
-
-    if (!mongoose.isValidObjectId(eventId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid event ID"
-      });
-    }
-
-    const event = await Event.findById(eventId)
-      .populate("eventManager", "name email")
-      .populate("category", "name");
-
-    if (!event) {
-      return res.status(404).json({
-        success: false,
-        message: "Event not found"
-      });
-    }
-    const selectedDate = new Date(date);
-    const eventDate = event.eventDates?.find(ed =>
-      ed.date.toDateString() === selectedDate.toDateString()
-    );
-
-    // If no specific date found in eventDates, check if event spans multiple days
-    let dateTickets = null;
-    if (!eventDate) {
-      // Check if the selected date is within the event's date range
-      const eventStartDate = new Date(event.startDate);
-      const eventEndDate = new Date(event.endDate);
-
-      if (selectedDate >= eventStartDate && selectedDate <= eventEndDate) {
-        // Use event's default ticket pricing for this date
-        dateTickets = event.ticketPricing;
-      } else {
-        return res.status(404).json({
-          success: false,
-          message: "Date not found for this event"
-        });
-      }
-    } else {
-      // Use the specific date's ticket availability
-      dateTickets = eventDate.ticketAvailability || event.ticketPricing;
-    }
-
-    // Get user's existing tickets for this date
-    let userTickets = [];
-    if (userId) {
-      const { default: Ticket } = await import("../models/Ticket.js");
-      const { default: Payment } = await import("../models/payment.js");
-
-      userTickets = await Ticket.find({
-        event: eventId,
-        eventDate: selectedDate,
-        user: userId,
-        status: { $in: ["active", "used"] }
-      }).populate("payment");
-    }
-
-    // Calculate available tickets for this specific date
-    const availableTickets = dateTickets.map(ticket => {
-      const userTicketCount = userTickets.filter(ut =>
-        ut.type === ticket.type && ut.status === "active"
-      ).length;
-
-      const maxTicketsPerUser = 10; // Configurable limit
-      const remainingForUser = Math.max(0, maxTicketsPerUser - userTicketCount);
-
-      return {
-        type: ticket.type,
-        price: ticket.price,
-        quantity: ticket.quantity,
-        sold: ticket.sold,
-        available: Math.max(0, ticket.quantity - ticket.sold),
-        remainingForUser: remainingForUser,
-        canPurchase: remainingForUser > 0
-      };
-    });
-
-    res.status(200).json({
-      success: true,
-      data: {
-        event: {
-          _id: event._id,
-          title: event.title,
-          description: event.description,
-          startTime: event.startTime,
-          endTime: event.endTime,
-          venue: event.venue,
-          images: event.images,
-          category: event.category,
-          eventManager: event.eventManager
-        },
-        selectedDate: selectedDate.toISOString(),
-        tickets: availableTickets,
-        userTickets: userTickets,
-        isMultiDay: (event.eventDates && event.eventDates.length > 1) || 
-                   (new Date(event.startDate).toDateString() !== new Date(event.endDate).toDateString())
-      }
-    });
-
-  } catch (error) {
-    console.error("Get date-specific tickets error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch date-specific tickets"
-    });
-  }
-};
 
 // 📝 Create Event Request (User submits request to admin)
 export const createEventRequest = async (req, res) => {
@@ -466,7 +352,7 @@ export const getAllEvents = async (req, res) => {
     console.log('Sort options:', sortOptions);
 
     const events = await Event.find(filter)
-      .populate("eventManager", "name email profileImage status")
+      .populate("eventManager", "name")
       .populate("category", "name")
       .sort(sortOptions)
       .limit(limit * 1)

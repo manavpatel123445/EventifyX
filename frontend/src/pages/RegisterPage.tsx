@@ -1,4 +1,6 @@
-import React, { useState, Suspense } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState } from "react";
+import Navbar from "../components/Navbar";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { registerUser } from "../services/authService";
@@ -47,8 +49,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
   }
 );
 Input.displayName = "Input";
-
-const Navbar = React.lazy(() => import("../components/Navbar"));
 
 const RegisterPage: React.FC = () => {
   // ✅ State
@@ -146,9 +146,7 @@ const RegisterPage: React.FC = () => {
 
   return (
     <>
-      <Suspense fallback={<div>Loading Navbar...</div>}>
-        <Navbar />
-      </Suspense>
+      <Navbar />
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="grid grid-cols-1 md:grid-cols-2 bg-white shadow-lg rounded-2xl overflow-hidden max-w-5xl w-full">
           {/* Left side image */}
@@ -157,7 +155,6 @@ const RegisterPage: React.FC = () => {
               src="https://images.unsplash.com/photo-1519389950473-47ba0277781c"
               alt="Register banner"
               className="w-full h-full object-cover"
-              loading="lazy"
             />
           </div>
 

@@ -23,9 +23,10 @@ const paymentsAPI = axios.create({
   baseURL: API_ROOT.endsWith('/') ? `${API_ROOT}payments` : `${API_ROOT}/payments`,
 });
 
-// Admin-scoped payments (some backends expose logs under /api/admin/payments)
+// Admin-scoped payments – in this backend, logs live under /api/payments/logs
+// so we reuse the same payments base URL.
 const adminPaymentsAPI = axios.create({
-  baseURL: API_ROOT.endsWith('/') ? `${API_ROOT}admin/payments` : `${API_ROOT}/admin/payments`,
+  baseURL: API_ROOT.endsWith('/') ? `${API_ROOT}payments` : `${API_ROOT}/payments`,
 });
 
 paymentsAPI.interceptors.request.use(

@@ -2,27 +2,9 @@
 import axios from "axios";
 
 // Create admin API instance
-// Resolve API root consistently across environments
-const resolveApiRoot = () => {
-  const env = (import.meta as any).env || {};
-  const raw = env?.VITE_API_URL as string | undefined;
-  // Use Vite proxy during development
-  if (env?.DEV) return "/api";
-  if (!raw) return "/api";
-
-  let base = raw.trim().replace(/\/+$/, "");
-  if (/^https?:\/\//i.test(base)) {
-    if (!/\/(api)(?:\/|$)/i.test(base)) base = `${base}/api`;
-    return base;
-  }
-  if (!base.startsWith('/')) base = `/${base}`;
-  if (!/\/(api)(?:\/|$)/i.test(base)) base = `${base}/api`;
-  return base;
-};
-
-const API_ROOT = resolveApiRoot();
+const API_ROOT = import.meta.env.VITE_API_BASE_URL || "/api";
 const adminAPI = axios.create({ 
-  baseURL: API_ROOT.endsWith('/') ? `${API_ROOT}admin` : `${API_ROOT}/admin`,
+  baseURL: `${API_ROOT}/admin`,
 });
 
 // Add auth token to requests
@@ -132,7 +114,7 @@ export const deleteCategory = async (categoryId: string) => {
 // Events Management Services
 export const cleanupCompletedEvents = async () => {
   // Create events API instance for this specific call
-  const eventsAPI = axios.create({ baseURL: API_ROOT.endsWith('/') ? `${API_ROOT}events` : `${API_ROOT}/events` });
+  const eventsAPI = axios.create({ baseURL: `${API_ROOT}/events` });
   
   // Add auth token
   const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
@@ -170,7 +152,7 @@ export type { User };
 
 // Manager-specific user access
 const managerAPI = axios.create({ 
-  baseURL: API_ROOT.endsWith('/') ? `${API_ROOT}manager` : `${API_ROOT}/manager`,
+  baseURL: `${API_ROOT}/manager`,
 });
 
 // Add auth token to requests

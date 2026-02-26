@@ -37,21 +37,21 @@ const SaleRevanueList = () => {
   const events: Event[] = useMemo(() => Array.isArray(eventsData) ? eventsData : [], [eventsData])
   const isLoading = isLoadingEvents || isLoadingRevenue;
   return (
-    <div className="flex bg-gray-50 min-h-screen">
+    <div className="flex bg-gray-50 dark:bg-[#1B1D2A] min-h-screen">
       <ManagerSideBar/>
       <div className="flex-1 p-8 space-y-6">
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Sale & Revenue</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Sale & Revenue</h1>
           </div>
           
           {/* Revenue Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white p-6 rounded-lg shadow border border-gray-100">
+            <div className="bg-white dark:bg-[#212530] p-6 rounded-lg shadow border border-gray-100 dark:border-gray-700/50">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Revenue</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
                     {formatINR(revenueData?.revenueSplit?.totalRevenue || 0)}
                   </p>
                 </div>
@@ -63,11 +63,11 @@ const SaleRevanueList = () => {
               </div>
             </div>
             
-            <div className="bg-gradient-to-r from-green-50 to-green-100 p-6 rounded-lg shadow border border-green-100">
+            <div className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-6 rounded-lg shadow border border-green-100 dark:border-green-800/50">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-green-600">Your Share (80%)</p>
-                  <p className="text-2xl font-bold text-green-800 mt-1">
+                  <p className="text-sm font-medium text-green-600 dark:text-green-400">Your Share (80%)</p>
+                  <p className="text-2xl font-bold text-green-800 dark:text-green-300 mt-1">
                     {formatINR(revenueData?.revenueSplit?.manager?.amount || 0)}
                   </p>
                   <p className="text-xs text-green-500 mt-1">
@@ -86,11 +86,11 @@ const SaleRevanueList = () => {
 
         {/* User Spending Table */}
        
-        <div className="bg-white rounded-2xl shadow p-6">
+        <div className="bg-white dark:bg-[#212530] rounded-2xl shadow p-6">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-gray-100 text-left text-sm text-gray-600">
+                <tr className="bg-gray-100 dark:bg-gray-800/50 text-left text-sm text-gray-600 dark:text-gray-400">
                   <th className="px-4 py-3">Title</th>
                   <th className="px-4 py-3">Category</th>
                   <th className="px-4 py-3">Date/Time</th>
@@ -113,26 +113,26 @@ const SaleRevanueList = () => {
                     currentStatus = 'completed';
                   }
                   const statusColorClass = {
-                    upcoming: 'bg-green-100 text-green-700',
-                    ongoing: 'bg-blue-100 text-blue-700',
-                    completed: 'bg-gray-100 text-gray-700',
-                    cancelled: 'bg-red-100 text-red-700',
-                  }[currentStatus] || 'bg-gray-100 text-gray-700';
+                    upcoming: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400',
+                    ongoing: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
+                    completed: 'bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300',
+                    cancelled: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400',
+                  }[currentStatus] || 'bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300';
                   return (
-                    <tr key={ev._id} className={`text-sm ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                      <td className="px-4 py-3 font-medium">{capitalizeFirstLetter(ev.title)}</td>
-                      <td className="px-4 py-3">{ev.category?.name ? capitalizeFirstLetter(ev.category.name) : '-'}</td>
+                    <tr key={ev._id} className={`text-sm ${i % 2 === 0 ? 'bg-white dark:bg-[#212530]' : 'bg-gray-50 dark:bg-gray-800/30'} border-b border-gray-100 dark:border-gray-700/50`}>
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{capitalizeFirstLetter(ev.title)}</td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">{ev.category?.name ? capitalizeFirstLetter(ev.category.name) : '-'}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <div>{new Date(ev.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
-                        <div className="text-gray-500 text-xs">
+                        <div className="text-gray-900 dark:text-white">{new Date(ev.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                        <div className="text-gray-500 dark:text-gray-400 text-xs">
                           {new Date(`2000-01-01T${ev.startTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {' '}
                           {new Date(`2000-01-01T${ev.endTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                         </div>
                       </td>
-                      <td className="px-4 py-3">{ev.venue?.city ?? ''}</td>
-                      <td className="px-4 py-3">{sold}</td>
-                      <td className="px-4 py-3">{formatINR(revenue)}</td>
-                      <td className="px-4 py-3 font-medium text-green-700">
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">{ev.venue?.city ?? ''}</td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">{sold}</td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">{formatINR(revenue)}</td>
+                      <td className="px-4 py-3 font-medium text-green-700 dark:text-green-400">
                         {formatINR(revenue * 0.8)}
                       </td>
                       <td className="px-4 py-3">
@@ -144,7 +144,7 @@ const SaleRevanueList = () => {
                         <div className="flex gap-2 justify-end">
                           <button 
                             onClick={() => setViewEvent(ev)} 
-                            className="px-3 py-1 rounded border text-gray-700 hover:bg-gray-50"
+                            className="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                           >
                             View
                           </button>
@@ -155,7 +155,7 @@ const SaleRevanueList = () => {
                 })}
                 {events.length === 0 && (
                   <tr>
-                    <td className="px-4 py-6 text-center text-gray-400" colSpan={8}>
+                    <td className="px-4 py-6 text-center text-gray-400 dark:text-gray-500" colSpan={8}>
                       {isLoading ? 'Loading events...' : 'No events yet'}
                     </td>
                   </tr>
