@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getMyEventRequests, type EventRequest } from "../services/eventService";
 import { getRequestsForManagedEvents } from "../services/eventService";
 import Navbar from "../components/Navbar";
-import { Clock, CheckCircle, XCircle, Calendar, MapPin, DollarSign, Eye } from "lucide-react";
+import { Clock, CheckCircle, XCircle, Calendar, MapPin, DollarSign } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
