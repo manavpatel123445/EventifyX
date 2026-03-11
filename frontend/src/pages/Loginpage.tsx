@@ -6,6 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { loginUser } from "../services/authService";
 import { loginSuccess, setError, setStatus } from "../app/slices/authslice";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import { Input } from "../lib/Input";
 import toast from "react-hot-toast";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
@@ -83,10 +84,11 @@ const Loginpage: React.FC = () => {
   return (
     <>
       <Navbar />
-      <div className="h-150  flex items-center justify-center bg-gray-50">
-        <div className="grid grid-cols-1 md:grid-cols-2 bg-white shadow-lg rounded-2xl overflow-hidden w-full max-w-4xl">
+      <div className="h-[calc(100vh-80px)] bg-[#eef0f3] dark:bg-gray-900 px-4 py-4 md:py-6 overflow-hidden">
+        <div className="mx-auto w-full max-w-5xl h-full flex items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-[0_8px_24px_rgba(15,23,42,0.08)] border border-gray-200/70 dark:border-gray-700 w-full max-h-full">
           {/* Left Banner */}
-          <div className="hidden md:block">
+          <div className="hidden md:block h-full">
             <img
               src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d"
               alt="EventifyX banner"
@@ -95,15 +97,15 @@ const Loginpage: React.FC = () => {
           </div>
 
           {/* Right Login Form */}
-          <div className="p-10 flex flex-col justify-center">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">
+          <div className="p-6 sm:p-8 md:p-9 flex flex-col justify-center">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-[#1f2a44] dark:text-white mb-6">
               Sign In to <span className="text-red-500">EventifyX</span>
             </h2>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
               {/* Email */}
               <div>
-                <label className="block text-gray-600 mb-1">Email</label>
+                <label className="block mb-2 text-gray-600 dark:text-gray-300">Email</label>
                 <Input
                   type="email"
                   value={email}
@@ -111,13 +113,14 @@ const Loginpage: React.FC = () => {
                   placeholder="Enter your email"
                   leftIcon={<FaEnvelope className="h-4 w-4" />}
                   error={!!errors.email}
+                  className="h-11 rounded-xl border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-gray-100"
                 />
                 {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
               </div>
 
               {/* Password */}
               <div>
-                <label className="block text-gray-600 mb-1">Password</label>
+                <label className="block text-gray-600 dark:text-gray-300 mb-2">Password</label>
                 <Input
                   type={showPassword ? "text" : "password"}
                   value={password}
@@ -127,13 +130,14 @@ const Loginpage: React.FC = () => {
                   rightIcon={
                     <span onClick={() => setShowPassword((v) => !v)}>
                       {showPassword ? (
-                        <FaEyeSlash className="h-4 w-4 text-gray-400" />
+                        <FaEyeSlash className="h-4 w-4 text-gray-400 dark:text-gray-300" />
                       ) : (
-                        <FaEye className="h-4 w-4 text-gray-400" />
+                        <FaEye className="h-4 w-4 text-gray-400 dark:text-gray-300" />
                       )}
                     </span>
                   }
                   error={!!errors.password}
+                  className="h-11 rounded-xl border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-gray-100"
                 />
                 {errors.password && (
                   <p className="text-red-500 text-xs mt-1">{errors.password}</p>
@@ -142,18 +146,18 @@ const Loginpage: React.FC = () => {
 
               {/* Remember Me */}
               <div className="flex items-center justify-between">
-                <label className="flex items-center space-x-2 text-gray-600">
+                <label className="flex items-center space-x-3 text-gray-600 dark:text-gray-300">
                   <input
                     type="checkbox"
                     checked={remember}
                     onChange={(e) => setRemember(e.target.checked)}
-                    className="w-4 h-4 text-red-500"
+                    className="h-5 w-5 rounded-md text-red-500 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
                   />
                   <span>Remember me</span>
                 </label>
                 <NavLink
                   to="/ForgotPassword"
-                  className="text-sm text-red-500 hover:underline"
+                  className="text-red-500 hover:underline"
                 >
                   Forgot Password?
                 </NavLink>
@@ -162,7 +166,7 @@ const Loginpage: React.FC = () => {
               {/* Submit */}
               <button
                 type="submit"
-                className="w-full py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition disabled:opacity-50"
+                className="w-full py-3.5 bg-red-500 text-white rounded-xl text-lg font-semibold hover:bg-red-600 transition disabled:opacity-50"
                 disabled={mutation.isPending}
               >
                 {mutation.isPending ? "Signing In..." : "Sign In"}
@@ -172,7 +176,7 @@ const Loginpage: React.FC = () => {
             </form>
 
             {/* Register */}
-            <p className="text-center text-gray-600 mt-6">
+            <p className="text-center text-gray-600 dark:text-gray-300 mt-6 text-base">
               Don’t have an account?{" "}
               <NavLink
                 to="/register"
@@ -183,7 +187,9 @@ const Loginpage: React.FC = () => {
             </p>
           </div>
         </div>
+        </div>
       </div>
+      <Footer />
     </>
   );
 };

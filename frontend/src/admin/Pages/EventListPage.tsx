@@ -80,7 +80,7 @@ const EventListPage: React.FC = () => {
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-[#0F1117]">
       <SideBar />
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-4 pt-20 md:p-8 md:pt-8">
         <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Event Requests</h1>
         <div className="flex gap-4 mb-6">
           <button

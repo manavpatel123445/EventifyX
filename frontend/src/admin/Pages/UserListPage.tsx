@@ -104,7 +104,7 @@ const UserListPage: React.FC = () => {
     return (
       <div className="flex min-h-screen bg-gray-50 dark:bg-[#1B1D2A]">
         <SideBar />
-        <div className="flex-1 p-8">
+        <div className="flex-1 p-4 pt-20 md:p-8 md:pt-8">
           <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Users</h1>
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -116,14 +116,12 @@ const UserListPage: React.FC = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-[#1B1D2A]">
-      <aside className="w-64 border-r border-transparent dark:border-gray-700/50">
-        <SideBar />
-      </aside>
-      <div className="flex-1 p-6 space-y-6">
+      <SideBar />
+      <div className="flex-1 p-4 pt-20 md:p-6 md:pt-6 space-y-6">
         {/* Search + Filters */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">User Management</h1>
-          <div className="relative w-1/3">
+          <div className="relative w-full md:w-1/3">
             <Search className="absolute left-3 top-2.5 text-gray-400 dark:text-gray-500" size={18} />
             <input
               type="text"

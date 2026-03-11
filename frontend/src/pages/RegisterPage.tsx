@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from "react";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { registerUser } from "../services/authService";
@@ -30,7 +31,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           type={type}
           {...props} // ✅ ensures value & onChange work
           className={cn(
-            "flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm",
+            "flex h-9 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm",
             "placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2",
             "focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
             leftIcon && "pl-10",
@@ -147,8 +148,8 @@ const RegisterPage: React.FC = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="grid grid-cols-1 md:grid-cols-2 bg-white shadow-lg rounded-2xl overflow-hidden max-w-5xl w-full">
+      <div className=" flex items-center justify-center bg-gray-50 px-4 ">
+        <div className="grid grid-cols-1 md:grid-cols-2 bg-white shadow-lg rounded-2xl overflow-hidden max-w-4xl w-full">
           {/* Left side image */}
           <div className="hidden md:block">
             <img
@@ -159,12 +160,12 @@ const RegisterPage: React.FC = () => {
           </div>
 
           {/* Register Form */}
-          <div className="p-10 flex flex-col justify-center">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">
+          <div className="p-6 md:p-8 flex flex-col justify-center">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
               Create an <span className="text-red-500">EventifyX</span> Account
             </h2>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {/* Full Name */}
               <div>
                 <label className="block text-gray-600 mb-1">Full Name</label>
@@ -291,7 +292,7 @@ const RegisterPage: React.FC = () => {
               {/* Submit */}
               <button
                 type="submit"
-                className="w-full py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-2.5 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={loading}
               >
                 {loading ? "Registering..." : "Sign Up"}
@@ -303,7 +304,7 @@ const RegisterPage: React.FC = () => {
             </form>
 
             {/* Divider */}
-            <div className="my-6 flex items-center">
+            <div className="my-4 flex items-center">
               <hr className="flex-1 border-gray-300" />
               <span className="px-2 text-gray-400 text-sm">OR</span>
               <hr className="flex-1 border-gray-300" />
@@ -322,6 +323,7 @@ const RegisterPage: React.FC = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 };

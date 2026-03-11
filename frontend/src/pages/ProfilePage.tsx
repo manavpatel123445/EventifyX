@@ -143,14 +143,14 @@ const ProfilePage = () => {
     value: string | number;
     color?: string;
   }) => (
-    <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
       <div className="flex items-center">
-        <div className={`p-3 rounded-full bg-${color}-100`}>
+        <div className={`p-3 rounded-full bg-${color}-100 dark:bg-gray-700`}>
           <Icon className={`h-6 w-6 text-${color}-600`} />
         </div>
         <div className="ml-4">
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{title}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
         </div>
       </div>
     </div>
@@ -169,7 +169,7 @@ const ProfilePage = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="space-y-6">
             {/* User Overview Header */}
@@ -222,7 +222,7 @@ const ProfilePage = () => {
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
+                  <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 animate-pulse">
                     <div className="flex items-center">
                       <div className="p-3 rounded-full bg-gray-200 w-12 h-12"></div>
                       <div className="ml-4 flex-1">
@@ -286,69 +286,69 @@ const ProfilePage = () => {
               {/* User Dashboard */}
               <div className="space-y-6">
                 {/* Quick Actions */}
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Quick Actions</h3>
                   <div className="space-y-3">
-                    <button className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                    <button className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     <NavLink to="/events">
                       <div className="flex items-center space-x-3">
                         
                         <Calendar className="h-5 w-5 text-blue-600" />
-                        <span className="text-sm font-medium">Browse Events</span>
+                        <span className="text-sm font-medium text-gray-800 dark:text-gray-100">Browse Events</span>
                       
                       </div>
                       </NavLink>
                     </button>
                     {user?.role !== ROLES.EVENT_MANAGER && (
-                      <button className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                      <button className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                         <div className="flex items-center space-x-3">
                           <User className="h-5 w-5 text-green-600" />
-                          <span className="text-sm font-medium">Request Event</span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-gray-100">Request Event</span>
                         </div>
                       </button>
                     )}
-                    <button className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                    <button className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     <NavLink to="/my-tickets">
                       <div className="flex items-center space-x-3">
                         
                         <Ticket className="h-5 w-5 text-purple-600" />
-                        <span className="text-sm font-medium">My Tickets</span>
+                        <span className="text-sm font-medium text-gray-800 dark:text-gray-100">My Tickets</span>
                       
                       </div>
                       </NavLink>
                     </button>
-                    <button className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                    <button className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                       <div className="flex items-center space-x-3">
                         <Heart className="h-5 w-5 text-red-600"/>
-                        <span className="text-sm font-medium">Favorites</span>
+                        <span className="text-sm font-medium text-gray-800 dark:text-gray-100">Favorites</span>
                       </div>
                     </button>
                   </div>
                 </div>
 
                 {/* Recent Activity */}
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Events</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Recent Events</h3>
                   <div className="space-y-3">
                     {recentEvents.length > 0 ? (
                       recentEvents.map((event) => (
-                        <div key={event._id} className="p-4 rounded-lg border border-gray-200 hover:bg-gray-50">
+                        <div key={event._id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                           <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-medium text-gray-900 text-sm">{capitalizeFirstLetter(event.title)}</h4>
+                            <h4 className="font-medium text-gray-900 dark:text-white text-sm">{capitalizeFirstLetter(event.title)}</h4>
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
                               {capitalizeFirstLetter(event.status)}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-600 mb-2">
+                          <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">
                             {capitalizeFirstLetter(event.venue.name)}, {capitalizeFirstLetter(event.venue.city)}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                             {new Date(event.date).toLocaleDateString()}
                           </p>
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-gray-500 text-center py-4">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
                         No recent events found
                       </p>
                     )}
@@ -356,12 +356,12 @@ const ProfilePage = () => {
                 </div>
 
                 {/* Account Status */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
                   <div className="flex items-center space-x-3 mb-3">
                     <User className="h-5 w-5 text-blue-600" />
-                    <h3 className="text-sm font-semibold text-blue-800">Account Status</h3>
+                    <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-300">Account Status</h3>
                   </div>
-                  <div className="text-sm">
+                  <div className="text-sm text-gray-800 dark:text-gray-100">
                     <div className="flex items-center mb-2">
                       <span className="font-medium mr-2">Role:</span>
                       <span 
@@ -376,22 +376,22 @@ const ProfilePage = () => {
                     
                     {/* Role-specific benefits */}
                     {user?.role === ROLES.EVENT_MANAGER && (
-                      <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                        <p className="font-medium text-blue-800 flex items-center">
+                      <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <p className="font-medium text-blue-800 dark:text-blue-300 flex items-center">
                           <BarChart3 className="w-4 h-4 mr-2" />
                           {capitalizeFirstLetter(getRoleDisplayName(user.role))} Benefits
                         </p>
-                        <ul className="mt-1 space-y-1 text-xs text-blue-700">
+                        <ul className="mt-1 space-y-1 text-xs text-blue-700 dark:text-blue-200">
                           <li className="flex items-start">
-                            <span className="mr-1">•</span>
+                            <span className="mr-1">*</span>
                             <span>Create and manage events</span>
                           </li>
                           <li className="flex items-start">
-                            <span className="mr-1">•</span>
+                            <span className="mr-1">*</span>
                             <span>Access event analytics</span>
                           </li>
                           <li className="flex items-start">
-                            <span className="mr-1">•</span>
+                            <span className="mr-1">*</span>
                             <span>Manage event registrations</span>
                           </li>
                         </ul>
@@ -399,22 +399,22 @@ const ProfilePage = () => {
                     )}
                     
                     {user?.role === ROLES.ADMIN && (
-                      <div className="mt-3 p-3 bg-red-50 rounded-lg">
-                        <p className="font-medium text-red-800 flex items-center">
+                      <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                        <p className="font-medium text-red-800 dark:text-red-300 flex items-center">
                           <Shield className="w-4 h-4 mr-2" />
                           Administrator Benefits
                         </p>
-                        <ul className="mt-1 space-y-1 text-xs text-red-700">
+                        <ul className="mt-1 space-y-1 text-xs text-red-700 dark:text-red-200">
                           <li className="flex items-start">
-                            <span className="mr-1">•</span>
+                            <span className="mr-1">*</span>
                             <span>Full system access</span>
                           </li>
                           <li className="flex items-start">
-                            <span className="mr-1">•</span>
+                            <span className="mr-1">*</span>
                             <span>User management</span>
                           </li>
                           <li className="flex items-start">
-                            <span className="mr-1">•</span>
+                            <span className="mr-1">*</span>
                             <span>System configuration</span>
                           </li>
                         </ul>

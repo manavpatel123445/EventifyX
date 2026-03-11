@@ -108,7 +108,7 @@ const AdminPaymentLogsPage = () => {
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-[#0F1117]">
       <SideBar />
-      <div className="flex-1 p-6 space-y-8 overflow-x-auto">
+      <div className="flex-1 p-4 pt-20 md:p-6 md:pt-6 space-y-8 overflow-x-auto">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Payment Logs</h1>
           <div className="relative">

@@ -53,7 +53,7 @@ const AdminDashboard: React.FC = () => {
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-[#1B1D2A]">
       <SideBar />
-      <div className="flex-1 p-6 space-y-8 overflow-x-auto">
+      <div className="flex-1 p-4 pt-20 md:p-6 md:pt-6 space-y-8 overflow-x-auto">
         {/* Header */}
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
 
@@ -99,7 +99,7 @@ const AdminDashboard: React.FC = () => {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date & Time</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Location</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -237,7 +237,7 @@ const AdminDashboard: React.FC = () => {
                       }
                     })()}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 text-center">
                     <button
                       onClick={() => setViewEvent(event)}
                       className="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"

@@ -172,46 +172,47 @@ const ProfileForm = ({ showTitle = true, className = "" }: ProfileFormProps) => 
   }
 
   return (
-    <div className={`bg-white rounded-lg shadow-md p-6 ${className}`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 ${className}`}>
       {showTitle && (
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Profile Settings</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Profile Settings</h2>
       )}
       
       {/* Profile Information */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Personal Information</h3>
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Personal Information</h3>
         
         <form onSubmit={handleProfileUpdate} className="space-y-4">
           {/* Profile Image */}
           <div className="flex items-center space-x-6">
             <div className="shrink-0">
               <img
-                className="h-20 w-20 object-cover rounded-full ring-4 ring-gray-300"
+                className="h-20 w-20 object-cover rounded-full ring-4 ring-gray-300 dark:ring-gray-600"
                 src={!formData.profileImage || formData.profileImage.includes("default-profile_qxqv2r.png") ? "/default-avatar.svg" : formData.profileImage}
                 alt="Profile"
                 onError={(e: any) => { e.currentTarget.src = "/default-avatar.svg"; }}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Profile Image</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Profile Image</label>
               <div className="flex items-center gap-3">
                 <input
                   key={avatarInputKey}
                   type="file"
                   accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                   onChange={onSelectAvatar}
+                  className="text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:rounded-md file:border file:border-gray-300 dark:file:border-gray-600 file:bg-gray-50 dark:file:bg-gray-700 file:px-3 file:py-1 file:text-sm file:text-gray-700 dark:file:text-gray-200 hover:file:bg-gray-100 dark:hover:file:bg-gray-600"
                 />
                 {uploadingAvatar && (
-                  <span className="text-sm text-gray-600">Uploading...</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Uploading...</span>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-1">Max 10MB. JPG, PNG, GIF, WebP.</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Max 10MB. JPG, PNG, GIF, WebP.</p>
             </div>
           </div>  
 
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Full Name *
             </label>
             <Input
@@ -224,7 +225,7 @@ const ProfileForm = ({ showTitle = true, className = "" }: ProfileFormProps) => 
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Email Address *
             </label>
             <Input
@@ -237,7 +238,7 @@ const ProfileForm = ({ showTitle = true, className = "" }: ProfileFormProps) => 
 
           {/* Phone */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Phone Number
             </label>
             <Input
@@ -251,24 +252,24 @@ const ProfileForm = ({ showTitle = true, className = "" }: ProfileFormProps) => 
           {/* Role & Status (Read Only) */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Role
               </label>
               <Input
                 type="text"
                 value={profile?.role?.replace('_', ' ').toUpperCase() || ""}
-                className="bg-gray-100 cursor-not-allowed"
+                className="bg-gray-100 dark:bg-gray-700 cursor-not-allowed"
                 disabled
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Status
               </label>
               <Input
                 type="text"
                 value={profile?.status?.toUpperCase() || ""}
-                className="bg-gray-100 cursor-not-allowed"
+                className="bg-gray-100 dark:bg-gray-700 cursor-not-allowed"
                 disabled
               />
             </div>
@@ -285,9 +286,9 @@ const ProfileForm = ({ showTitle = true, className = "" }: ProfileFormProps) => 
       </div>
 
       {/* Password Section */}
-      <div className="border-t pt-6">
+      <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">Password</h3>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Password</h3>
           <Button
             type="button"
             variant="outline"
@@ -300,7 +301,7 @@ const ProfileForm = ({ showTitle = true, className = "" }: ProfileFormProps) => 
         {showPasswordForm && (
           <form onSubmit={handlePasswordChange} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Current Password *
               </label>
               <Input
@@ -312,7 +313,7 @@ const ProfileForm = ({ showTitle = true, className = "" }: ProfileFormProps) => 
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 New Password *
               </label>
               <Input
@@ -325,7 +326,7 @@ const ProfileForm = ({ showTitle = true, className = "" }: ProfileFormProps) => 
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Confirm New Password *
               </label>
               <Input
@@ -349,9 +350,9 @@ const ProfileForm = ({ showTitle = true, className = "" }: ProfileFormProps) => 
 
       {/* Account Information */}
       {profile && (
-        <div className="border-t pt-6 mt-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Account Information</h3>
-          <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Account Information</h3>
+          <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
             <div>
               <span className="font-medium">Member Since:</span>
               <p>{new Date(profile.createdAt).toLocaleDateString()}</p>

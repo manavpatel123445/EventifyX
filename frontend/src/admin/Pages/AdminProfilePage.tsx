@@ -97,11 +97,9 @@ const AdminProfilePage: React.FC = () => {
   if (isLoading) {
     return (
       <>
-        <div className="min-h-screen bg-gray-50 dark:bg-[#1B1D2A] py-6 flex">
-          <aside className="w-64 border-r border-transparent dark:border-gray-700/50">
-            <SideBar />
-          </aside>
-          <div className="flex-1 flex items-center justify-center">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#1B1D2A] flex">
+          <SideBar />
+          <div className="flex-1 pt-20 md:pt-0 flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto"></div>
               <p className="mt-4 text-gray-600 dark:text-gray-400">Loading profile...</p>
@@ -115,11 +113,9 @@ const AdminProfilePage: React.FC = () => {
   if (isError) {
     return (
       <>
-        <div className="min-h-screen bg-gray-50 dark:bg-[#1B1D2A] py-6 flex">
-          <aside className="w-64 border-r border-transparent dark:border-gray-700/50">
-            <SideBar />
-          </aside>
-          <div className="flex-1 flex items-center justify-center">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#1B1D2A] flex">
+          <SideBar />
+          <div className="flex-1 pt-20 md:pt-0 flex items-center justify-center">
             <div className="text-center">
               <div className="text-5xl mb-3">⚠️</div>
               <p className="text-gray-700 dark:text-gray-300 mb-2">Failed to load profile</p>
@@ -140,11 +136,9 @@ const AdminProfilePage: React.FC = () => {
   return (
     <>
 
-      <div className="min-h-screen bg-gray-50 dark:bg-[#1B1D2A] py-6 flex">
-        <aside className="w-64 border-r border-transparent dark:border-gray-700/50">
-        <SideBar/>
-      </aside>
-        <div className="flex-1 min-w-0 bg-white dark:bg-[#212530] p-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-[#1B1D2A] flex">
+        <SideBar />
+        <div className="flex-1 min-w-0 bg-white dark:bg-[#212530] p-4 pt-20 md:p-8 md:pt-8">
           {/* Header */}
           <div className="flex flex-col items-start text-left mb-8">
             <div className="relative">
