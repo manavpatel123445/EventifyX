@@ -6,9 +6,11 @@ import bcrypt from "bcryptjs";
 
 
 const generateAccessToken = (user) => {
+	const secret = process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET;
+	if (!secret) throw new Error("ACCESS_TOKEN_SECRET must be set");
 	return jwt.sign(
 		{ id: user._id, role: user.role },
-		process.env.JWT_SECRET,
+		secret,
 		{ expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "1d" }
 	);
 };
@@ -105,8 +107,12 @@ export const refresh = async (req, res) => {
   try {
     const { refreshToken } = req.body;
     if (!refreshToken) return res.status(400).json({ success: false, message: "Refresh token required" });
+    const refreshSecret = process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET;
+    if (!refreshSecret) {
+      return res.status(500).json({ success: false, message: "Refresh token secret is not configured" });
+    }
 
-    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, decoded) => {
+    jwt.verify(refreshToken, refreshSecret, async (err, decoded) => {
       if (err) return res.status(401).json({ success: false, message: "Invalid refresh token" });
 
       const user = await User.findById(decoded.id);
@@ -138,75 +144,7 @@ export const getMe = async (req, res) => {
 	}
 };
 
-// @route   POST /api/auth/create-admin
-// @desc    Create admin user (TEMPORARY - REMOVE IN PRODUCTION)
-// @access  Public (should be protected in production)
-export const createAdmin = async (req, res) => {
-	try {
-		const { name, email, password, adminSecret } = req.body;
-		
-		// Simple secret check (replace with proper authentication)
-		if (adminSecret !== process.env.ADMIN_SECRET || !process.env.ADMIN_SECRET) {
-			return res.status(403).json({ 
-				success: false, 
-				message: "Invalid admin secret" 
-			});
-		}
-		
-		if (!name || !email || !password) {
-			return res.status(400).json({ 
-				success: false, 
-				message: "Name, email, and password are required" 
-			});
-		}
-		
-		// Check if admin already exists
-		const existingAdmin = await User.findOne({ 
-			$or: [
-				{ email },
-				{ role: 'admin' }
-			]
-		});
-		
-		if (existingAdmin) {
-			return res.status(400).json({ 
-				success: false, 
-				message: "Admin user already exists" 
-			});
-		}
-		
-		// Create admin user
-		const user = await User.create({ 
-			name, 
-			email, 
-			password, 
-			role: 'admin',
-			status: 'active'
-		});
-		
-		const accessToken = generateAccessToken(user);
-		const refreshToken = generateRefreshToken(user);
-		
-		res.status(201).json({
-			success: true,
-			message: "Admin user created successfully",
-			user: {
-				_id: user._id,
-				name: user.name,
-				email: user.email,
-				role: user.role,
-				status: user.status,
-				profileImage: user.profileImage
-			},
-			accessToken,
-			refreshToken
-		});
-		
-	} catch (error) {
-		console.error('Create admin error:', error);
-		res.status(500).json({ success: false, message: "Server error" });
-	}
-};
+
 
 // @route   POST /api/auth/forgot-password
 // @desc    Send password reset email
@@ -237,13 +175,13 @@ export const forgotPassword = async (req, res) => {
 		
 		await user.save({ validateBeforeSave: false });
 		
-		// For development purposes, we'll return the reset token in response
-		// In production, you would send this via email
+		// For development purposes, we log the reset token
+		// In production, you MUST integrate an email service (SendGrid, Nodemailer)
+		console.log(`\n[SECURITY WARNING] Password Reset Token for ${email}: ${resetToken}\n`);
+		
 		res.json({
 			success: true,
-			message: "Password reset link sent to email",
-			// TODO: Remove this in production - only for development
-			resetToken: resetToken
+			message: "If an account with that email exists, we have sent a password reset link (check console limit during dev)"
 		});
 		
 	} catch (error) {

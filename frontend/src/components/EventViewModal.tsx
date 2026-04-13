@@ -8,14 +8,14 @@ interface EventViewModalProps {
 }
 
 const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event }) => {
-  if (!isOpen || !event) return null;
+  const safeEvent = event;
 
   // Safely compute metrics from ticketPricing
   const ticketMetrics = useMemo(() => {
     const base = { sold: 0, revenue: 0, capacity: 0 };
     try {
-      if (!Array.isArray(event.ticketPricing)) return base;
-      return event.ticketPricing.reduce((acc, t) => {
+      if (!safeEvent || !Array.isArray(safeEvent.ticketPricing)) return base;
+      return safeEvent.ticketPricing.reduce((acc, t) => {
         const sold = Number((t as any).sold) || 0;
         const price = Number((t as any).price) || 0;
         const qty = Number((t as any).quantity) || 0;
@@ -27,7 +27,9 @@ const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event 
     } catch {
       return base;
     }
-  }, [event.ticketPricing]);
+  }, [safeEvent]);
+
+  if (!isOpen || !safeEvent) return null;
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -74,28 +76,28 @@ const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event 
 
         {/* Header */}
         <div className="mb-6">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">{event.title}</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">{safeEvent.title}</h2>
           <div className="flex items-center gap-4 text-sm text-gray-600">
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
-              {getStatusText(event.status)}
+            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(safeEvent.status)}`}>
+              {getStatusText(safeEvent.status)}
             </span>
             <span>•</span>
-            <span>Created: {formatDate(event.createdAt)}</span>
-            {event.updatedAt !== event.createdAt && (
+            <span>Created: {formatDate(safeEvent.createdAt)}</span>
+            {safeEvent.updatedAt !== safeEvent.createdAt && (
               <>
                 <span>•</span>
-                <span>Updated: {formatDate(event.updatedAt)}</span>
+                <span>Updated: {formatDate(safeEvent.updatedAt)}</span>
               </>
             )}
           </div>
         </div>
 
         {/* Event Images */}
-        {event.images && event.images.length > 0 && (
+        {safeEvent.images && safeEvent.images.length > 0 && (
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-3 text-gray-700">Event Images</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {event.images.map((image, index) => (
+              {safeEvent.images.map((image, index) => (
                 <div key={index} className="relative">
                   <img 
                     src={image} 
@@ -115,23 +117,23 @@ const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event 
             {/* Description */}
             <div>
               <h3 className="text-lg font-semibold mb-2 text-gray-700">Description</h3>
-              <p className="text-gray-600 leading-relaxed">{event.description}</p>
+              <p className="text-gray-600 leading-relaxed">{safeEvent.description}</p>
             </div>
 
             {/* Category */}
             <div>
               <h3 className="text-lg font-semibold mb-2 text-gray-700">Category</h3>
               <span className="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
-                {event.category?.name || (event.category as any) || 'No category'}
+                {safeEvent.category?.name || (safeEvent.category as any) || 'No category'}
               </span>
             </div>
 
             {/* Tags */}
-            {event.tags && event.tags.length > 0 && (
+            {safeEvent.tags && safeEvent.tags.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold mb-2 text-gray-700">Tags</h3>
                 <div className="flex flex-wrap gap-2">
-                  {event.tags.map((tag, index) => (
+                  {safeEvent.tags.map((tag, index) => (
                     <span 
                       key={index}
                       className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-sm"
@@ -144,13 +146,13 @@ const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event 
             )}
 
             {/* Event Manager */}
-            {event.eventManager ? (
+            {safeEvent.eventManager ? (
               <div>
                 <h3 className="text-lg font-semibold mb-2 text-gray-700">Event Manager</h3>
                 <div className="bg-gray-50 p-3 rounded-lg">
-                  <p className="font-medium text-gray-800">{event.eventManager?.name || 'Not specified'}</p>
-                  {event.eventManager?.email && (
-                    <p className="text-sm text-gray-600">{event.eventManager.email}</p>
+                  <p className="font-medium text-gray-800">{safeEvent.eventManager?.name || 'Not specified'}</p>
+                  {safeEvent.eventManager?.email && (
+                    <p className="text-sm text-gray-600">{safeEvent.eventManager.email}</p>
                   )}
                 </div>
               </div>
@@ -175,7 +177,7 @@ const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event 
                   <div>
                     <p className="font-medium text-gray-800">Start</p>
                     <p className="text-sm text-gray-600">
-                      {formatDate(event.startDate)} at {formatTime(event.startTime)}
+                      {formatDate(safeEvent.startDate)} at {formatTime(safeEvent.startTime)}
                     </p>
                   </div>
                 </div>
@@ -184,7 +186,7 @@ const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event 
                   <div>
                     <p className="font-medium text-gray-800">End</p>
                     <p className="text-sm text-gray-600">
-                      {formatDate(event.endDate)} at {formatTime(event.endTime)}
+                      {formatDate(safeEvent.endDate)} at {formatTime(safeEvent.endTime)}
                     </p>
                   </div>
                 </div>
@@ -195,9 +197,9 @@ const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event 
             <div>
               <h3 className="text-lg font-semibold mb-3 text-gray-700">Venue</h3>
               <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="font-medium text-gray-800">{event.venue?.name || '-'}</p>
-                <p className="text-sm text-gray-600">{event.venue?.address || '-'}</p>
-                <p className="text-sm text-gray-600">{event.venue?.city || '-'}{event.venue?.state ? `, ${event.venue.state}` : ''}</p>
+                <p className="font-medium text-gray-800">{safeEvent.venue?.name || '-'}</p>
+                <p className="text-sm text-gray-600">{safeEvent.venue?.address || '-'}</p>
+                <p className="text-sm text-gray-600">{safeEvent.venue?.city || '-'}{safeEvent.venue?.state ? `, ${safeEvent.venue.state}` : ''}</p>
               </div>
             </div>
 
@@ -205,7 +207,7 @@ const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event 
             <div>
               <h3 className="text-lg font-semibold mb-3 text-gray-700">Ticket Pricing</h3>
               <div className="space-y-2">
-                {(event.ticketPricing || []).map((ticket, index) => {
+                {(safeEvent.ticketPricing || []).map((ticket, index) => {
                   const sold = Number((ticket as any).sold) || 0;
                   const price = Number((ticket as any).price) || 0;
                   const quantity = Number((ticket as any).quantity) || 0;
@@ -237,11 +239,11 @@ const EventViewModal: React.FC<EventViewModalProps> = ({ isOpen, onClose, event 
           <h3 className="text-lg font-semibold mb-4 text-gray-700">Event Statistics</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-blue-50 p-4 rounded-lg text-center">
-              <p className="text-2xl font-bold text-blue-600">{(event.totalBookings ?? ticketMetrics.sold).toLocaleString()}</p>
+              <p className="text-2xl font-bold text-blue-600">{(safeEvent.totalBookings ?? ticketMetrics.sold).toLocaleString()}</p>
               <p className="text-sm text-blue-800">Total Bookings</p>
             </div>
             <div className="bg-green-50 p-4 rounded-lg text-center">
-              <p className="text-2xl font-bold text-green-600">₹{(event.totalRevenue ?? ticketMetrics.revenue).toLocaleString('en-IN')}</p>
+              <p className="text-2xl font-bold text-green-600">₹{(safeEvent.totalRevenue ?? ticketMetrics.revenue).toLocaleString('en-IN')}</p>
               <p className="text-sm text-green-800">Total Revenue</p>
             </div>
             <div className="bg-purple-50 p-4 rounded-lg text-center">

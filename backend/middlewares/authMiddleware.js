@@ -20,7 +20,8 @@ export const protect = async (req, res, next) => {
 
     try {
       // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const secret = process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET;
+      const decoded = jwt.verify(token, secret);
       
       // Get user from database
       const user = await User.findById(decoded.id).select("-password");
@@ -92,7 +93,8 @@ export const optionalAuth = async (req, res, next) => {
 
     if (token) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const secret = process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET;
+        const decoded = jwt.verify(token, secret);
         const user = await User.findById(decoded.id).select("-password");
         
         if (user && user.status === "active") {
@@ -114,6 +116,10 @@ export const optionalAuth = async (req, res, next) => {
 export const checkOwnership = (modelName, paramName = "id", userField = "user") => {
   return async (req, res, next) => {
     try {
+      const validModels = ["Event", "Category", "EventRequest", "EventManagerRequest", "Ticket", "User", "payment"];
+      if (!validModels.includes(modelName)) {
+         return res.status(400).json({ success: false, message: "Invalid resource model." });
+      }
       const Model = (await import(`../models/${modelName}.js`)).default;
       const resourceId = req.params[paramName];
       

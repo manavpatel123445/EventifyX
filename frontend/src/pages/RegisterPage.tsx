@@ -105,7 +105,6 @@ const RegisterPage: React.FC = () => {
     }
     return newErrors;
   };
-
   // ✅ Handle Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,7 +143,6 @@ const RegisterPage: React.FC = () => {
       setLoading(false);
     }
   };
-
   return (
     <>
       <Navbar />
@@ -158,8 +156,7 @@ const RegisterPage: React.FC = () => {
               className="w-full h-full object-cover"
             />
           </div>
-
-          {/* Register Form */}
+            {/* Register Form */} 
           <div className="p-6 md:p-8 flex flex-col justify-center">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
               Create an <span className="text-red-500">EventifyX</span> Account
@@ -182,7 +179,6 @@ const RegisterPage: React.FC = () => {
                   <p className="text-red-500 text-xs mt-1">{errors.name}</p>
                 )}
               </div>
-
               {/* Email */}
               <div>
                 <label className="block text-gray-600 mb-1">Email</label>
@@ -230,7 +226,6 @@ const RegisterPage: React.FC = () => {
                   <p className="text-red-500 text-xs mt-1">{errors.password}</p>
                 )}
               </div>
-
               {/* Confirm Password */}
               <div>
                 <label className="block text-gray-600 mb-1">
@@ -309,7 +304,6 @@ const RegisterPage: React.FC = () => {
               <span className="px-2 text-gray-400 text-sm">OR</span>
               <hr className="flex-1 border-gray-300" />
             </div>
-
             {/* Redirect to Login */}
             <p className="text-center text-gray-600">
               Already have an account?{" "}

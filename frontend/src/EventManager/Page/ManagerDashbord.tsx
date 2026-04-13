@@ -48,7 +48,7 @@ const ManagerDashboard: React.FC = () => {
     }
 
     const now = new Date();
-    let total = events.length;
+    const total = events.length;
     let sold = 0;
     let rev = 0;
     let upcoming = 0;
