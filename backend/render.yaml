@@ -4,6 +4,8 @@ services:
     env: node
     plan: free
     rootDir: backend
-    nodeVersion: 18.17.0
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
     buildCommand: npm ci && npm run build
     startCommand: npm start
