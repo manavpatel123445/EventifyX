@@ -7,6 +7,8 @@ import { getEventById } from "../services/eventService";
 import type { Event } from "../services/eventService";
 import toast from "react-hot-toast";
 import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import TiltCard from "../components/TiltCard";
 
 const Eventdetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -98,27 +100,32 @@ const Eventdetail: React.FC = () => {
   return (
     <>
       <Navbar/>
-      <div className="bg-white dark:bg-[#1B1D2A] min-h-screen font-poppins">
+      <div className="bg-gray-50/50 dark:bg-slate-950 min-h-screen font-poppins">
         {/* Main Layout */}
         <div className="max-w-7xl mx-auto px-6 py-10 grid lg:grid-cols-3 gap-10">
           {/* Left Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="lg:col-span-2 space-y-8"
+          >
             {/* Poster */}
             <img
               src={banner}
               alt={event.title + " Banner"}
-              className="w-full rounded-xl shadow-lg"
+              className="w-full rounded-3xl shadow-2xl dark:shadow-purple-900/10 object-cover max-h-[500px]"
             />
 
             {/* Title + Tags */}
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{event.title}</h1>
-              <p className="text-gray-500 dark:text-gray-400">Produced by {event.eventManager?.name || "EventifyX Manager"}</p>
-              <div className="mt-2 flex gap-3">
-                <span className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm rounded-full">
+            <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-3xl p-8 shadow-xl shadow-purple-900/5 border border-white/50 dark:border-slate-800">
+              <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-400 dark:to-blue-400">{event.title}</h1>
+              <p className="text-gray-500 dark:text-gray-400 mt-2 font-medium">Produced by {event.eventManager?.name || "EventifyX Manager"}</p>
+              <div className="mt-4 flex gap-3 flex-wrap">
+                <span className="px-4 py-1.5 bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-full">
                   {typeof event.category === "object" && event.category !== null ? (event.category as any).name : "General"}
                 </span>
-                <span className={`px-3 py-1 text-sm rounded-full ${
+                <span className={`px-4 py-1.5 text-sm font-medium rounded-full ${
                   (() => {
                     const now = new Date();
                     const endDate = new Date(event.endDate);
@@ -142,8 +149,15 @@ const Eventdetail: React.FC = () => {
             </div>
 
             {/* About the Event */}
-            <div>
-              <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">About The Event</h2>
+            <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-3xl p-8 shadow-xl shadow-purple-900/5 border border-white/50 dark:border-slate-800">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+                  <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">About The Event</h2>
+              </div>
               <div className="relative">
                 <p className={`text-gray-700 dark:text-gray-300 leading-relaxed ${event.description && event.description.length > 200 ? 'line-clamp-4' : ''}`}>
                   {event.description || "No description available."}
@@ -154,24 +168,29 @@ const Eventdetail: React.FC = () => {
                       e.currentTarget.previousElementSibling?.classList.toggle('line-clamp-4');
                       e.currentTarget.textContent = e.currentTarget.textContent === 'Read More' ? 'Show Less' : 'Read More';
                     }}
-                    className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-500 font-medium mt-1 text-sm focus:outline-none"
+                    className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium mt-2 text-sm focus:outline-none transition-colors"
                   >
                     Read More
                   </button>
                 )}
               </div>
-            </div>
+            
 
             {/* Organizer Info */}
-            <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
-              <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">About the Organizer</h2>
-              <div className="flex items-start gap-4">
+            <div className="mt-8 border-t border-gray-100 dark:border-slate-800 pt-8">
+              <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-white flex items-center">
+                <span className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center mr-3">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                </span>
+                About the Organizer
+              </h2>
+              <div className="flex items-start gap-5 bg-gray-50/50 dark:bg-slate-800/50 p-6 rounded-2xl border border-white/40 dark:border-slate-700/50">
                 <div className="flex-shrink-0">
                   {event.eventManager?.profileImage ? (
                     <img 
                       src={event.eventManager.profileImage} 
                       alt={event.eventManager.name || 'Organizer'}
-                      className="w-16 h-16 rounded-full object-cover"
+                      className="w-16 h-16 rounded-2xl object-cover shadow-md"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.onerror = null;
@@ -186,34 +205,53 @@ const Eventdetail: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <div>
+                <div className="pt-1">
                   <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{event.eventManager?.name || 'EventifyX Team'}</h3>
-                  <p className="text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {event.eventManager?.email || 'Contact information not available'}
                   </p>
                 </div>
               </div>
             </div>
+            </div>
 
             {/* Gallery */}
-            <div>
-              <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">Gallery</h2>
-              <div className="grid grid-cols-3 gap-3">
+            <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-3xl p-8 shadow-xl shadow-purple-900/5 border border-white/50 dark:border-slate-800">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                  <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Gallery</h2>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
                 {galleryImages.length > 0 ? (
                   galleryImages.map((imgUrl: string, idx: number) => (
-                    <img key={idx} src={imgUrl} className="rounded-lg" />
+                    <TiltCard key={idx} tiltAmount={5}>
+                      <img src={imgUrl} className="rounded-2xl object-cover h-32 w-full shadow-md" />
+                    </TiltCard>
                   ))
                 ) : (
-                  <img src={banner} className="rounded-lg" />
+                  <TiltCard tiltAmount={5}>
+                    <img src={banner} className="rounded-2xl object-cover h-32 w-full shadow-md" />
+                  </TiltCard>
                 )}
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Right Booking Panel */}
-          <div className="space-y-6">
-            <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-lg sticky top-10 bg-white dark:bg-[#212530]">
-              <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="space-y-6"
+          >
+            <TiltCard tiltAmount={4}>
+              <div className="bg-white/90 backdrop-blur-2xl dark:bg-slate-900/90 rounded-3xl p-8 shadow-2xl shadow-purple-900/10 border border-white/50 dark:border-slate-800 sticky top-10 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2 pointer-events-none group-hover:bg-purple-500/20 transition-all duration-500"></div>
+                <div className="flex items-center gap-4 mb-8 p-5 bg-gray-50/50 dark:bg-slate-800/50 rounded-2xl border border-white/40 dark:border-slate-700/50 relative z-10 transition-colors group-hover:bg-gray-50/80 dark:group-hover:bg-slate-800/80">
                 {event.eventManager?.profileImage ? (
                   <img 
                     src={event.eventManager.profileImage} 
@@ -233,11 +271,11 @@ const Eventdetail: React.FC = () => {
                   </div>
                 )}
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Organized by</p>
-                  <p className="font-medium text-gray-900 dark:text-white">{event.eventManager?.name || 'EventifyX Team'}</p>
+                  <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-0.5">Organized by</p>
+                  <p className="font-bold text-gray-900 dark:text-white">{event.eventManager?.name || 'EventifyX Team'}</p>
                 </div>
               </div>
-              <ul className="space-y-3 text-gray-700 dark:text-gray-300">
+              <ul className="space-y-5 text-gray-700 dark:text-gray-300 relative z-10">
                 <li>
                   📅 {(() => {
                     const sd = new Date(event.startDate);
@@ -247,15 +285,26 @@ const Eventdetail: React.FC = () => {
                     return sameDay ? fmt(sd) : `${fmt(sd)} – ${fmt(ed)}`;
                   })()}
                 </li>
-                <li>
-                  ⏰ {new Date(`2000-01-01T${event.startTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
-                  {event.endTime ? ` – ${new Date(`2000-01-01T${event.endTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}` : ''}
+                <li className="flex items-start">
+                  <span className="text-xl mr-3 mt-0.5">⏰</span>
+                  <span>
+                    {new Date(`2000-01-01T${event.startTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                    {event.endTime ? ` – ${new Date(`2000-01-01T${event.endTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}` : ''}
+                  </span>
                 </li>
-                <li>📍 {event.venue?.name}, {event.venue?.address}, {event.venue?.city}</li>
-                {event.venue?.state && (<li>🏙️ {event.venue.state}</li>)}
+                <li className="flex items-start">
+                  <span className="text-xl mr-3 mt-0.5">📍</span>
+                  <span>{event.venue?.name}, {event.venue?.address}, {event.venue?.city}</span>
+                </li>
+                {event.venue?.state && (
+                  <li className="flex items-start">
+                    <span className="text-xl mr-3 mt-0.5">🏙️</span>
+                    <span>{event.venue.state}</span>
+                  </li>
+                )}
               </ul>
 
-              <div className={`mt-4 font-medium ${
+              <div className={`mt-6 font-semibold inline-block px-4 py-1.5 rounded-full relative z-10 ${
                 (() => {
                   const now = new Date();
                   const endDate = new Date(event.endDate);
@@ -276,9 +325,12 @@ const Eventdetail: React.FC = () => {
                 })()}
               </div>
 
-              <div className="mt-4">
-                <p className="text-lg font-bold text-gray-900 dark:text-white">{ticketMinPrice > 0 ? `₹${ticketMinPrice} onwards` : 'Free'}</p>
-              <button
+              <div className="mt-8 border-t border-gray-100 dark:border-slate-800 pt-6 relative z-10">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Starting from</p>
+                <p className="text-3xl font-extrabold text-gray-900 dark:text-white">
+                  {ticketMinPrice > 0 ? `₹${ticketMinPrice}` : 'Free'}
+                </p>
+                <button
                   onClick={() => {
                     const isAuthenticated = Boolean(localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken"));
                     if (!isAuthenticated) {
@@ -297,27 +349,31 @@ const Eventdetail: React.FC = () => {
                     if (startDate <= now && endDate >= now) return false; // Allow booking for ongoing events
                     return event.status !== 'upcoming';
                   })()}
-                  className="mt-3 w-full py-3 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700 transition disabled:opacity-50"
+                  className="mt-6 w-full py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-purple-500/25 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
                 >
                   Book Now
                 </button>
               </div>
 
               {Array.isArray(event.ticketPricing) && event.ticketPricing.length > 0 && (
-                <div className="mt-4">
-                  <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">Ticket Types</h3>
-                  <ul className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                <div className="mt-6 p-5 bg-gray-50/50 dark:bg-slate-800/50 rounded-2xl border border-white/40 dark:border-slate-700/50 relative z-10">
+                  <h3 className="font-bold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wider">Ticket Types</h3>
+                  <ul className="space-y-2 text-sm">
                     {event.ticketPricing.map((t, i) => (
-                      <li key={i} className="flex justify-between">
-                        <span className="capitalize">{t.type}</span>
-                        <span>₹{t.price} · {t.quantity - (t.sold ?? 0)} left</span>
+                      <li key={i} className="flex justify-between items-center py-1">
+                        <span className="capitalize font-medium text-gray-700 dark:text-gray-300">{t.type}</span>
+                        <div className="text-right">
+                          <span className="block font-bold text-gray-900 dark:text-white">₹{t.price}</span>
+                          <span className="text-xs text-purple-600 dark:text-purple-400">{t.quantity - (t.sold ?? 0)} left</span>
+                        </div>
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
-            </div>
-          </div>
+              </div>
+            </TiltCard>
+          </motion.div>
         </div>
       </div>
       <Footer/>

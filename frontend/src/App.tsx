@@ -33,6 +33,7 @@ import RevenueAnalyticsPage from './admin/Pages/RevenueAnalyticsPage';
 import AdminPaymentLogsPage from './admin/Pages/PaymentLogsPage';
 import ManagerPaymentLogsPage from './manager/Pages/PaymentLogsPage';
 import SaleRevanue from './EventManager/Page/SaleRevanue';
+import { PageNotFound } from './pages/PageNotFound';
 
 
 const queryClient = new QueryClient();
@@ -42,132 +43,135 @@ function App() {
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-        <Router>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/events" element={<EventPage />} />
-            <Route path="/events/:id" element={<Eventdetail />} />
-            <Route path="/demo/event-view" element={<EventViewDemo />} />
-            <Route path="/create-event" element={<RoleProtectedRoute allowedRoles={['user', 'event_manager']}><CreateEventpage /></RoleProtectedRoute>} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/checkout-success" element={<CheckoutSuccessPage />} />
-            <Route path="/login" element={<Loginpage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/ForgotPassword" element={<ForgotPassword />} />
-            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-            <Route path="/contact" element={<ContectPage />} />
-            <Route path="/eventdetail" element={<Eventdetail />} />
-            <Route path="/myEventRequests" element={<RoleProtectedRoute allowedRoles={['user', 'event_manager']}><MyEventRequests /></RoleProtectedRoute>} />
-            <Route path="/profile" element={<RoleProtectedRoute allowedRoles={["user", "event_manager"]}><ProfilePage /></RoleProtectedRoute>} />
-            <Route path="/my-tickets" element={<RoleProtectedRoute allowedRoles={['user', 'event_manager']}><MyTicketsPage /></RoleProtectedRoute>} />
+          <Router>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/events" element={<EventPage />} />
+              <Route path="/events/:id" element={<Eventdetail />} />
+              <Route path="/demo/event-view" element={<EventViewDemo />} />
+              <Route path="/create-event" element={<RoleProtectedRoute allowedRoles={['user', 'event_manager']}><CreateEventpage /></RoleProtectedRoute>} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/checkout-success" element={<CheckoutSuccessPage />} />
+              <Route path="/login" element={<Loginpage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/ForgotPassword" element={<ForgotPassword />} />
+              <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+              <Route path="/contact" element={<ContectPage />} />
+              <Route path="/eventdetail" element={<Eventdetail />} />
+              <Route path="/myEventRequests" element={<RoleProtectedRoute allowedRoles={['user', 'event_manager']}><MyEventRequests /></RoleProtectedRoute>} />
+              <Route path="/profile" element={<RoleProtectedRoute allowedRoles={["user", "event_manager"]}><ProfilePage /></RoleProtectedRoute>} />
+              <Route path="/my-tickets" element={<RoleProtectedRoute allowedRoles={['user', 'event_manager']}><MyTicketsPage /></RoleProtectedRoute>} />
 
-            {/* Event Manager Request Route */}
-            <Route
-              path="/request-manager-role"
-              element={
-                <RoleProtectedRoute requiredRole="user" allowedRoles={["user"]}>
-                  <EventManagerRequestPage />
+              {/* Event Manager Request Route */}
+              <Route
+                path="/request-manager-role"
+                element={
+                  <RoleProtectedRoute requiredRole="user" allowedRoles={["user"]}>
+                    <EventManagerRequestPage />
+                  </RoleProtectedRoute>
+                }
+              />
+
+              {/* Protected User Routes */}
+              <Route
+                path="/my-events"
+                element={
+                  <RoleProtectedRoute requiredRole="user" allowedRoles={["user", "event_manager"]}>
+                    <MyEventRequests />
+                  </RoleProtectedRoute>
+                }
+              />
+              {/* Admin Routes */}
+              <Route path="/admin" element={
+                <RoleProtectedRoute allowedRoles={['admin']}>
+                  <AdminDashboard />
                 </RoleProtectedRoute>
-              }
-            />
-
-            {/* Protected User Routes */}
-            <Route
-              path="/my-events"
-              element={
-                <RoleProtectedRoute requiredRole="user" allowedRoles={["user", "event_manager"]}>
-                  <MyEventRequests />
+              } />
+              <Route path="/admin/events" element={
+                <RoleProtectedRoute allowedRoles={['admin']}>
+                  <EventListPage />
                 </RoleProtectedRoute>
-              }
-            />
-            {/* Admin Routes */}
-            <Route path="/admin" element={
-              <RoleProtectedRoute allowedRoles={['admin']}>
-                <AdminDashboard />
-              </RoleProtectedRoute>
-            } />
-            <Route path="/admin/events" element={
-              <RoleProtectedRoute allowedRoles={['admin']}>
-                <EventListPage />
-              </RoleProtectedRoute>
-            } />
-            <Route path="/admin/users" element={
-              <RoleProtectedRoute allowedRoles={['admin']}>
-                <UserListPage />
-              </RoleProtectedRoute>
-            } />
-            <Route path="/admin/revenue" element={
-              <RoleProtectedRoute allowedRoles={['admin']}>
-                <RevenueAnalyticsPage />
-              </RoleProtectedRoute>
-            } />
-            <Route path="/admin/payments" element={
-              <RoleProtectedRoute allowedRoles={['admin']}>
-                <AdminPaymentLogsPage />
-              </RoleProtectedRoute>
-            } />
-            <Route path="/admin/profile" element={
-              <RoleProtectedRoute allowedRoles={['admin']}>
-                <AdminProfilePage />
-              </RoleProtectedRoute>
-            } />
+              } />
+              <Route path="/admin/users" element={
+                <RoleProtectedRoute allowedRoles={['admin']}>
+                  <UserListPage />
+                </RoleProtectedRoute>
+              } />
+              <Route path="/admin/revenue" element={
+                <RoleProtectedRoute allowedRoles={['admin']}>
+                  <RevenueAnalyticsPage />
+                </RoleProtectedRoute>
+              } />
+              <Route path="/admin/payments" element={
+                <RoleProtectedRoute allowedRoles={['admin']}>
+                  <AdminPaymentLogsPage />
+                </RoleProtectedRoute>
+              } />
+              <Route path="/admin/profile" element={
+                <RoleProtectedRoute allowedRoles={['admin']}>
+                  <AdminProfilePage />
+                </RoleProtectedRoute>
+              } />
 
-            {/* Event Manager Routes */}
-            <Route path="/manager" element={
-              <RoleProtectedRoute allowedRoles={['event_manager']}>
-                <ManagerDashbord />
-              </RoleProtectedRoute>
-            } />
-            <Route path="/manager/eventlist" element={
-              <RoleProtectedRoute allowedRoles={['event_manager']}>
-                <EventList />
-              </RoleProtectedRoute>
-            } />
-            <Route path="/manager/sale-revenue" element={
-              <RoleProtectedRoute allowedRoles={['event_manager']}>
-                <SaleRevanue/>
-              </RoleProtectedRoute>
-            } />
-            <Route path="/manager/payments" element={
-              <RoleProtectedRoute allowedRoles={['event_manager']}>
-                <ManagerPaymentLogsPage />
-              </RoleProtectedRoute>
-            } />
-            
-            <Route path="/manager/profile" element={
-              <RoleProtectedRoute allowedRoles={['event_manager']}>
-                <ManagerProfile />
-              </RoleProtectedRoute>
-            } />
+              {/* Event Manager Routes */}
+              <Route path="/manager" element={
+                <RoleProtectedRoute allowedRoles={['event_manager']}>
+                  <ManagerDashbord />
+                </RoleProtectedRoute>
+              } />
+              <Route path="/manager/eventlist" element={
+                <RoleProtectedRoute allowedRoles={['event_manager']}>
+                  <EventList />
+                </RoleProtectedRoute>
+              } />
+              <Route path="/manager/sale-revenue" element={
+                <RoleProtectedRoute allowedRoles={['event_manager']}>
+                  <SaleRevanue/>
+                </RoleProtectedRoute>
+              } />
+              <Route path="/manager/payments" element={
+                <RoleProtectedRoute allowedRoles={['event_manager']}>
+                  <ManagerPaymentLogsPage />
+                </RoleProtectedRoute>
+              } />
+              
+              <Route path="/manager/profile" element={
+                <RoleProtectedRoute allowedRoles={['event_manager']}>
+                  <ManagerProfile />
+                </RoleProtectedRoute>
+              } />
 
-            <Route path="*" element={<Home />} />
-            <Route path="*" element={<Home />} />
-          </Routes>
-        </Router>
+              <Route path="*" element={<PageNotFound />} />
+            </Routes>
+          </Router>
+          
+          {/* Global Grain Overlay for Premium Feel */}
+          <div className="grain-overlay" />
+          
+          {/* Toast notifications */}
+          <Toaster
+            position="bottom-right"
+            toastOptions={{
+              duration: 5000,
+              style: {
+                background: 'rgba(255, 255, 255, 0.8)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255, 255, 255, 0.4)',
+                borderRadius: '1.5rem',
+                color: '#1e293b',
+                fontWeight: 'bold',
+                padding: '1rem 1.5rem',
+                boxShadow: '0 20px 40px -10px rgba(0,0,0,0.1)',
+              },
+              success: {
+                iconTheme: {
+                  primary: '#8b5cf6',
+                  secondary: '#fff',
+                },
+              },
+            }}
+          />
         </ThemeProvider>
-        {/* Toast notifications */}
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#fff',
-              color: '#333',
-            },
-            success: {
-              style: {
-                background: '#10b981',
-                color: '#fff',
-              },
-            },
-            error: {
-              style: {
-                background: '#ef4444',
-                color: '#fff',
-              },
-            },
-          }}
-        />
       </QueryClientProvider>
     </Provider>
   );

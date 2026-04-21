@@ -214,7 +214,6 @@ eventSchema.index({ startDate: 1, status: 1 });
 eventSchema.index({ endDate: 1, status: 1 });
 eventSchema.index({ eventManager: 1 });
 eventSchema.index({ category: 1 });
-eventSchema.index({ slug: 1 });
 eventSchema.index({ 'venue.city': 1, startDate: 1 });
 eventSchema.index({ tags: 1 });
 

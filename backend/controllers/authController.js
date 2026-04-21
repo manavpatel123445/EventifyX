@@ -8,14 +8,14 @@ import bcrypt from "bcryptjs";
 const generateAccessToken = (user) => {
 	return jwt.sign(
 		{ id: user._id, role: user.role },
-		process.env.JWT_SECRET,
+		process.env.ACCESS_TOKEN_SECRET,
 		{ expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "1d" }
 	);
 };
 
 const generateRefreshToken = (user) => {
-	const secret = process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET;
-	if (!secret) throw new Error("REFRESH_TOKEN_SECRET or JWT_SECRET must be set");
+	const secret = process.env.REFRESH_TOKEN_SECRET;
+	if (!secret) throw new Error("REFRESH_TOKEN_SECRET must be set");
 	return jwt.sign(
 		{ id: user._id, role: user.role },
 		secret,

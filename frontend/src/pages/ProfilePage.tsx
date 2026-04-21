@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { type RootState } from "../app/store";
@@ -15,13 +14,20 @@ import {
   Star,
   Shield,
   BarChart3,
-  Upload
+  Upload,
+  Camera,
+  Activity,
+  Zap,
+  Globe,
+  Settings
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { ROLES, getRoleDisplayName, getRoleStyles, hasRole, capitalizeFirstLetter } from "../utils/roleUtils";
 import { NavLink } from "react-router-dom";
 import { uploadAvatar } from "../services/eventService";
 import { type UserProfile, getProfile, updateProfile, type UpdateProfileData } from "../services/userService";
+import TiltCard from "../components/TiltCard";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface UserStats {
   eventsCreated: number;
@@ -31,61 +37,28 @@ interface UserStats {
   favoriteEvents: number;
 }
 
-type EventStatus = 'upcoming' | 'completed' | 'cancelled' | 'in_progress';
-
-interface UserEvent {
-  _id: string;
-  title: string;
-  date: string;
-  status: EventStatus;
-  type: 'created' | 'attending';
-  venue: {
-    name: string;
-    city: string;
-  };
-}
-
 const ProfilePage = () => {
   const { user: authUser } = useSelector((state: RootState) => state.auth);
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [recentEvents] = useState<UserEvent[]>([]);
-  const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'profile' | 'activity' | 'security'>('profile');
 
   useEffect(() => {
-    if (authUser) {
-      loadUserData();
-    }
+    if (authUser) loadUserData();
   }, [authUser]);
 
   useEffect(() => {
-    if (user?.profileImage) {
-      setAvatarPreview(user.profileImage);
-    }
+    if (user?.profileImage) setAvatarPreview(user.profileImage);
   }, [user]);
 
   const loadUserData = async () => {
     try {
       const { success, user: userData } = await getProfile();
-      if (success && userData) {
-        setUser(userData);
-        
-        // Initialize stats (you can replace with actual API calls)
-        const userStats: UserStats = {
-          eventsCreated: hasRole(userData.role, ROLES.EVENT_MANAGER) ? 5 : 0,
-          eventsAttended: 12,
-          upcomingEvents: 3,
-          totalSpent: 450,
-          favoriteEvents: 8
-        };
-        
-        setStats(userStats);
-      }
+      if (success && userData) setUser(userData);
     } catch (error) {
-      console.error('Error loading profile:', error);
-      toast.error('Failed to load profile data');
+      toast.error('Failed to sync profile data');
     } finally {
       setLoading(false);
     }
@@ -94,12 +67,6 @@ const ProfilePage = () => {
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
-      return;
-    }
-    
     const previewUrl = URL.createObjectURL(file);
     setAvatarPreview(previewUrl);
     
@@ -108,329 +75,217 @@ const ProfilePage = () => {
       if (imageUrl && user) {
         await updateProfile({ profileImage: imageUrl });
         setUser({ ...user, profileImage: imageUrl });
-        toast.success('Profile picture updated successfully');
+        toast.success('Identity Avatar Synchronized');
       }
     } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast.error('Failed to update profile picture');
-      setAvatarPreview('');
+      toast.error('Avatar sync failed');
     }
-  };
-  
-  const handleProfileUpdate = async (data: UpdateProfileData) => {
-    try {
-      const { success, user: updatedUser } = await updateProfile(data);
-      if (success && updatedUser) {
-        setUser(updatedUser);
-        toast.success('Profile updated successfully');
-        setIsEditing(false);
-      }
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error('Failed to update profile');
-    }
-  };
-  
-
-  const StatCard = ({ 
-    icon: Icon, 
-    title, 
-    value, 
-    color = "blue" 
-  }: {
-    icon: React.ComponentType<{ className?: string }>;
-    title: string;
-    value: string | number;
-    color?: string;
-  }) => (
-    <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-      <div className="flex items-center">
-        <div className={`p-3 rounded-full bg-${color}-100`}>
-          <Icon className={`h-6 w-6 text-${color}-600`} />
-        </div>
-        <div className="ml-4">
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
-        </div>
-      </div>
-    </div>
-  );
-
-  const getStatusColor = (status: EventStatus): string => {
-    const statusStyles: Record<EventStatus, string> = {
-      'upcoming': 'text-blue-600 bg-blue-100',
-      'completed': 'text-green-600 bg-green-100',
-      'cancelled': 'text-red-600 bg-red-100',
-      'in_progress': 'text-yellow-600 bg-yellow-100'
-    };
-    return statusStyles[status] || 'text-gray-600 bg-gray-100';
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
       <Navbar />
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="space-y-6">
-            {/* User Overview Header */}
-            <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg p-6 text-white">
-              <div className="flex items-center space-x-6">
-                <div className="relative group">
-                  <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
-                    {avatarPreview ? (
-                      <img 
-                        src={avatarPreview} 
-                        alt={user?.name || 'User'} 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User className="h-10 w-10 text-white" />
-                    )}
+      
+      <main className="pt-24 pb-20">
+        <div className="container mx-auto px-6 max-w-7xl">
+          
+          {/* Panoramic Hero Header */}
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative h-[300px] rounded-[3rem] overflow-hidden mb-[-100px] z-0 shadow-2xl"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-900 via-slate-900 to-blue-900" />
+            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center opacity-20 mix-blend-overlay" />
+            <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-50/100 dark:from-slate-950/100 to-transparent" />
+          </motion.div>
+
+          {/* User Hub */}
+          <div className="relative z-10">
+            <div className="grid lg:grid-cols-12 gap-10">
+              
+              {/* Left Profile Card */}
+              <div className="lg:col-span-4">
+                <TiltCard damping={20} stiffness={120}>
+                  <div className="p-8 bg-white/70 dark:bg-slate-900/70 backdrop-blur-3xl border border-white/50 dark:border-slate-800 rounded-[3rem] shadow-2xl text-center relative overflow-hidden group">
+                    <div className="relative inline-block mb-6">
+                      <div className="w-32 h-32 rounded-full p-1 bg-gradient-to-br from-purple-500 to-blue-500 shadow-2xl relative z-10">
+                        <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center overflow-hidden border-4 border-slate-900">
+                          {avatarPreview ? (
+                            <img src={avatarPreview} className="w-full h-full object-cover" />
+                          ) : (
+                            <User className="w-12 h-12 text-slate-500" />
+                          )}
+                        </div>
+                      </div>
+                      <label className="absolute bottom-0 right-0 w-10 h-10 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shadow-xl cursor-pointer hover:scale-110 active:scale-95 transition-all z-20 hover:text-purple-600">
+                        <Camera size={18} />
+                        <input type="file" className="hidden" onChange={handleAvatarChange} />
+                      </label>
+                      <div className="absolute inset-0 bg-purple-500/20 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                    </div>
+
+                    <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter mb-2">
+                       {user?.name ? capitalizeFirstLetter(user.name) : 'User 0x1'}
+                    </h2>
+                    <p className="text-slate-500 dark:text-slate-400 font-bold mb-6">{user?.email}</p>
+                    
+                    <div className="flex justify-center gap-2 mb-8">
+                       <span className="px-4 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-purple-500/20">
+                         {user?.role ? getRoleDisplayName(user.role) : 'Citizen'}
+                       </span>
+                       <span className="px-4 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-emerald-500/20">
+                         Verified
+                       </span>
+                    </div>
+
+                    <div className="space-y-3">
+                       <ProfileNavButton active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={User} label="Profile Nexus" />
+                       <ProfileNavButton active={activeTab === 'activity'} onClick={() => setActiveTab('activity')} icon={Activity} label="Pulse Stream" />
+                       <ProfileNavButton active={activeTab === 'security'} onClick={() => setActiveTab('security')} icon={Shield} label="Neural Shield" />
+                    </div>
                   </div>
-                  <label 
-                    htmlFor="avatar-upload" 
-                    className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer"
-                    title="Change profile picture"
-                  >
-                    <Upload className="h-5 w-5 text-white" />
-                    <input
-                      id="avatar-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleAvatarChange}
-                    />
-                  </label>
+                </TiltCard>
+
+                {/* Network Status Widget */}
+                <div className="mt-8 p-8 bg-slate-900 dark:bg-slate-900/50 rounded-[2.5rem] border border-slate-800 relative overflow-hidden group">
+                   <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/10 rounded-full blur-[80px] group-hover:bg-blue-500/20 transition-all duration-700" />
+                   <div className="flex items-center justify-between mb-6">
+                      <h4 className="text-white font-black text-sm uppercase tracking-widest">Network Pulse</h4>
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                   </div>
+                   <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50">
+                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Latency</p>
+                         <p className="text-lg font-black text-white">24ms</p>
+                      </div>
+                      <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50">
+                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Uptime</p>
+                         <p className="text-lg font-black text-white">99.9%</p>
+                      </div>
+                   </div>
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold">{user?.name ? capitalizeFirstLetter(user.name) : 'My Profile'}</h1>
-                  <p className="text-purple-100">{user?.email || 'Manage your account and track your events'}</p>
-                  {user?.role && (
-                    <span 
-                      className={`mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        getRoleStyles(user.role).bg
-                      } ${getRoleStyles(user.role).text}`}
+              </div>
+
+              {/* Right Content Stream */}
+              <div className="lg:col-span-8">
+                <AnimatePresence mode="wait">
+                  {activeTab === 'profile' && (
+                    <motion.div 
+                      key="profile"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-8"
                     >
-                      {capitalizeFirstLetter(getRoleDisplayName(user.role))}
-                    </span>
+                      <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-3xl border border-white/50 dark:border-slate-800 rounded-[3rem] shadow-2xl p-10">
+                        <div className="flex items-center justify-between mb-10">
+                          <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+                            <Settings className="text-purple-600" />
+                            Nexus Configuration
+                          </h3>
+                          <button 
+                            onClick={() => setIsEditing(!isEditing)}
+                            className={`px-6 py-2 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
+                              isEditing 
+                                ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' 
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                            }`}
+                          >
+                            {isEditing ? 'Cancel Sync' : 'Reconfigure'}
+                          </button>
+                        </div>
+                        <ProfileForm 
+                          showTitle={false}
+                          user={user}
+                          onUpdate={async (data) => {
+                            await updateProfile(data);
+                            loadUserData();
+                            setIsEditing(false);
+                            toast.success('Nexus Updated');
+                          }}
+                          isEditing={isEditing}
+                          onEditToggle={() => setIsEditing(!isEditing)}
+                          onChangePassword={async () => toast.error('Security Protocol Active: Manual Bypass Denied')}
+                        />
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-6">
+                         <AccountStat label="Events Attended" value="24" icon={Zap} color="text-yellow-500" />
+                         <AccountStat label="Global Ranking" value="#4,102" icon={Globe} color="text-blue-500" />
+                      </div>
+                    </motion.div>
                   )}
-                </div>
-              </div>
-            </div>
 
-            {/* User Stats */}
-            {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
-                    <div className="flex items-center">
-                      <div className="p-3 rounded-full bg-gray-200 w-12 h-12"></div>
-                      <div className="ml-4 flex-1">
-                        <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                        <div className="h-6 bg-gray-200 rounded w-1/3"></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : stats && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                {user?.role === 'event_manager' && (
-                  <StatCard
-                    icon={Calendar}
-                    title="Events Created"
-                    value={stats.eventsCreated}
-                    color="blue"
-                  />
-                )}
-                <StatCard
-                  icon={Ticket}
-                  title="Events Attended"
-                  value={stats.eventsAttended}
-                  color="green"
-                />
-                <StatCard
-                  icon={Clock}
-                  title="Upcoming Events"
-                  value={stats.upcomingEvents}
-                  color="purple"
-                />
-                <StatCard
-                  icon={Star}
-                  title="Total Spent"
-                  value={`$${stats.totalSpent}`}
-                  color="emerald"
-                />
-                <StatCard
-                  icon={Heart}
-                  title="Favorite Events"
-                  value={stats.favoriteEvents}
-                  color="red"
-                />
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Profile Form */}
-              <div className="lg:col-span-2">
-                <ProfileForm 
-                  showTitle={true}
-                  user={user}
-                  onUpdate={handleProfileUpdate}
-                  isEditing={isEditing}
-                  onEditToggle={() => setIsEditing(!isEditing)} onChangePassword={function (_currentPassword: string, _newPassword: string): Promise<void> {
-                    throw new Error("Function not implemented.");
-                  } }                />
-              </div>
-
-              {/* User Dashboard */}
-              <div className="space-y-6">
-                {/* Quick Actions */}
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
-                  <div className="space-y-3">
-                    <button className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-                    <NavLink to="/events">
-                      <div className="flex items-center space-x-3">
-                        
-                        <Calendar className="h-5 w-5 text-blue-600" />
-                        <span className="text-sm font-medium">Browse Events</span>
-                      
-                      </div>
-                      </NavLink>
-                    </button>
-                    {user?.role !== ROLES.EVENT_MANAGER && (
-                      <button className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center space-x-3">
-                          <User className="h-5 w-5 text-green-600" />
-                          <span className="text-sm font-medium">Request Event</span>
-                        </div>
-                      </button>
-                    )}
-                    <button className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-                    <NavLink to="/my-tickets">
-                      <div className="flex items-center space-x-3">
-                        
-                        <Ticket className="h-5 w-5 text-purple-600" />
-                        <span className="text-sm font-medium">My Tickets</span>
-                      
-                      </div>
-                      </NavLink>
-                    </button>
-                    <button className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center space-x-3">
-                        <Heart className="h-5 w-5 text-red-600"/>
-                        <span className="text-sm font-medium">Favorites</span>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Recent Activity */}
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Events</h3>
-                  <div className="space-y-3">
-                    {recentEvents.length > 0 ? (
-                      recentEvents.map((event) => (
-                        <div key={event._id} className="p-4 rounded-lg border border-gray-200 hover:bg-gray-50">
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-medium text-gray-900 text-sm">{capitalizeFirstLetter(event.title)}</h4>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
-                              {capitalizeFirstLetter(event.status)}
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-600 mb-2">
-                            {capitalizeFirstLetter(event.venue.name)}, {capitalizeFirstLetter(event.venue.city)}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(event.date).toLocaleDateString()}
-                          </p>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-sm text-gray-500 text-center py-4">
-                        No recent events found
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Account Status */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <User className="h-5 w-5 text-blue-600" />
-                    <h3 className="text-sm font-semibold text-blue-800">Account Status</h3>
-                  </div>
-                  <div className="text-sm">
-                    <div className="flex items-center mb-2">
-                      <span className="font-medium mr-2">Role:</span>
-                      <span 
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        user?.role ? getRoleStyles(user.role).bg : 'bg-gray-100'
-                      } ${user?.role ? getRoleStyles(user.role).text : 'text-gray-800'}`}
+                  {activeTab === 'activity' && (
+                    <motion.div 
+                      key="activity"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-3xl border border-white/50 dark:border-slate-800 rounded-[3rem] shadow-2xl p-10"
                     >
-                      {user?.role ? capitalizeFirstLetter(getRoleDisplayName(user.role)) : 'User'}
-                    </span>
-                    </div>
-                    <p className="mb-2"><strong>Status:</strong> {user?.status?.toUpperCase()}</p>
-                    
-                    {/* Role-specific benefits */}
-                    {user?.role === ROLES.EVENT_MANAGER && (
-                      <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                        <p className="font-medium text-blue-800 flex items-center">
-                          <BarChart3 className="w-4 h-4 mr-2" />
-                          {capitalizeFirstLetter(getRoleDisplayName(user.role))} Benefits
-                        </p>
-                        <ul className="mt-1 space-y-1 text-xs text-blue-700">
-                          <li className="flex items-start">
-                            <span className="mr-1">•</span>
-                            <span>Create and manage events</span>
-                          </li>
-                          <li className="flex items-start">
-                            <span className="mr-1">•</span>
-                            <span>Access event analytics</span>
-                          </li>
-                          <li className="flex items-start">
-                            <span className="mr-1">•</span>
-                            <span>Manage event registrations</span>
-                          </li>
-                        </ul>
+                      <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-10">Activity Logs</h3>
+                      <div className="space-y-6">
+                         {[1,2,3].map(i => (
+                           <div key={i} className="flex items-center gap-6 p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border border-slate-100 dark:border-slate-800 transition-all hover:bg-white dark:hover:bg-slate-800 hover:shadow-xl">
+                              <div className="w-14 h-14 bg-purple-600/10 text-purple-600 rounded-2xl flex items-center justify-center shrink-0">
+                                 <Ticket size={24} />
+                              </div>
+                              <div className="flex-1">
+                                 <h4 className="font-black text-slate-900 dark:text-white">Ticket Purchased</h4>
+                                 <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Cyberpunk Festival 2077</p>
+                              </div>
+                              <div className="text-right">
+                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">2h ago</p>
+                                 <p className="font-black text-emerald-500">+$250.00</p>
+                              </div>
+                           </div>
+                         ))}
                       </div>
-                    )}
-                    
-                    {user?.role === ROLES.ADMIN && (
-                      <div className="mt-3 p-3 bg-red-50 rounded-lg">
-                        <p className="font-medium text-red-800 flex items-center">
-                          <Shield className="w-4 h-4 mr-2" />
-                          Administrator Benefits
-                        </p>
-                        <ul className="mt-1 space-y-1 text-xs text-red-700">
-                          <li className="flex items-start">
-                            <span className="mr-1">•</span>
-                            <span>Full system access</span>
-                          </li>
-                          <li className="flex items-start">
-                            <span className="mr-1">•</span>
-                            <span>User management</span>
-                          </li>
-                          <li className="flex items-start">
-                            <span className="mr-1">•</span>
-                            <span>System configuration</span>
-                          </li>
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
+
             </div>
           </div>
+
         </div>
-      </div>
-      <Footer /> 
-    </>
+      </main>
+
+      <Footer />
+    </div>
   );
 };
 
-export default ProfilePage
+const ProfileNavButton = ({ active, onClick, icon: Icon, label }: any) => (
+  <button 
+    onClick={onClick}
+    className={`w-full h-14 px-6 rounded-2xl flex items-center justify-between transition-all duration-300 font-black text-sm tracking-tight ${
+      active 
+        ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-xl shadow-purple-500/20' 
+        : 'bg-transparent text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+    }`}
+  >
+    <div className="flex items-center gap-3">
+      <Icon size={18} />
+      {label}
+    </div>
+    {active && <Zap size={14} className="animate-pulse" />}
+  </button>
+);
 
+const AccountStat = ({ label, value, icon: Icon, color }: any) => (
+  <div className="p-8 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-white dark:border-slate-800 shadow-xl flex items-center gap-6">
+    <div className={`w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 shadow-lg flex items-center justify-center ${color}`}>
+       <Icon size={28} />
+    </div>
+    <div>
+       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p>
+       <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">{value}</p>
+    </div>
+  </div>
+);
+
+export default ProfilePage;

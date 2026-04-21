@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useMemo } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -9,11 +8,11 @@ import { fetchCategories } from "../services/categoryService";
 import { createEventRequest, type EventRequestData } from "../services/eventService";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Calendar, MapPin, Users, DollarSign, Tag, FileText, Send, Check } from "lucide-react";
-import { useTheme } from "../context/ThemeContext";
+import { Calendar, MapPin, DollarSign, Tag, FileText, Send, Sparkles, Rocket } from "lucide-react";
+import { motion } from "framer-motion";
+import TiltCard from "../components/TiltCard";
 
-
-// CategorySelect component using TanStack Query
+// CategorySelect component
 interface CategorySelectProps {
   value: string;
   onChange: (value: string) => void;
@@ -27,36 +26,37 @@ const CategorySelect: React.FC<CategorySelectProps> = ({ value, onChange, error 
   });
 
   return (
-    <div>
+    <div className="relative group">
+      <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-purple-600 transition-colors" size={18} />
       <select
-        className={`mt-1 w-full rounded-lg border px-3 py-2 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring focus:ring-red-300 dark:focus:ring-red-900 ${
-          error ? "border-red-500 dark:border-red-500" : ""
+        className={`w-full h-14 pl-12 pr-4 rounded-2xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm text-gray-900 dark:text-gray-100 border border-white/40 dark:border-slate-800 outline-none transition-all focus:ring-2 focus:ring-purple-500/20 appearance-none cursor-pointer font-bold ${
+          error ? "border-red-500/50" : ""
         }`}
-        name="category"
         value={value}
         onChange={e => onChange(e.target.value)}
         required
       >
         <option value="" disabled>
-          {isLoading ? "Loading categories..." : queryError ? "Error loading categories" : "Select category"}
+          {isLoading ? "Loading Galaxy..." : queryError ? "Error Loading" : "Select Category"}
         </option>
         {Array.isArray(data) &&
           data.map((cat: any) => (
-            <option key={cat._id || cat.id} value={cat._id || cat.id}>
+            <option key={cat._id} value={cat._id}>
               {cat.name}
             </option>
           ))}
       </select>
-      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+         <SlidersHorizontal size={14} className="hidden" /> {/* Placeholder for alignment */}
+      </div>
+      {error && <p className="text-red-500 text-[10px] uppercase font-black tracking-widest mt-2 ml-4">{error}</p>}
     </div>
   );
 };
 
 const CreateEventPage: React.FC = () => {
   const navigate = useNavigate();
-  const { theme } = useTheme();
 
-  // Form state
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -69,559 +69,275 @@ const CreateEventPage: React.FC = () => {
     venueAddress: "",
     city: "",
     state: "",
-    ticketType: "regular" as  "regular" | "vip" | "premium",
+    ticketType: "regular" as "regular" | "vip" | "premium",
     ticketPrice: "",
     ticketQuantity: "",
-    
     tags: ""
   });
   
   const [images, setImages] = useState<string[]>([]);
-  const [singleDay, setSingleDay] = useState<boolean>(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Progress bar: compute completion for each step
   const steps = useMemo(() => {
-    const step1 = Boolean(formData.title.trim() && formData.category && formData.description.trim());
-    const step2 = Boolean(
-      formData.startDate && formData.endDate && formData.startTime && formData.endTime &&
-      formData.venueName.trim() && formData.venueAddress.trim() && formData.city.trim() && formData.state.trim() &&
-      formData.ticketPrice && parseFloat(formData.ticketPrice) >= 0 &&
-      formData.ticketQuantity && parseInt(formData.ticketQuantity) >= 1
-    );
+    const step1 = Boolean(formData.title.trim() && formData.category);
+    const step2 = Boolean(formData.startDate && formData.venueName.trim());
     const step3 = images.length >= 1;
     return [
-      { name: "Basic Information", completed: step1 },
-      { name: "Event Details", completed: step2 },
-      { name: "Images", completed: step3 },
+      { name: "Concept", completed: step1, icon: Rocket },
+      { name: "Venue", completed: step2, icon: MapPin },
+      { name: "Assets", completed: step3, icon: Tag },
     ];
   }, [formData, images]);
 
-  // Create event request mutation
   const createEventMutation = useMutation({
     mutationFn: createEventRequest,
-    onSuccess: (_response) => {
-      toast.success("Event request submitted successfully! Waiting for admin approval.");
-      navigate("/my-events"); // Redirect to user's events page
+    onSuccess: () => {
+      toast.success("Blueprint Transmitted! Awaiting Admin Decryption.");
+      navigate("/my-events");
     },
     onError: (error: any) => {
-      const message = error?.response?.data?.message || "Failed to submit event request";
-      toast.error(message);
-      console.error("Event creation error:", error);
+      toast.error(error?.response?.data?.message || "Transmission Failed");
     }
   });
 
-  // Form validation
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-
-    if (!formData.title.trim()) newErrors.title = "Event title is required";
-    if (!formData.description.trim()) newErrors.description = "Description is required";
-    if (!formData.category) newErrors.category = "Category is required";
-    if (!formData.startDate) newErrors.startDate = "Start date is required";
-    if (!formData.endDate) newErrors.endDate = "End date is required";
-    if (!formData.startTime) newErrors.startTime = "Start time is required";
-    if (!formData.endTime) newErrors.endTime = "End time is required";
-    if (!formData.venueName.trim()) newErrors.venueName = "Venue name is required";
-    if (!formData.venueAddress.trim()) newErrors.venueAddress = "Venue address is required";
-    if (!formData.city.trim()) newErrors.city = "City is required";
-    if (!formData.state.trim()) newErrors.state = "State is required";
-    if (!formData.ticketPrice || parseFloat(formData.ticketPrice) < 0) newErrors.ticketPrice = "Valid ticket price is required";
-    if (!formData.ticketQuantity || parseInt(formData.ticketQuantity) < 1) newErrors.ticketQuantity = "Valid ticket quantity is required";
-
-    // Date validation
-    const startDate = formData.startDate ? new Date(formData.startDate) : null;
-    const endDate = formData.endDate ? new Date(formData.endDate) : null;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (startDate && startDate <= today) newErrors.startDate = "Start date must be in the future";
-    // Allow single-day events: endDate can be the same as startDate
-    if (startDate && endDate && endDate < startDate) newErrors.endDate = "End date must be the same as or after start date";
-
-    // Time validation
-    if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
-      newErrors.endTime = "End time must be after start time";
-    }
-
-    // Registration deadline validation
+    if (!formData.title.trim()) newErrors.title = "Title Missing";
+    if (!formData.description.trim()) newErrors.description = "Mission intel required";
+    if (!formData.category) newErrors.category = "Classification needed";
+    if (!formData.startDate) newErrors.startDate = "Timeline unknown";
+    if (!formData.venueName.trim()) newErrors.venueName = "Target location unknown";
+    if (!formData.ticketPrice) newErrors.ticketPrice = "Credits not set";
+    if (!formData.ticketQuantity) newErrors.ticketQuantity = "Capacity unknown";
     
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      toast.error("Please fix the form errors before submitting");
-      return;
-    }
+    if (!validateForm()) return;
 
-    const eventRequestData: EventRequestData = {
-      title: formData.title.trim(),
-      description: formData.description.trim(),
-      category: formData.category,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      startTime: formData.startTime,
-      endTime: formData.endTime,
-      venue: {
-        name: formData.venueName.trim(),
-        address: formData.venueAddress.trim(),
-        city: formData.city.trim(),
-        state: formData.state.trim()
-      },
-      ticketPricing: [{
-        type: formData.ticketType,
-        price: parseFloat(formData.ticketPrice),
-        quantity: parseInt(formData.ticketQuantity)
-      }],
+    const data: EventRequestData = {
+      ...formData,
+      venue: { name: formData.venueName, address: formData.venueAddress, city: formData.city, state: formData.state },
+      ticketPricing: [{ type: formData.ticketType, price: parseFloat(formData.ticketPrice), quantity: parseInt(formData.ticketQuantity) }],
       images,
-      tags: formData.tags ? formData.tags.split(",").map(tag => tag.trim()).filter(Boolean) : []
+      tags: formData.tags.split(",").filter(Boolean)
     };
-
-    createEventMutation.mutate(eventRequestData);
-  };
-
-  // Handle input changes
-  const handleInputChange = (field: string, value: string) => {
-    // Auto-behavior for single-day events
-    if (field === "startDate") {
-      setFormData(prev => {
-        // If single-day is ON or no end date yet, keep endDate in sync and turn single-day ON
-        if (singleDay || !prev.endDate) {
-          return { ...prev, startDate: value, endDate: value };
-        }
-        return { ...prev, startDate: value };
-      });
-      if (singleDay || !formData.endDate) {
-        setSingleDay(true);
-      }
-    } else if (field === "endDate") {
-      // If user chooses a different end date than start date, automatically turn OFF single-day
-      if (value && value !== formData.startDate) {
-        setSingleDay(false);
-      } else if (value && value === formData.startDate) {
-        setSingleDay(true);
-      }
-      setFormData(prev => ({ ...prev, endDate: value }));
-    } else {
-      setFormData(prev => ({ ...prev, [field]: value }));
-    }
-
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: "" }));
-    }
+    createEventMutation.mutate(data);
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
       <Navbar />
-      <div className="min-h-screen bg-gray-50 dark:bg-[#1B1D2A] py-8">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="bg-white dark:bg-[#212530] rounded-2xl shadow-lg p-8">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Create Event Request</h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                Submit your event for admin approval. Once approved, you'll become an Event Manager!
-              </p>
-            </div>
+      
+      <main className="pt-24 pb-20">
+        <div className="container mx-auto px-6 max-w-5xl">
+          <div className="grid lg:grid-cols-12 gap-12">
+            
+            {/* Sidebar Navigation */}
+            <div className="lg:col-span-4 lg:sticky lg:top-24 h-fit">
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-8"
+              >
+                <div>
+                  <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter mb-4">
+                    Create <span className="text-purple-600">Event</span>
+                  </h1>
+                  <p className="text-slate-500 dark:text-slate-400 font-bold leading-relaxed">
+                    Broadcast your next experience to the global network. 
+                    Start by defining your mission parameters.
+                  </p>
+                </div>
 
-            {/* Progress Bar - updates when details are filled */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between">
-                {steps.map((step, index) => (
-                  <React.Fragment key={step.name}>
-                    <div className="flex flex-col items-center">
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
-                          step.completed
-                            ? "bg-red-500 dark:bg-red-600 text-white"
-                            : theme === "dark"
-                            ? "bg-gray-700 text-gray-400"
-                            : "bg-gray-200 text-gray-600"
-                        }`}
-                      >
-                        {step.completed ? <Check className="w-5 h-5" /> : index + 1}
+                <div className="space-y-4">
+                  {steps.map((step, i) => (
+                    <div key={i} className="flex items-center gap-4 group">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 ${
+                        step.completed 
+                          ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20 scale-110" 
+                          : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400"
+                      }`}>
+                        <step.icon size={20} />
                       </div>
-                      <span
-                        className={`mt-2 text-sm font-medium ${
-                          step.completed
-                            ? "text-red-500 dark:text-red-400"
-                            : theme === "dark"
-                            ? "text-gray-400"
-                            : "text-gray-600"
-                        }`}
-                      >
-                        {step.name}
-                      </span>
+                      <div>
+                        <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-0.5 ${step.completed ? 'text-purple-600' : 'text-slate-400'}`}>Step 0{i+1}</p>
+                        <h3 className={`font-black tracking-tight ${step.completed ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>{step.name}</h3>
+                      </div>
                     </div>
-                    {index < steps.length - 1 && (
-                      <div
-                        className={`flex-1 h-1 mx-2 rounded transition-all ${
-                          step.completed
-                            ? "bg-red-500 dark:bg-red-600"
-                            : theme === "dark"
-                            ? "bg-gray-700"
-                            : "bg-gray-200"
-                        }`}
-                        style={{ minWidth: "40px" }}
-                      />
-                    )}
-                  </React.Fragment>
-                ))}
-              </div>
+                  ))}
+                </div>
+
+                <TiltCard damping={15}>
+                  <div className="p-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
+                     <Sparkles className="absolute -top-4 -right-4 w-24 h-24 text-white/10 group-hover:scale-125 transition-transform duration-700" />
+                     <h3 className="text-xl font-black mb-4 relative z-10">Pro Tip</h3>
+                     <p className="text-sm font-bold text-white/80 leading-relaxed relative z-10">
+                        High-quality assets increase event engagement by up to 85%. Ensure your visual identity is crystal clear.
+                     </p>
+                  </div>
+                </TiltCard>
+              </motion.div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Basic Information */}
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
-                <h3 className="flex items-center text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  <FileText className="w-5 h-5 mr-2 text-red-500 dark:text-red-400" />
-                  Basic Information
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Event Title */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Event Title *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.title}
-                      onChange={(e) => handleInputChange("title", e.target.value)}
-                      placeholder="Enter event title"
-                      className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${
-                        errors.title ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""
-                      }`}
-                      maxLength={100}
+            {/* Main Form */}
+            <div className="lg:col-span-8">
+              <motion.form 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                onSubmit={handleSubmit} 
+                className="space-y-10"
+              >
+                {/* Section 1: Core */}
+                <Section title="Basic Information" Icon={FileText}>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <InputField 
+                      label="Event Horizon (Title)" 
+                      value={formData.title} 
+                      onChange={(v: string) => setFormData({...formData, title: v})} 
+                      placeholder="e.g. Neon Nights 2026"
+                      error={errors.title}
                     />
-                    {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
-                  </div>
-
-                  {/* Category */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Event Category *
-                    </label>
-                    <CategorySelect
-                      value={formData.category}
-                      onChange={(value) => handleInputChange("category", value)}
+                    <CategorySelect 
+                      value={formData.category} 
+                      onChange={(v: string) => setFormData({...formData, category: v})} 
                       error={errors.category}
                     />
                   </div>
-                </div>
-
-                {/* Description */}
-                <div className="mt-6">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Description *
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => handleInputChange("description", e.target.value)}
-                    placeholder="Describe your event in detail"
-                    rows={4}
-                    className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition resize-none ${errors.description ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
-                    maxLength={2000}
-                  />
-                  {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{formData.description.length}/2000 characters</p>
-                </div>
-              </div>
-
-              {/* Date & Time */}
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
-                <h3 className="flex items-center text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  <Calendar className="w-5 h-5 mr-2 text-red-500 dark:text-red-400" />
-                  Date & Time
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Start Date */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Start Date *
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.startDate}
-                      onChange={(e) => handleInputChange("startDate", e.target.value)}
-                      className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.startDate ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
-                      min={new Date().toISOString().split('T')[0]}
+                  <div className="relative group">
+                    <textarea
+                      placeholder="Transmission details (Description)..."
+                      className="w-full min-h-[160px] p-6 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-white/40 dark:border-slate-800 rounded-3xl outline-none focus:ring-2 focus:ring-purple-500/20 text-slate-900 dark:text-white font-bold transition-all resize-none"
+                      value={formData.description}
+                      onChange={e => setFormData({...formData, description: e.target.value})}
                     />
-                    {errors.startDate && <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>}
                   </div>
+                </Section>
 
-                  {/* Single-day toggle and End Date */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      End Date *
-                    </label>
-                   
-                    <input
-                      type="date"
-                      value={formData.endDate}
-                      onChange={(e) => handleInputChange("endDate", e.target.value)}
-                      className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.endDate ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
-                      min={formData.startDate || new Date().toISOString().split('T')[0]}
-                      disabled={singleDay}
-                    />
-                     <div className="flex items-center justify-between mb-2">
-                      <label className="inline-flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300 select-none">
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
-                          checked={singleDay}
-                          onChange={(e) => {
-                            const checked = e.target.checked;
-                            setSingleDay(checked);
-                            if (checked && formData.startDate) {
-                              setFormData(prev => ({ ...prev, endDate: prev.startDate }));
-                            }
-                          }}
-                        />
-                        <span className="font-medium">Single-day</span>
-                        
-                      </label>
+                {/* Section 2: Time & Location */}
+                <Section title="Timeline & Coordinates" Icon={Calendar}>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <InputField label="Start Cycle" type="date" value={formData.startDate} onChange={(v: string) => setFormData({...formData, startDate: v})} />
+                    <InputField label="End Cycle" type="date" value={formData.endDate} onChange={(v: string) => setFormData({...formData, endDate: v})} />
+                    <InputField label="H-Hour" type="time" value={formData.startTime} onChange={(v: string) => setFormData({...formData, startTime: v})} />
+                    <InputField label="Stand-down" type="time" value={formData.endTime} onChange={(v: string) => setFormData({...formData, endTime: v})} />
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-6 pt-4">
+                    <InputField label="Operational Base (Venue)" value={formData.venueName} onChange={(v: string) => setFormData({...formData, venueName: v})} placeholder="Venue Name" />
+                    <InputField label="City Protocol" value={formData.city} onChange={(v: string) => setFormData({...formData, city: v})} placeholder="Global City" />
+                  </div>
+                </Section>
+
+                {/* Section 3: Economy */}
+                <Section title="Economic Framework" Icon={DollarSign}>
+                  <div className="grid md:grid-cols-3 gap-6">
+                    <div className="relative group">
+                      <select 
+                        value={formData.ticketType} 
+                        onChange={e => setFormData({...formData, ticketType: e.target.value as any})}
+                        className="w-full h-14 px-6 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-white/40 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-purple-500/20 text-slate-900 dark:text-white font-bold appearance-none cursor-pointer"
+                      >
+                         <option value="regular">Regular</option>
+                         <option value="vip">VIP</option>
+                         <option value="premium">Premium</option>
+                      </select>
                     </div>
-                    {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
-                    {singleDay ? (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">End date follows Start date automatically for single-day events.</p>
+                    <InputField label="Credit Cost (INR)" type="number" value={formData.ticketPrice} onChange={(v: string) => setFormData({...formData, ticketPrice: v})} placeholder="0.00" />
+                    <InputField label="Operational Capacity" type="number" value={formData.ticketQuantity} onChange={(v: string) => setFormData({...formData, ticketQuantity: v})} placeholder="Total Seats" />
+                  </div>
+                </Section>
+
+                {/* Section 4: Visuals */}
+                <Section title="Identity Assets" Icon={Tag}>
+                   <div className="bg-white/30 dark:bg-slate-900/30 p-8 rounded-[2rem] border border-white/20 dark:border-slate-800/30">
+                     <ImageUpload onImagesChange={setImages} maxImages={3} existingImages={images} />
+                   </div>
+                </Section>
+
+                {/* Submit Hub */}
+                <div className="pt-10 flex flex-col items-center">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    disabled={createEventMutation.isPending}
+                    type="submit"
+                    className="w-full h-20 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-[2rem] font-black text-xl shadow-2xl shadow-purple-500/30 flex items-center justify-center gap-4 group transition-all"
+                  >
+                    {createEventMutation.isPending ? (
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
                     ) : (
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Turn on single-day to auto-set End date to Start date.</p>
+                      <>
+                        Transmit Blueprint
+                        <Send className="group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
+                      </>
                     )}
-                  </div>
-
-                  {/* Start Time */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Start Time *
-                    </label>
-                    <input
-                      type="time"
-                      value={formData.startTime}
-                      onChange={(e) => handleInputChange("startTime", e.target.value)}
-                      className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.startTime ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
-                    />
-                    {errors.startTime && <p className="text-red-500 text-sm mt-1">{errors.startTime}</p>}
-                  </div>
-
-                  {/* End Time */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      End Time *
-                    </label>
-                    <input
-                      type="time"
-                      value={formData.endTime}
-                      onChange={(e) => handleInputChange("endTime", e.target.value)}
-                      className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.endTime ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
-                    />
-                    {errors.endTime && <p className="text-red-500 text-sm mt-1">{errors.endTime}</p>}
-                  </div>
+                  </motion.button>
+                  <p className="mt-6 text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Secure Transmission v3.4.1</p>
                 </div>
 
-                
-              </div>
-
-              {/* Venue Information */}
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
-                <h3 className="flex items-center text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  <MapPin className="w-5 h-5 mr-2 text-red-500 dark:text-red-400" />
-                  Venue Information
-                </h3>
-                
-                <div className="space-y-6">
-                  {/* Venue Name */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Venue Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.venueName}
-                      onChange={(e) => handleInputChange("venueName", e.target.value)}
-                      placeholder="Enter venue name"
-                      className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.venueName ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
-                    />
-                    {errors.venueName && <p className="text-red-500 text-sm mt-1">{errors.venueName}</p>}
-                  </div>
-
-                  {/* Venue Address */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Venue Address *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.venueAddress}
-                      onChange={(e) => handleInputChange("venueAddress", e.target.value)}
-                      placeholder="Enter full venue address"
-                      className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.venueAddress ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
-                    />
-                    {errors.venueAddress && <p className="text-red-500 text-sm mt-1">{errors.venueAddress}</p>}
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* City */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        City *
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.city}
-                        onChange={(e) => handleInputChange("city", e.target.value)}
-                        placeholder="Enter city"
-                        className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.city ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
-                      />
-                      {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
-                    </div>
-
-                    {/* State */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        State *
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.state}
-                        onChange={(e) => handleInputChange("state", e.target.value)}
-                        placeholder="Enter state"
-                        className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.state ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
-                      />
-                      {errors.state && <p className="text-red-500 text-sm mt-1">{errors.state}</p>}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Ticket Information */}
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
-                <h3 className="flex items-center text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  <DollarSign className="w-5 h-5 mr-2 text-red-500 dark:text-red-400" />
-                  Ticket Information
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Ticket Type */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Ticket Type
-                    </label>
-                    <select
-                      value={formData.ticketType}
-                      onChange={(e) => handleInputChange("ticketType", e.target.value)}
-                      className="w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition"
-                    >
-                      <option value="regular">Regular</option>
-                      <option value="vip">VIP</option>
-                      <option value="premium">Premium</option>
-                    </select>
-                  </div>
-
-                  {/* Ticket Price */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Ticket Price (₹) *
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.ticketPrice}
-                      onChange={(e) => handleInputChange("ticketPrice", e.target.value)}
-                      placeholder="0.00"
-                      className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.ticketPrice ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
-                      min="0"
-                      step="0.01"
-                    />
-                    {errors.ticketPrice && <p className="text-red-500 text-sm mt-1">{errors.ticketPrice}</p>}
-                  </div>
-
-                  {/* Ticket Quantity */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Available Tickets *
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.ticketQuantity}
-                      onChange={(e) => handleInputChange("ticketQuantity", e.target.value)}
-                      placeholder="Enter quantity"
-                      className={`w-full rounded-lg border px-4 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-red-500 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900 outline-none transition ${errors.ticketQuantity ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
-                      min="1"
-                    />
-                    {errors.ticketQuantity && <p className="text-red-500 text-sm mt-1">{errors.ticketQuantity}</p>}
-                  </div>
-                </div>
-              </div>
-
-              {/* Event Images */}
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
-                <h3 className="flex items-center text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  <Tag className="w-5 h-5 mr-2 text-red-500 dark:text-red-400" />
-                  Event Images
-                </h3>
-                
-                <ImageUpload
-                  onImagesChange={setImages}
-                  maxImages={3}
-                  existingImages={images}
-                />
-              </div>
-
-              
-             
-              {/* Submit Button */}
-              <div className="flex items-center justify-center pt-6">
-                <button
-                  type="submit"
-                  disabled={createEventMutation.isPending}
-                  className="flex items-center justify-center px-8 py-4 bg-red-500 dark:bg-red-600 text-white text-lg font-semibold rounded-lg shadow-lg hover:bg-red-600 dark:hover:bg-red-700 focus:ring-4 focus:ring-red-200 dark:focus:ring-red-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed min-w-[200px]"
-                >
-                  {createEventMutation.isPending ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-5 h-5 mr-2" />
-                      Submit Event Request
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Info Note */}
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-lg p-4">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <Users className="h-5 w-5 text-blue-500 dark:text-blue-400 mt-0.5" />
-                  </div>
-                  <div className="ml-3">
-                    <h4 className="text-sm font-medium text-blue-900 dark:text-blue-200">
-                      What happens next?
-                    </h4>
-                    <div className="mt-1 text-sm text-blue-700 dark:text-blue-300">
-                      <p>
-                        Your event request will be reviewed by our admin team. Once approved, you'll automatically become an Event Manager and your event will be published on our platform.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </form>
+              </motion.form>
+            </div>
           </div>
         </div>
-      </div>
+      </main>
+
       <Footer />
-    </>
+    </div>
   );
 };
 
-export default CreateEventPage
+const Section = ({ title, children, Icon }: any) => (
+  <div className="space-y-6">
+    <div className="flex items-center gap-4 mb-2">
+      <div className="w-10 h-10 rounded-xl bg-purple-600/10 text-purple-600 flex items-center justify-center">
+        <Icon size={20} />
+      </div>
+      <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{title}</h2>
+    </div>
+    <div className="space-y-6">
+      {children}
+    </div>
+  </div>
+);
+
+const InputField = ({ label, type = "text", value, onChange, placeholder, error }: any) => (
+  <div className="space-y-2 group">
+    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-4 group-focus-within:text-purple-600 transition-colors">
+      {label}
+    </label>
+    <div className="relative">
+      <input
+        type={type}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={`w-full h-14 px-6 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-white/40 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-purple-500/20 text-slate-900 dark:text-white font-bold transition-all ${
+          error ? 'border-red-500/50 ring-2 ring-red-500/10' : ''
+        }`}
+      />
+      {error && <p className="text-red-500 text-[10px] uppercase font-black tracking-widest mt-2 ml-4">{error}</p>}
+    </div>
+  </div>
+);
+
+const SlidersHorizontal = ({ size, className }: any) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M21 4h-7M10 4H3M21 12H12M8 12H3M21 20H16M12 20H3M14 2v4M8 10v4M16 18v4"/>
+  </svg>
+);
+
+export default CreateEventPage;

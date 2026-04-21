@@ -49,7 +49,6 @@ const eventManagerRequestSchema = new mongoose.Schema(
 
 // Index for faster queries
 eventManagerRequestSchema.index({ status: 1 });
-eventManagerRequestSchema.index({ user: 1 });
 
 // Populate user data when querying
 eventManagerRequestSchema.pre(/^find/, function (next) {

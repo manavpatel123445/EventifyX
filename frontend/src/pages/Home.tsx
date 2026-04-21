@@ -1,13 +1,18 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
 import { getAllEvents, type Event } from "../services/eventService";
 import { formatINR } from "../utils/currency";
 import { getAllCategories } from "../services/categoryService";
+import TiltCard from "../components/TiltCard";
+import { motion } from "framer-motion";
+import { 
+  Search, MapPin, Calendar, ArrowRight, Zap, 
+  ShieldCheck, Star, Users, Play, Globe, Sparkles 
+} from "lucide-react";
 
 interface Category {
   _id: string;
@@ -21,117 +26,30 @@ interface Category {
 const Home = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
-  const categoryScrollRef = useRef<HTMLDivElement | null>(null);
 
-  // Auto-scroll categories every 2.0 seconds
-  useEffect(() => {
-    const container = categoryScrollRef.current;
-    if (!container) return;
-
-    const scrollStep = 240; // pixels per step (approx one card)
-    const interval = setInterval(() => {
-      if (!container) return;
-      const nearEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 5;
-      if (nearEnd) {
-        container.scrollTo({ left: 0, behavior: "smooth" });
-      } else {
-        container.scrollBy({ left: scrollStep, behavior: "smooth" });
-      }
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Events Query with TanStack Query
-  const {
-    data: eventsResponse,
-    isLoading: eventsLoading,
-    error: eventsError,
-    refetch: refetchEvents
-  } = useQuery({
-    queryKey: ['events', 'active', { limit: 9 }],
-    queryFn: async () => {
-      console.log('🔍 Fetching events with TanStack Query...');
-      // No status passed so backend returns active (upcoming + ongoing)
-      const response = await getAllEvents({ limit: 9 });
-      console.log('📡 Events API Response:', response);
-      return response;
-    },
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    refetchOnWindowFocus: false,
-    retry: (failureCount, error) => {
-      // Retry up to 2 times, but not for 4xx errors
-      if (axios.isAxiosError(error)) {
-        const status = error.response?.status;
-        if (typeof status === 'number' && status >= 400 && status < 500) {
-          return false;
-        }
-      }
-      return failureCount < 2;
-    }
-  });
-
-  // Categories Query with TanStack Query
-  const {
-    data: categoriesResponse,
-    isLoading: categoriesLoading,
-  } = useQuery({
+  // Categories Query
+  const { data: categoriesResponse, isLoading: categoriesLoading } = useQuery({
     queryKey: ['categories', 'active'],
     queryFn: async () => {
-      console.log('📢 Fetching categories with TanStack Query...');
       const response = await getAllCategories();
-      console.log('📢 Categories API Response:', response);
       return response;
     },
-    staleTime: 10 * 60 * 1000, // Consider data fresh for 10 minutes (categories change less frequently)
-    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
-    refetchOnWindowFocus: false,
-    retry: 2
+    staleTime: 10 * 60 * 1000,
   });
 
-  // Process events data
-  const events: Event[] = (() => {
-    if (!eventsResponse) return [];
-    
-    let eventsData = [];
-    if (eventsResponse?.success && eventsResponse?.data?.events) {
-      eventsData = eventsResponse.data.events;
-    } else if (eventsResponse?.data?.events) {
-      eventsData = eventsResponse.data.events;
-    } else {
-      eventsData = eventsResponse?.events || [];
-    }
-    
-    console.log('📊 Found', eventsData.length, 'events');
-    return eventsData;
-  })();
+  // Events Query
+  const { data: eventsResponse, isLoading: eventsLoading } = useQuery({
+    queryKey: ['events', 'active', { limit: 8 }],
+    queryFn: async () => {
+      const response = await getAllEvents({ limit: 8 });
+      return response;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
-  // Process categories data
-  const categories: Category[] = (() => {
-    if (!categoriesResponse) return [];
-    
-    let categoriesData = [];
-    if (categoriesResponse?.success && categoriesResponse?.data) {
-      categoriesData = categoriesResponse.data;
-    } else if (categoriesResponse?.data) {
-      categoriesData = categoriesResponse.data;
-    } else if (Array.isArray(categoriesResponse)) {
-      categoriesData = categoriesResponse;
-    }
-    
-    // Filter only active categories
-    const activeCategories = categoriesData.filter((cat: Category) => 
-      !cat.status || cat.status === 'active'
-    );
-    
-    console.log('📢 Active categories:', activeCategories.length);
-    return activeCategories;
-  })();
-
-  // Computed loading states
-  const loading = eventsLoading;
-  const hasEventsError = !!eventsError;
+  const events: Event[] = eventsResponse?.data?.events || eventsResponse?.events || [];
+  const categories: Category[] = categoriesResponse?.data || categoriesResponse || [];
+  const activeCategories = categories.filter((cat: Category) => !cat.status || cat.status === 'active');
 
   const handleSearch = () => {
     const params = new URLSearchParams();
@@ -141,409 +59,355 @@ const Home = () => {
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500 overflow-x-hidden">
       <Navbar />
       
-      {/* Enhanced Hero Section */}
-      <section
-        className="relative flex items-center justify-center h-[500px] md:h-[600px] w-full bg-cover bg-center"
-        style={{
-          backgroundImage:
-            "url('https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80')",
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60" />
-        <div className="relative z-10 text-center text-white max-w-4xl px-6">
-          <h1 className="text-5xl md:text-7xl font-extrabold mb-6 drop-shadow-lg">
-            Welcome to <span className="text-red-400">EventifyX</span>
-          </h1>
-          <p className="text-xl md:text-2xl mb-8 drop-shadow max-w-2xl mx-auto leading-relaxed">
-            Discover amazing events, connect with your community, and create unforgettable experiences.
-          </p>
-          
-          {/* Search Bar */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 mb-8 max-w-3xl mx-auto">
-            <div className="flex flex-col md:flex-row gap-4">
-              <input
-                type="text"
-                placeholder="Search events..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 px-4 py-3 rounded-lg border border-gray-300 text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500"
-              />
-              <input
-                type="text"
-                placeholder="City..."
-                value={selectedCity}
-                onChange={(e) => setSelectedCity(e.target.value)}
-                className="md:w-40 px-4 py-3 rounded-lg border border-gray-300 text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500"
-              />
-              <button
-                onClick={handleSearch}
-                className="px-8 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-semibold"
+      {/* 🎭 Cinematic Hero Section */}
+      <section className="relative h-screen flex items-center justify-center overflow-hidden pt-32">
+        <div className="absolute inset-0 z-0">
+          <img
+            src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1920&q=80"
+            alt="Hero Background"
+            className="w-full h-full object-cover scale-110 blur-sm brightness-[0.4] dark:brightness-[0.3]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-950/20 to-slate-950" />
+        </div>
+
+        {/* Animated Particles/Blobs */}
+        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-purple-600/20 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-blue-600/20 rounded-full blur-[100px] animate-pulse delay-1000" />
+
+        <div className="relative z-10 container mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-bold mb-8">
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              <span>Transforming your Event Experiences</span>
+            </div>
+            <h1 className="text-6xl md:text-8xl font-black text-white leading-[1.1] mb-8 tracking-tighter">
+              Discover <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-blue-400 to-indigo-400">Extraordinary</span> <br />
+              Experiences
+            </h1>
+            <p className="text-slate-300 text-xl md:text-2xl max-w-xl mb-12 leading-relaxed">
+              Join millions of people discovering events, festivals, and workshops tailored to your soul's calling.
+            </p>
+
+            <div className="flex flex-wrap gap-4">
+              <Link
+                to="/events"
+                className="px-10 py-5 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-[2rem] font-black text-lg shadow-2xl shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-105 active:scale-95 transition-all flex items-center gap-3 group"
               >
-                Search Events
+                Start Exploring
+                <ArrowRight className="group-hover:translate-x-2 transition-transform" />
+              </Link>
+              <button className="px-10 py-5 bg-white/10 backdrop-blur-xl border border-white/20 text-white rounded-[2rem] font-black text-lg hover:bg-white/20 transition-all flex items-center gap-3">
+                <Play className="fill-white" size={20} />
+                Watch How it Works
               </button>
             </div>
+            
+            <div className="mt-12 flex items-center gap-6">
+               <div className="flex -space-x-4">
+                 {[1,2,3,4].map(i => (
+                   <img key={i} src={`https://i.pravatar.cc/100?u=${i}`} className="w-12 h-12 rounded-full border-4 border-slate-900 shadow-xl" />
+                 ))}
+                 <div className="w-12 h-12 rounded-full bg-indigo-600 border-4 border-slate-900 flex items-center justify-center text-white font-bold text-xs">9k+</div>
+               </div>
+               <p className="text-slate-400 text-sm font-bold tracking-wide uppercase">Trusted by Event Creators Globally</p>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, delay: 0.2 }}
+            className="hidden lg:block relative"
+          >
+            <TiltCard damping={10} stiffness={100}>
+               <div className="relative rounded-[3rem] overflow-hidden border border-white/20 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)]">
+                 <img
+                   src="https://images.unsplash.com/photo-1514525253361-bee8a187499b?auto=format&fit=crop&w=600&q=80"
+                   className="w-full h-full object-cover"
+                   alt="Featured Experience"
+                 />
+                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                 <div className="absolute bottom-10 left-10 right-10">
+                   <div className="px-4 py-1 bg-purple-600 rounded-full text-white text-[10px] font-black uppercase tracking-widest inline-block mb-4">Trending Now</div>
+                   <h3 className="text-3xl font-black text-white mb-2 leading-tight">Lunar Light Music Festival 2026</h3>
+                   <div className="flex items-center gap-4 text-slate-300">
+                      <div className="flex items-center gap-2"><MapPin size={16} className="text-purple-400" /> <span className="text-xs font-bold uppercase tracking-widest leading-none">Los Angeles, CA</span></div>
+                      <div className="flex items-center gap-2"><Calendar size={16} className="text-purple-400" /> <span className="text-xs font-bold uppercase tracking-widest leading-none">Aug 24-26</span></div>
+                   </div>
+                 </div>
+               </div>
+            </TiltCard>
+            
+            {/* Flying Glass Cards */}
+            <motion.div
+              animate={{ y: [0, -20, 0] }}
+              transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+              className="absolute -top-10 -right-10 p-6 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl z-10"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/50">
+                  <ShieldCheck size={24} />
+                </div>
+                <div>
+                   <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Secure Payments</p>
+                   <p className="text-sm font-bold text-white leading-none">Verified Merchant</p>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              animate={{ y: [0, 20, 0] }}
+              transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
+              className="absolute -bottom-10 -left-10 p-6 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl z-10"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/50">
+                  <Users size={24} />
+                </div>
+                <div>
+                   <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Connect</p>
+                   <p className="text-sm font-bold text-white leading-none">12.5k Joined</p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* 🔍 Premium Search Hub */}
+      <section className="relative z-20 mt-[-100px] container mx-auto px-6">
+        <motion.div
+           initial={{ y: 50, opacity: 0 }}
+           whileInView={{ y: 0, opacity: 1 }}
+           viewport={{ once: true }}
+           className="p-8 md:p-12 bg-white/80 dark:bg-slate-900/80 backdrop-blur-3xl border border-white/50 dark:border-slate-800 rounded-[4rem] shadow-2xl flex flex-col lg:flex-row items-center gap-8"
+        >
+          <div className="flex-1 w-full space-y-4">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-4">What's the vibe?</label>
+            <div className="relative group">
+              <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-purple-600" size={24} />
+              <input
+                type="text"
+                placeholder="Concerts, Tech Conferences, Digital Art..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-20 pl-16 pr-8 rounded-[2rem] bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xl font-bold focus:ring-4 focus:ring-purple-500/20 outline-none transition-all dark:text-white"
+              />
+            </div>
           </div>
-          
-          {/* Call to Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              to="/events"
-              className="inline-block rounded-lg bg-red-500 px-8 py-4 font-semibold text-white shadow-lg hover:bg-red-600 transition-all transform hover:scale-105"
-            >
-              Browse Events
-            </Link>
-            <Link
-              to="/create-event"
-              className="inline-block rounded-lg bg-transparent border-2 border-white px-8 py-4 font-semibold text-white shadow-lg hover:bg-white hover:text-red-500 transition-all transform hover:scale-105"
-            >
-              Create Event
+
+          <div className="flex-1 w-full space-y-4">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-4">Where to?</label>
+            <div className="relative group">
+              <MapPin className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-purple-600" size={24} />
+              <input
+                type="text"
+                placeholder="New York, Remote, Tokyo..."
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+                className="w-full h-20 pl-16 pr-8 rounded-[2rem] bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xl font-bold focus:ring-4 focus:ring-purple-500/20 outline-none transition-all dark:text-white"
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={handleSearch}
+            className="w-full lg:w-auto h-20 px-12 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[2rem] font-black text-xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-slate-900/20"
+          >
+            Find Experience
+          </button>
+        </motion.div>
+      </section>
+
+      {/* 📁 Glassmorphic Categories */}
+      <section className="py-32 container mx-auto px-6">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+           <div>
+             <h2 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white mb-4 tracking-tighter">Explore <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">Industries</span></h2>
+             <p className="text-slate-500 dark:text-slate-400 text-xl font-medium max-w-xl">Dive into curated universes of specialized events and global communities.</p>
+           </div>
+           <Link to="/events" className="group flex items-center gap-3 text-lg font-black text-purple-600 hover:text-purple-700 transition-colors">
+              Browse Everything <ArrowRight className="group-hover:translate-x-2 transition-transform" />
+           </Link>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
+           {categoriesLoading ? (
+             [1,2,3,4,5].map(i => <div key={i} className="h-64 rounded-[2.5rem] bg-slate-200 dark:bg-slate-800 animate-pulse" />)
+           ) : activeCategories.slice(0, 10).map((cat, idx) => (
+             <motion.div
+               key={cat._id}
+               initial={{ opacity: 0, y: 30 }}
+               whileInView={{ opacity: 1, y: 0 }}
+               transition={{ delay: idx * 0.05 }}
+               viewport={{ once: true }}
+             >
+               <TiltCard damping={15} stiffness={150}>
+                 <Link to={`/events?category=${cat._id}`} className="group relative block aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-white/70 dark:bg-slate-900/70 border border-white/40 dark:border-slate-800 p-8 shadow-xl hover:shadow-2xl transition-all duration-500">
+                    <div 
+                      className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500"
+                      style={{ backgroundColor: cat.color || '#8b5cf6' }}
+                    />
+                    <div 
+                      className="w-16 h-16 rounded-2xl flex items-center justify-center text-4xl mb-6 shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all duration-500"
+                      style={{ backgroundColor: `${cat.color || '#8b5cf6'}15`, color: cat.color || '#8b5cf6' }}
+                    >
+                      {cat.icon || '🛸'}
+                    </div>
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-2">{cat.name}</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs font-bold line-clamp-2 leading-relaxed opacity-60 group-hover:opacity-100">{cat.description || "Discover niche experiences in this category."}</p>
+                    <div className="absolute bottom-8 right-8 w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center opacity-0 group-hover:opacity-100 group-hover:translate-x-0 translate-x-4 transition-all duration-500">
+                       <ArrowRight size={20} className="text-slate-900 dark:text-white" />
+                    </div>
+                 </Link>
+               </TiltCard>
+             </motion.div>
+           ))}
+        </div>
+      </section>
+
+      {/* 🚀 Showcase Events */}
+      <section className="py-32 bg-slate-100 dark:bg-slate-900/30">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-24">
+             <motion.div
+               initial={{ opacity: 0, y: 20 }}
+               whileInView={{ opacity: 1, y: 0 }}
+               viewport={{ once: true }}
+             >
+               <p className="text-purple-600 font-black uppercase tracking-[0.3em] text-xs mb-4">Curation</p>
+               <h2 className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white mb-8 tracking-tighter">Live & <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">Upcoming</span></h2>
+               <p className="text-slate-500 text-xl font-medium max-w-2xl mx-auto">Hand-picked experiences selected by our neural algorithms for maximum impact.</p>
+             </motion.div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {eventsLoading ? (
+              [1,2,3,4].map(i => <div key={i} className="h-96 rounded-[3rem] bg-slate-200 dark:bg-slate-800 animate-pulse" />)
+            ) : events.slice(0, 8).map((event, idx) => (
+              <motion.div
+                key={event._id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                transition={{ delay: idx * 0.1 }}
+                viewport={{ once: true }}
+              >
+                <TiltCard damping={25} stiffness={200} className="h-full">
+                  <Link to={`/events/${event._id}`} className="group block h-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-white/50 dark:border-slate-800 rounded-[2.5rem] overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500">
+                    <div className="relative aspect-video overflow-hidden">
+                       <img src={event.images?.[0] || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={event.title} />
+                       <div className="absolute top-6 left-6 px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black text-white uppercase tracking-widest border border-white/30">
+                         {event.category?.name || 'Experience'}
+                       </div>
+                    </div>
+                    <div className="p-8">
+                       <h3 className="text-xl font-black text-slate-900 dark:text-white mb-4 line-clamp-2 leading-tight group-hover:text-purple-600 transition-colors">
+                         {event.title}
+                       </h3>
+                       <div className="space-y-3 opacity-60 group-hover:opacity-100 transition-opacity">
+                         <div className="flex items-center gap-3 text-sm font-bold text-slate-600 dark:text-slate-400">
+                           <Calendar size={16} className="text-purple-500" />
+                           {new Date(event.startDate).toLocaleDateString()}
+                         </div>
+                         <div className="flex items-center gap-3 text-sm font-bold text-slate-600 dark:text-slate-400">
+                           <MapPin size={16} className="text-blue-500" />
+                           {event.venue?.city || 'Virtual'}
+                         </div>
+                       </div>
+                       <div className="mt-8 flex items-center justify-between">
+                         <p className="text-2xl font-black text-slate-900 dark:text-white">
+                            {typeof event.ticketPricing?.[0]?.price === 'number' ? formatINR(event.ticketPricing[0].price) : 'Free'}
+                         </p>
+                         <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                            <ArrowRight size={20} />
+                         </div>
+                       </div>
+                    </div>
+                  </Link>
+                </TiltCard>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="text-center mt-24">
+            <Link to="/events" className="px-12 py-5 border-2 border-slate-900 dark:border-white text-slate-900 dark:text-white rounded-full font-black text-lg hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:hover:text-slate-900 transition-all active:scale-95">
+              Explore All 2.5k+ Events
             </Link>
           </div>
         </div>
       </section>
-      <div className="bg-gray-50">
-        {/* Categories Section */}
-        <section className="py-16 px-6 md:px-16 bg-white">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="text-3xl font-bold mb-4 text-center text-gray-800">Explore by Category</h2>
-            <p className="text-gray-600 text-center mb-12 max-w-2xl mx-auto">
-              Find events that match your interests across various categories
-            </p>
-            {categoriesLoading ? (
-              <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
-                <span className="ml-3 text-gray-600">Loading categories...</span>
-              </div>
-            ) : categories.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-4xl mb-4">📁</div>
-                <p className="text-gray-500">No categories available</p>
-              </div>
-            ) : (
-              <>
-                <div
-                  ref={categoryScrollRef}
-                  className="relative overflow-x-auto no-scrollbar mb-8"
-                  style={{ scrollBehavior: "smooth" }}
-                >
-                  <div className="flex gap-4 pr-4 snap-x snap-mandatory">
-                    {categories.slice(0, 20).map((category) => {
-                      const categoryColor = category.color || '#6B7280';
-                      const categoryIcon = category.icon || '📁';
-                      return (
-                        <Link
-                          key={category._id}
-                          to={`/events?category=${category._id}`}
-                          className="snap-start shrink-0 w-[220px] group text-center p-6 bg-gray-50 rounded-xl hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-current transform hover:scale-105"
-                          style={{
-                            '--category-color': categoryColor,
-                            borderColor: 'transparent'
-                          } as React.CSSProperties}
-                          onMouseEnter={(e) => {
-                            (e.target as HTMLElement).style.borderColor = categoryColor;
-                          }}
-                          onMouseLeave={(e) => {
-                            (e.target as HTMLElement).style.borderColor = 'transparent';
-                          }}
-                        >
-                          <div
-                            className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-md"
-                            style={{
-                              backgroundColor: `${categoryColor}15`,
-                              border: `2px solid ${categoryColor}30`
-                            }}
-                          >
-                            <span
-                              className="text-3xl"
-                              style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}
-                            >
-                              {categoryIcon}
-                            </span>
-                          </div>
-                          <h3
-                            className="font-bold text-sm mb-2 group-hover:text-current transition-colors"
-                            style={{ color: categoryColor }}
-                          >
-                            {category.name}
-                          </h3>
-                          {category.description && (
-                            <p className="text-xs text-gray-500 group-hover:text-gray-600 transition-colors line-clamp-2">
-                              {category.description}
-                            </p>
-                          )}
-                        </Link>
-                      );
-                    })}
+
+      {/* 🔮 Why Section */}
+      <section className="py-32 bg-slate-950 text-white overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-purple-600/10 blur-[150px] -mr-48" />
+        <div className="container mx-auto px-6 relative z-10">
+           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+             <div className="lg:col-span-1">
+               <h2 className="text-6xl font-black mb-8 leading-tight tracking-tighter">Why <br />Eventify<span className="text-purple-500">X</span>?</h2>
+               <p className="text-slate-400 text-xl font-medium leading-relaxed mb-12">Building the future of human connection through secure, immersive, and borderless event management.</p>
+               <Link to="/register" className="px-10 py-5 bg-white text-slate-950 rounded-[2rem] font-black text-lg hover:shadow-[0_0_50px_rgba(255,255,255,0.3)] transition-all inline-block">Join the Evolution</Link>
+             </div>
+             
+             <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
+               <div className="p-10 bg-white/5 border border-white/10 rounded-[3rem] hover:bg-white/10 hover:border-white/20 transition-all group">
+                  <div className="w-16 h-16 bg-purple-600 rounded-3xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                    <Globe size={32} />
                   </div>
-                </div>
-                {categories.length > 20 && (
-                  <div className="text-center">
-                    <Link
-                      to="/events"
-                      className="inline-flex items-center gap-2 text-red-600 hover:text-red-700 font-semibold transition-colors"
-                    >
-                      View All Categories
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Link>
+                  <h3 className="text-2xl font-black mb-4 uppercase tracking-tighter">Global Access</h3>
+                  <p className="text-slate-400 font-medium leading-relaxed">Book events anywhere in the world with localized currency support and secure blockchain verification.</p>
+               </div>
+               <div className="p-10 bg-white/5 border border-white/10 rounded-[3rem] hover:bg-white/10 hover:border-white/20 transition-all group">
+                  <div className="w-16 h-16 bg-blue-600 rounded-3xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                    <Zap size={32} />
                   </div>
-                )}
-              </>
-            )}
-          </div>
-        </section>
-
-        {/* Featured Events Section */}
-        <section className="py-16 px-6 md:px-16">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-4 text-gray-800">Featured Events</h2>
-              <p className="text-gray-600 max-w-2xl mx-auto">
-                Don't miss out on these amazing upcoming events happening in your area
-              </p>
-            </div>
-            
-            {loading ? (
-              <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
-                <p className="ml-4 text-gray-600">Loading amazing events...</p>
-              </div>
-            ) : hasEventsError ? (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">⚠️</div>
-                <p className="text-xl text-gray-500 mb-4">Unable to load events</p>
-                <p className="text-gray-400 mb-6">There was an issue connecting to our servers</p>
-                <button
-                  onClick={() => refetchEvents()}
-                  className="inline-block bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors"
-                >
-                  Try Again
-                </button>
-              </div>
-            ) : events.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">🎭</div>
-                <p className="text-xl text-gray-500 mb-4">No events available right now</p>
-                <p className="text-gray-400 mb-6">Be the first to create an amazing event!</p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Link
-                    to="/create-event"
-                    className="inline-block bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors"
-                  >
-                    Create First Event
-                  </Link>
-                  <button
-                    onClick={() => refetchEvents()}
-                    className="inline-block bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-colors"
-                  >
-                    Refresh Events
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                
-                {events.slice(0, 9).map((event) => (
-                   <Link
-                     key={event._id}
-                     to={`/events/${event._id}`}
-                     className="block h-full"
-                   >
-                  <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 group h-full flex flex-col">
-                    <div className="relative overflow-hidden">
-                      <img
-                        src={event.images?.[0] || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=400&q=80"}
-                        alt={event.title}
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute top-3 left-3">
-                        <span className="bg-red-500/90 text-white px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
-                          {event.category?.name || 'General'}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="p-5 flex-1 flex flex-col">
-                      <h3 className="font-bold text-lg text-gray-800 line-clamp-2 group-hover:text-red-600 transition-colors mb-2">
-                        {event.title}
-                      </h3>
-                      <p className="text-gray-500 text-sm mb-4 line-clamp-2">
-                        {event.description}
-                      </p>
-                      
-                      <div className="space-y-3 mb-4 flex-1">
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                          <div className="flex items-start">
-                            <span className="text-red-500 mt-0.5 mr-2">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                            </span>
-                            <div className="flex-1">
-                              <div className="text-xs font-medium text-gray-500 mb-1">START</div>
-                              <div className="text-sm text-gray-800">
-                                {new Date(event.startDate).toLocaleDateString('en-US', { 
-                                  month: 'short', 
-                                  day: 'numeric',
-                                  year: 'numeric'
-                                })}
-                                <span className="mx-2 text-gray-300">•</span>
-                                {new Date(`2000-01-01T${event.startTime || '00:00'}`).toLocaleTimeString('en-US', {
-                                  hour: 'numeric',
-                                  minute: '2-digit',
-                                  hour12: true
-                                })}
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {event.endDate && (
-                            <div className="flex items-start mt-2 pt-2 border-t border-gray-100">
-                              <span className="text-red-500 mt-0.5 mr-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              </span>
-                              <div className="flex-1">
-                                <div className="text-xs font-medium text-gray-500 mb-1">END</div>
-                                <div className="text-sm text-gray-800">
-                                  {new Date(event.endDate).toLocaleDateString('en-US', { 
-                                    month: 'short', 
-                                    day: 'numeric',
-                                    year: 'numeric'
-                                  })}
-                                  <span className="mx-2 text-gray-300">•</span>
-                                  {new Date(`2000-01-01T${event.endTime || '00:00'}`).toLocaleTimeString('en-US', {
-                                    hour: 'numeric',
-                                    minute: '2-digit',
-                                    hour12: true
-                                  })}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center text-sm text-gray-600">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500 mr-2 ml-3 " fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                          <span className="line-clamp-1">{event.venue?.city || 'Location TBD'}</span>
-                        </div>
-                        
-                        <div className="flex items-center justify-between bg-gradient-to-r from-red-50 to-white p-3 rounded-lg border border-red-50">
-                          <div className="flex items-center text-sm font-medium text-gray-700">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            From {typeof event.ticketPricing?.[0]?.price === 'number' 
-                              ? formatINR(event.ticketPricing[0].price)
-                              : 'Free'}
-                          </div>
-                         
-                        </div>
-                      </div>
-                     
-                      <button className="w-full mt-auto bg-gradient-to-r from-red-500 to-red-600 text-white py-2.5 px-4 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 font-semibold text-sm flex items-center justify-center space-x-2 group-hover:shadow-lg">
-                        <span>View Event</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
-                      </button>
-                       
-                      
-                    </div>
+                  <h3 className="text-2xl font-black mb-4 uppercase tracking-tighter">Instant Identity</h3>
+                  <p className="text-slate-400 font-medium leading-relaxed">Check-in with a single neural-link or QR. No paper, no lines, no friction. Just experience.</p>
+               </div>
+               <div className="p-10 bg-white/5 border border-white/10 rounded-[3rem] hover:bg-white/10 hover:border-white/20 transition-all group">
+                  <div className="w-16 h-16 bg-indigo-600 rounded-3xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                    <Users size={32} />
                   </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-            
-            <div className="text-center mt-12">
-              <Link
-                to="/events"
-                className="inline-block bg-transparent border-2 border-red-500 text-red-500 px-8 py-3 rounded-lg hover:bg-red-500 hover:text-white transition-all duration-300 font-semibold"
-              >
-                View All Events
-              </Link>
-            </div>
-          </div>
-        </section>
+                  <h3 className="text-2xl font-black mb-4 uppercase tracking-tighter">Network Growth</h3>
+                  <p className="text-slate-400 font-medium leading-relaxed">Connect with fellow attendees via the EventifyX neural network. Grow your circle instantly.</p>
+               </div>
+               <div className="p-10 bg-white/5 border border-white/10 rounded-[3rem] hover:bg-white/10 hover:border-white/20 transition-all group">
+                  <div className="w-16 h-16 bg-emerald-600 rounded-3xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                    <Star size={32} />
+                  </div>
+                  <h3 className="text-2xl font-black mb-4 uppercase tracking-tighter">Creator Tools</h3>
+                  <p className="text-slate-400 font-medium leading-relaxed">Enterprise-grade analytics and management tools for event organizers of all sizes.</p>
+               </div>
+             </div>
+           </div>
+        </div>
+      </section>
 
-        {/* Features Section */}
-        <section className="py-16 px-6 md:px-16 bg-white">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-4 text-gray-800">Why Choose EventifyX?</h2>
-              <p className="text-gray-600 max-w-2xl mx-auto">
-                Everything you need to discover, create, and manage amazing events
-              </p>
-            </div>
-            
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="text-center p-6">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">🔍</span>
-                </div>
-                <h3 className="text-xl font-bold mb-3 text-gray-800">Discover Events</h3>
-                <p className="text-gray-600">
-                  Find amazing events happening near you with our powerful search and filtering system.
-                </p>
-              </div>
-              
-              <div className="text-center p-6">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">✨</span>
-                </div>
-                <h3 className="text-xl font-bold mb-3 text-gray-800">Create Events</h3>
-                <p className="text-gray-600">
-                  Easily create and manage your own events with our intuitive event creation tools.
-                </p>
-              </div>
-              
-              <div className="text-center p-6">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">🎟️</span>
-                </div>
-                <h3 className="text-xl font-bold mb-3 text-gray-800">Secure Ticketing</h3>
-                <p className="text-gray-600">
-                  Safe and secure ticket purchasing with integrated payment processing and QR codes.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+      {/* 📣 Community Feed Banner */}
+      <section className="py-20 bg-gradient-to-r from-purple-600 to-blue-600 relative overflow-hidden text-center group cursor-pointer">
+         <motion.div
+            animate={{ x: [-100, 100] }}
+            transition={{ repeat: Infinity, duration: 10, ease: "linear", repeatType: "mirror" }}
+            className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none"
+         >
+            <h2 className="text-[20rem] font-black whitespace-nowrap">COMMUNITY FEED</h2>
+         </motion.div>
+         <div className="relative z-10 container mx-auto px-6">
+            <h2 className="text-3xl md:text-5xl font-black text-white mb-6 tracking-tighter">Ready to become an Organizer?</h2>
+            <p className="text-white/80 text-xl font-bold mb-10 max-w-2xl mx-auto">Start building your community events today with our zero-commission trial.</p>
+            <Link to="/create-event" className="inline-block px-12 py-5 bg-white text-purple-600 rounded-full font-black text-xl shadow-2xl shadow-black/20 transform hover:-translate-y-1 transition-all">Host Your First Event</Link>
+         </div>
+      </section>
 
-        {/* Call to Action Section */}
-        <section className="py-16 px-6 md:px-16 bg-gradient-to-r from-red-500 to-red-600">
-          <div className="max-w-4xl mx-auto text-center text-white">
-            <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
-            <p className="text-xl mb-8 opacity-90">
-              Join thousands of event creators and attendees on EventifyX
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/register"
-                className="inline-block bg-white text-red-600 px-8 py-4 rounded-lg hover:bg-gray-100 transition-colors font-semibold shadow-lg"
-              >
-                Sign Up Now
-              </Link>
-              <Link
-                to="/events"
-                className="inline-block bg-transparent border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-red-600 transition-colors font-semibold"
-              >
-                Browse Events
-              </Link>
-            </div>
-          </div>
-        </section>
-      </div>
       <Footer />
-    </>
+    </div>
   );
 };
 

@@ -6,7 +6,13 @@ import Footer from "../components/Footer";
 import { getAllEvents } from "../services/eventService";
 import { getAllCategories } from "../services/categoryService";
 import type { Event } from "../services/eventService";
-import toast from "react-hot-toast";
+import TiltCard from "../components/TiltCard";
+import { motion } from "framer-motion";
+import { 
+  Search, MapPin, 
+  SlidersHorizontal, ArrowLeft, ArrowRight, 
+  X, Sparkles, Globe, Ticket
+} from "lucide-react";
 
 interface EventsData {
   events: Event[];
@@ -26,7 +32,6 @@ const EventPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [categories, setCategories] = useState<Array<{ _id: string; name: string; status?: string }>>([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const location = useLocation();
 
   const fetchEvents = async () => {
@@ -46,323 +51,283 @@ const EventPage = () => {
         const now = new Date();
         const activeEvents = data.events.filter(event => {
           const end = event?.endDate ? new Date(event.endDate) : (event?.startDate ? new Date(event.startDate) : null);
-          if (!end) return true; // if no dates, keep it
+          if (!end) return true;
           return end >= now && event.status !== 'cancelled';
         });
         setEvents(activeEvents);
         setTotalPages(data.pagination.pages);
-      } else {
-        toast.error("Failed to load events");
       }
     } catch (error) {
       console.error("Error fetching events:", error);
-      toast.error("Failed to load events");
     } finally {
       setLoading(false);
     }
   };
 
-  // Load categories for the filter
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        setCategoriesLoading(true);
         const res = await getAllCategories();
         const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
-        // keep only active if status exists
         const active = list.filter((c: any) => !c.status || c.status === 'active');
         setCategories(active);
       } catch (e) {
-        // silent fail for categories filter; page can still function
         setCategories([]);
-      } finally {
-        setCategoriesLoading(false);
       }
     };
     loadCategories();
   }, []);
 
-  // Initialize filters from URL query params
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const s = params.get('search') || "";
-    const c = params.get('city') || "";
-    const cat = params.get('category') || ""; // expecting category ID
-    const pageParam = parseInt(params.get('page') || "1", 10);
-
-    setSearchTerm(s);
-    setSelectedCity(c);
-    setSelectedCategory(cat);
-    setCurrentPage(Number.isNaN(pageParam) ? 1 : pageParam);
+    setSearchTerm(params.get('search') || "");
+    setSelectedCity(params.get('city') || "");
+    setSelectedCategory(params.get('category') || "");
+    setCurrentPage(parseInt(params.get('page') || "1", 10) || 1);
   }, [location.search]);
 
   useEffect(() => {
     fetchEvents();
   }, [currentPage, searchTerm, selectedCategory, selectedCity]);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-    setCurrentPage(1); // Reset to first page when searching
-  };
-
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedCategory(e.target.value);
-    setCurrentPage(1);
-  };
-
-  const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedCity(e.target.value);
-    setCurrentPage(1);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
-
-  const formatTime = (timeString: string) => {
-    if (!timeString) return 'TBD';
-    const [hours, minutes] = timeString.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
-  };
 
   return (
-    <>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500 overflow-hidden">
       <Navbar />
-      <div className="bg-gray-50 dark:bg-[#1B1D2A] min-h-screen font-poppins">
-        {/* Hero Section */}
-        <div className="bg-gradient-to-r from-red-500 to-pink-500 dark:from-red-600 dark:to-pink-600 text-white py-16">
-          <div className="max-w-7xl mx-auto px-6 text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-4">
-              Discover Amazing Events
-            </h1>
-            <p className="text-xl mb-8">
-              Find the best events happening around you
-            </p>
-            
-            {/* Search Bar */}
-            <div className="max-w-2xl mx-auto bg-white dark:bg-[#212530] rounded-full p-2 flex items-center shadow-lg">
-              <input
-                type="text"
-                placeholder="Search events..."
-                value={searchTerm}
-                onChange={handleSearchChange}
-                className="flex-1 px-4 py-3 text-gray-800 dark:text-white bg-transparent rounded-full focus:outline-none placeholder-gray-500 dark:placeholder-gray-400"
-              />
-              <button className="bg-red-500 dark:bg-red-600 text-white px-6 py-3 rounded-full hover:bg-red-600 dark:hover:bg-red-700 transition">
-                Search
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="bg-white dark:bg-[#212530] rounded-lg shadow-sm p-6 mb-8">
-            <div className="grid md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Category
-                </label>
-                <select
-                  value={selectedCategory}
-                  onChange={handleCategoryChange}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
-                >
-                  <option value="">All Categories</option>
-                  {categoriesLoading ? (
-                    <option disabled>Loading...</option>
-                  ) : (
-                    categories.map((cat) => (
-                      <option key={cat._id} value={cat._id}>
-                        {cat.name}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  City
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter city"
-                  value={selectedCity}
-                  onChange={handleCityChange}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
-                />
-              </div>
-              
-              <div className="flex items-end">
-                <button
-                  onClick={() => {
-                    setSearchTerm("");
-                    setSelectedCategory("");
-                    setSelectedCity("");
-                    setCurrentPage(1);
-                  }}
-                  className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Loading State */}
-          {loading && (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 dark:border-red-400"></div>
-              <span className="ml-3 text-gray-600 dark:text-gray-400">Loading events...</span>
-            </div>
-          )}
-
-          {/* Events Grid */}
-          {!loading && (
-            <>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {events.map((event) => (
-                  <Link
-                    key={event._id}
-                    to={`/events/${event._id}`}
-                    className="bg-white dark:bg-[#212530] rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden"
-                  >
-                    <div className="aspect-w-16 aspect-h-9">
-                      <img
-                        src={
-                          event.images && event.images.length > 0
-                            ? event.images[0]
-                            : "https://via.placeholder.com/400x225?text=Event+Image"
-                        }
-                        alt={event.title}
-                        className="w-full h-48 object-cover"
-                      />
-                    </div>
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-red-500 dark:text-red-400 font-medium">
-                          {event.category?.name || 'General'}
-                        </span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {(() => {
-                            const sd = new Date(event.startDate);
-                            const ed = event.endDate ? new Date(event.endDate) : null;
-                            if (ed && sd.toDateString() !== ed.toDateString()) {
-                              return `${formatDate(event.startDate)} – ${formatDate(event.endDate as string)}`;
-                            }
-                            return formatDate(event.startDate);
-                          })()}
-                        </span>
-                      </div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
-                        {event.title}
-                      </h3>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">
-                        {event.description}
-                      </p>
-                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
-                        <span className="mr-1">📍</span>
-                        <span>{`${event.venue?.city || 'TBD'}${event.venue?.state ? `, ${event.venue.state}` : ''}`}</span>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
-                        <span className="mr-1">⏰</span>
-                        <span>
-                          {formatTime(event.startTime)}{event.endTime ? ` – ${formatTime(event.endTime)}` : ''}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm font-medium text-green-600 dark:text-green-400">
-                          {event.ticketPricing?.length
-                            ? `From ₹${Math.min(...event.ticketPricing.map(t => t.price)).toLocaleString('en-IN')}`
-                            : 'Free'}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {event.eventManager?.name || 'Organizer'}
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-
-              {/* No Events Found */}
-              {events.length === 0 && (
-                <div className="text-center py-12">
-                  <div className="text-6xl mb-4">🎪</div>
-                  <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
-                    No events found
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    Try adjusting your search criteria or check back later for new events.
-                  </p>
-                  <button
-                    onClick={() => {
-                      setSearchTerm("");
-                      setSelectedCategory("");
-                      setSelectedCity("");
-                      setCurrentPage(1);
-                    }}
-                    className="px-6 py-3 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700 transition"
-                  >
-                    Show All Events
-                  </button>
-                </div>
-              )}
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-center mt-12">
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      disabled={currentPage === 1}
-                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
-                    >
-                      Previous
-                    </button>
-                    
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => setCurrentPage(pageNum)}
-                          className={`px-4 py-2 border rounded-lg ${
-                            currentPage === pageNum
-                              ? "bg-red-500 dark:bg-red-600 text-white border-red-500 dark:border-red-600"
-                              : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                    
-                    <button
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                      disabled={currentPage === totalPages}
-                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+      
+      {/* Cinematic Pulse Header */}
+      <div className="relative h-[600px] flex flex-col items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-fixed bg-center opacity-30 dark:opacity-20 scale-105" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-50/0 via-slate-50/50 to-slate-50 dark:from-slate-950/0 dark:via-slate-950/50 dark:to-slate-950" />
+        
+        <div className="relative z-10 text-center container mx-auto px-6 pt-20">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 font-black text-[10px] uppercase tracking-[0.4em] mb-10"
+          >
+             <Sparkles size={14} />
+             Global Experience Portal
+          </motion.div>
+          
+          <motion.h1 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-6xl md:text-8xl font-black text-slate-900 dark:text-white mb-8 tracking-tighter"
+          >
+            Discover the <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-600 to-emerald-500">Unforgettable</span>
+          </motion.h1>
+          
+          <motion.p
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-slate-500 dark:text-slate-400 text-xl font-bold max-w-2xl mx-auto leading-relaxed"
+          >
+            Join a global community of explorers. Access exclusive festivals, 
+            high-tech conferences, and immersive performances.
+          </motion.p>
         </div>
       </div>
+
+      <main className="container mx-auto px-6 -mt-32 relative z-20 pb-32">
+        {/* Intelligence Search Hub */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="p-8 bg-white/70 dark:bg-slate-900/70 backdrop-blur-3xl border border-white/50 dark:border-slate-800 rounded-[4rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.2)] mb-20"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+             <div className="lg:col-span-4 relative group">
+                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-purple-600 transition-colors" size={20} />
+                <input 
+                  type="text" 
+                  placeholder="Experience ID or Keyword..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full h-16 pl-16 pr-8 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl outline-none focus:ring-4 focus:ring-purple-500/10 text-slate-900 dark:text-white font-black transition-all"
+                />
+             </div>
+             <div className="lg:col-span-3 relative group">
+                <MapPin className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={20} />
+                <input 
+                  type="text" 
+                  placeholder="Geospatial Node..." 
+                  value={selectedCity}
+                  onChange={(e) => setSelectedCity(e.target.value)}
+                  className="w-full h-16 pl-16 pr-8 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl outline-none focus:ring-4 focus:ring-blue-500/10 text-slate-900 dark:text-white font-black transition-all"
+                />
+             </div>
+             <div className="lg:col-span-3 relative group">
+                <SlidersHorizontal className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={20} />
+                <select 
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full h-16 pl-16 pr-8 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl outline-none focus:ring-4 focus:ring-emerald-500/10 text-slate-900 dark:text-white font-black transition-all appearance-none cursor-pointer"
+                >
+                   <option value="">All Architectures</option>
+                   {categories.map(cat => <option key={cat._id} value={cat._id}>{cat.name}</option>)}
+                </select>
+             </div>
+             <div className="lg:col-span-2">
+                <button 
+                  onClick={() => { setSearchTerm(""); setSelectedCity(""); setSelectedCategory(""); }}
+                  className="w-full h-16 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-3xl font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3"
+                >
+                  <X size={18} />
+                  Reset
+                </button>
+             </div>
+          </div>
+        </motion.div>
+
+        {/* Results Deck */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+             {[1,2,3,4,5,6].map(i => (
+               <div key={i} className="h-[500px] rounded-[4rem] bg-slate-100 dark:bg-white/5 animate-pulse" />
+             ))}
+          </div>
+        ) : events.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+             {events.map((event, idx) => (
+               <ExperienceCard key={event._id} event={event} idx={idx} />
+             ))}
+          </div>
+        ) : (
+          <div className="py-40 flex flex-col items-center justify-center text-center">
+             <div className="w-24 h-24 bg-slate-100 dark:bg-slate-900 rounded-[2rem] flex items-center justify-center mb-10 shadow-inner">
+                <Globe className="text-slate-300 dark:text-slate-700" size={40} />
+             </div>
+             <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter mb-6 text-balance">Perspective Shift Required</h2>
+             <p className="text-slate-500 dark:text-slate-400 font-bold max-w-sm mb-12">We couldn't locate any active experiences matching your current coordinates or filters.</p>
+             <button 
+               onClick={() => { setSearchTerm(""); setSelectedCity(""); setSelectedCategory(""); }}
+               className="h-20 px-12 bg-purple-600 text-white rounded-[2.5rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-purple-500/40 hover:scale-105 active:scale-95 transition-all"
+             >
+                Reset Network Filter
+             </button>
+          </div>
+        )}
+
+        {/* Temporal Navigation (Pagination) */}
+        {totalPages > 1 && (
+           <div className="mt-32 flex items-center justify-center gap-4">
+              <NavButton disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} icon={ArrowLeft} />
+              <div className="flex gap-2">
+                 {[...Array(totalPages)].map((_, i) => (
+                   <button 
+                     key={i}
+                     onClick={() => setCurrentPage(i + 1)}
+                     className={`w-14 h-14 rounded-2xl font-black text-lg transition-all ${
+                       currentPage === i + 1 
+                       ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl" 
+                       : "bg-white/50 dark:bg-slate-900/50 text-slate-400 hover:text-slate-900 dark:hover:text-white border border-transparent hover:border-slate-200 dark:hover:border-slate-800"
+                     }`}
+                   >
+                      {i + 1}
+                   </button>
+                 ))}
+              </div>
+              <NavButton disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} icon={ArrowRight} />
+           </div>
+        )}
+      </main>
+
       <Footer />
-    </>
+    </div>
   );
 };
+
+const ExperienceCard = ({ event, idx }: { event: Event; idx: number }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 30 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: idx * 0.05 }}
+  >
+    <TiltCard damping={15}>
+      <Link to={`/events/${event._id}`} className="group block relative bg-white/70 dark:bg-slate-900/70 backdrop-blur-3xl border border-white/50 dark:border-slate-800 rounded-[4rem] overflow-hidden shadow-xl hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] transition-all duration-700 h-[580px] flex flex-col">
+        {/* Visual Portal */}
+        <div className="relative h-64 overflow-hidden mask-bottom-fade">
+           <motion.img 
+             whileHover={{ scale: 1.1 }}
+             transition={{ duration: 1 }}
+             src={event.images?.[0] || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87'} 
+             className="w-full h-full object-cover"
+           />
+           <div className="absolute top-8 left-8">
+              <span className="px-5 py-2 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-white font-black text-[10px] uppercase tracking-[0.3em] shadow-2xl">
+                 {event.category?.name || 'Experience'}
+              </span>
+           </div>
+           
+           <div className="absolute inset-0 bg-gradient-to-t from-white/70 dark:from-slate-900/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+
+        {/* Intellectual Core */}
+        <div className="p-10 flex-1 flex flex-col">
+           <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex flex-col items-center justify-center shrink-0">
+                 <span className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">
+                    {new Date(event.startDate).toLocaleString('en-US', { month: 'short' })}
+                 </span>
+                 <span className="text-xl font-black text-slate-900 dark:text-white leading-none">
+                    {new Date(event.startDate).getDate()}
+                 </span>
+              </div>
+              <div className="h-8 w-[2px] bg-slate-200 dark:bg-slate-800" />
+              <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold text-sm">
+                 <MapPin size={16} className="text-purple-600" />
+                 {event.venue?.city || 'Global Network'}
+              </div>
+           </div>
+
+           <h3 className="text-3xl font-black text-slate-900 dark:text-white mb-6 line-clamp-2 leading-[1.1] tracking-tighter group-hover:text-purple-600 transition-colors">
+              {event.title}
+           </h3>
+
+           <div className="mt-auto pt-8 border-t border-slate-100 dark:border-slate-800 flex items-end justify-between gap-6">
+              <div>
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                    <Ticket size={12} className="text-emerald-500" />
+                    Entry Configuration
+                 </p>
+                 <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">
+                   {event.ticketPricing?.length ? (
+                     <span className="flex items-baseline gap-1">
+                        <span className="text-sm font-bold text-slate-400">₹</span>
+                        {Math.min(...event.ticketPricing.map(t => t.price))}
+                     </span>
+                   ) : 'Gratis'}
+                 </p>
+              </div>
+
+              <div className="w-14 h-14 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[1.5rem] flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all shadow-2xl">
+                 <ChevronRight size={24} />
+              </div>
+           </div>
+        </div>
+      </Link>
+    </TiltCard>
+  </motion.div>
+);
+
+const NavButton = ({ disabled, onClick, icon: Icon }: any) => (
+  <button
+    disabled={disabled}
+    onClick={onClick}
+    className="w-16 h-16 flex items-center justify-center rounded-[1.5rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white disabled:opacity-30 transition-all hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:hover:text-slate-900 active:scale-90 shadow-xl"
+  >
+    <Icon size={24} />
+  </button>
+);
+
+const ChevronRight = ({ size }: { size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 18l6-6-6-6" />
+  </svg>
+);
 
 export default EventPage;

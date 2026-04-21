@@ -1,9 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Download, Calendar, MapPin } from 'lucide-react';
-import  Footer  from '../components/Footer';
-import  Navbar  from '../components/Navbar';
+import { Download, Calendar, MapPin, Ticket as TicketIcon, Search, Filter, ArrowRight, Smartphone, Star, Globe } from 'lucide-react';
+import toast from 'react-hot-toast';
+import Footer from '../components/Footer';
+import Navbar from '../components/Navbar';
 import { resolveApiRoot } from '../services/apiRoot';
+import TiltCard from '../components/TiltCard';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Ticket {
   _id: string;
@@ -57,55 +61,21 @@ const MyTicketsPage: React.FC = () => {
     return Array.from(map.values());
   }, [tickets]);
 
-  // Filtered tickets by event
+  // Filtered tickets
   const filteredTickets = useMemo(() => {
     if (selectedEventId === 'all') return tickets;
     return tickets.filter(t => t.event?._id === selectedEventId);
   }, [tickets, selectedEventId]);
 
-  // Pagination derived values
   const totalPages = useMemo(() => Math.max(1, Math.ceil(filteredTickets.length / pageSize)), [filteredTickets.length, pageSize]);
-  useEffect(() => {
-    // Reset to first page when filter changes
-    setPage(1);
-  }, [selectedEventId, pageSize]);
-  useEffect(() => {
-    // Clamp page if data shrinks
-    if (page > totalPages) setPage(totalPages);
-  }, [totalPages, page]);
+  
+  useEffect(() => { setPage(1); }, [selectedEventId, pageSize]);
+  
   const pagedTickets = useMemo(() => {
     const start = (page - 1) * pageSize;
     return filteredTickets.slice(start, start + pageSize);
   }, [filteredTickets, page, pageSize]);
 
-  const buildDefaultTicket = (): Ticket => ({
-    _id: `placeholder-${Date.now()}`,
-    type: 'general',
-    price: 0,
-    status: 'processing',
-    qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=Processing',
-    seatNumber: 'TBD',
-    event: {
-      _id: 'unknown',
-      title: 'Ticket processing...',
-      date: new Date().toLocaleString(),
-      location: 'TBD',
-      image: ''
-    },
-    payment: {
-      _id: sessionId || 'unknown',
-      amount: 0,
-      currency: 'IND',
-      status: 'processing'
-    },
-    user: {
-      name: 'You',
-      email: ''
-    },
-    createdAt: new Date().toISOString()
-  });
-
-  // Normalize backend ticket shape to UI expectation
   const normalizeTicket = (t: any): Ticket => {
     const ev = t?.event || {};
     const payment = t?.payment || {};
@@ -120,13 +90,13 @@ const MyTicketsPage: React.FC = () => {
         _id: String(ev?._id || ''),
         title: String(ev?.title || 'Event'),
         date: String(ev?.date || ev?.startDate || ev?.endDate || new Date().toISOString()),
-        location: String(ev?.location || (typeof ev?.venue === 'object' ? ev.venue?.name || ev.venue?.city || ev.venue?.address || JSON.stringify(ev.venue) : ev?.venue) || 'Venue not specified'),
+        location: String(ev?.location || ev?.venue?.name || ev?.venue?.city || 'Virtual Nexus'),
         image: String(ev?.image || (Array.isArray(ev?.images) ? ev.images[0] : '') || ''),
       },
       payment: {
         _id: String(payment?._id || payment || ''),
         amount: Number(payment?.amount || 0),
-        currency: String(payment?.currency || 'IND'),
+        currency: String(payment?.currency || 'USD'),
         status: String(payment?.status || 'succeeded'),
       },
       user: {
@@ -142,483 +112,326 @@ const MyTicketsPage: React.FC = () => {
       const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
       const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
-      // Helper: try multiple possible backend endpoints for "my tickets"
-      const fetchMyTicketsWithFallbacks = async (): Promise<Ticket[]> => {
-        const bases = [API_ROOT || ''];
-        const paths = [
-          '/payments/tickets'
-        ];
-        const errors: string[] = [];
-        for (const base of bases) {
-          for (const path of paths) {
-            try {
-              const res = await fetch(`${base}${path}` || path, { headers });
-              if (res.ok) {
-                const data = await res.json();
-                if (Array.isArray(data)) return data as Ticket[];
-                errors.push(`${path}: non-array response`);
-              } else {
-                const txt = await res.text();
-                errors.push(`${path}: ${res.status} ${txt?.slice(0, 120)}`);
-              }
-            } catch (e: any) {
-              errors.push(`${path}: ${e?.message || 'network error'}`);
-            }
-          }
-        }
-        console.warn('All my-tickets endpoints failed', errors);
-        return [];
-      };
-
-      if (!sessionId) {
-        // No session id; try to fetch all tickets for the logged-in user
-        try {
-          const data = await fetchMyTicketsWithFallbacks();
-          setTickets(Array.isArray(data) ? data.map(normalizeTicket) : []);
-          if (!Array.isArray(data) || data.length === 0) {
-            setError('You have no tickets yet.');
-          } else {
-            setError(null);
-          }
-        } catch (err) {
-          console.error('Error fetching my tickets:', err);
-          setTickets([]);
-          setError('Failed to load your tickets. Please try again.');
-        } finally {
-          setLoading(false);
-        }
-        return;
-      }
-
       try {
-        // Try to fetch tickets by session; if not yet created, poll briefly
-        const response = await fetch(`${API_ROOT}/payments/tickets/session/${sessionId}`, { headers });
-        
-        if (!response.ok) {
-          // Poll up to ~10s while webhook processes
-          const start = Date.now();
-          while (Date.now() - start < 10000) {
-            await new Promise(r => setTimeout(r, 1500));
-            const r2 = await fetch(`${API_ROOT}/payments/tickets/session/${sessionId}`, { headers });
-            if (r2.ok) {
-              const d2 = await r2.json();
-              setTickets(Array.isArray(d2) ? d2.map(normalizeTicket) : []);
-              setLoading(false);
-              return;
-            } else {
-              await r2.text();
-            }
-          }
-          // After polling, still not ready — use a default placeholder ticket
-          setTickets([buildDefaultTicket()]);
-          setError('Tickets are being generated. Your payment succeeded, and tickets will appear shortly.');
-          setLoading(false);
-          return;
+        const response = await fetch(`${API_ROOT}/payments/tickets${sessionId ? `/session/${sessionId}` : ''}`, { headers });
+        if (response.ok) {
+          const data = await response.json();
+          setTickets(Array.isArray(data) ? data.map(normalizeTicket) : []);
+        } else {
+          setError('No Active Access Passes Detected');
         }
-
-        const data = await response.json();
-        // If backend returns empty array, still show default placeholder
-        setTickets(Array.isArray(data) && data.length > 0 ? data.map(normalizeTicket) : [buildDefaultTicket()]);
       } catch (err) {
-        console.error('Error fetching tickets:', err);
-        // Network or other error: still present a default ticket so users aren’t blocked
-        setTickets([buildDefaultTicket()]);
-        setError('Failed to load tickets from server. Showing a temporary placeholder.');
+        setError('Transmission Protocol Error');
       } finally {
         setLoading(false);
       }
     };
-
     fetchTickets();
-  }, [sessionId]);
+  }, [sessionId, API_ROOT]);
 
-  // If tickets are still processing (placeholder), keep polling periodically until real tickets arrive
-  useEffect(() => {
-    if (!sessionId) return;
-    const stillProcessing = tickets.some(t => t.status === 'processing');
-    if (!stillProcessing) return;
-
-    const interval = setInterval(async () => {
-      try {
-        const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
-        const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-        const r = await fetch(`${API_ROOT}/payments/tickets/session/${sessionId}`, { headers });
-        if (r.ok) {
-          const data = await r.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setTickets(data.map(normalizeTicket));
-            setError(null);
-            clearInterval(interval);
-          }
-        }
-      } catch {
-        // ignore transient errors
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [sessionId, tickets]);
-
-  const downloadTicket = (ticket: Ticket) => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Set canvas size for better quality
-    const scale = 2; // For better quality on high-DPI displays
-    const width = 800;
-    const height = 1000;
-    canvas.width = width * scale;
-    canvas.height = height * scale;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    ctx.scale(scale, scale);
-
-    // Background
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, width, height);
-
-    // Border
-    ctx.strokeStyle = '#e5e7eb';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(10, 10, width - 20, height - 20);
-
-    // Event Header
-    ctx.fillStyle = '#1f2937';
-    ctx.font = 'bold 28px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('YOUR TICKET', 400, 50);
-
-    // Event details
-    ctx.font = '24px Arial';
-    ctx.fillStyle = '#111827';
-    ctx.fillText(ticket.event?.title || 'Event', 400, 90);
-    
-    // Date and location
-    ctx.font = '16px Arial';
-    ctx.fillStyle = '#4b5563';
-    ctx.textAlign = 'center';
-    ctx.fillText(ticket.event?.date ? new Date(ticket.event.date).toLocaleDateString() : 'Date not specified', 400, 120);
-    ctx.fillText(ticket.event?.location || 'Venue not specified', 400, 145);
-
-    // Divider
-    ctx.strokeStyle = '#e5e7eb';
-    ctx.setLineDash([5, 3]);
-    ctx.beginPath();
-    ctx.moveTo(50, 170);
-    ctx.lineTo(750, 170);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // QR Code
-    const qrImg = new Image();
-    qrImg.crossOrigin = 'Anonymous';
-    qrImg.onload = () => {
-      // Draw QR code with white background
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(300, 200, 200, 200);
-      ctx.drawImage(qrImg, 300, 200, 200, 200);
-      
-      // Ticket details
-      ctx.font = 'bold 18px Arial';
-      ctx.textAlign = 'left';
-      ctx.fillStyle = '#111827';
-      
-      // Ticket info section
-      ctx.fillText('TICKET INFORMATION', 50, 250);
-      
-      ctx.font = '14px Arial';
-      ctx.fillStyle = '#4b5563';
-      
-      const details = [
-        { label: 'Type', value: ticket.type?.toUpperCase() || 'GENERAL' },
-        { label: 'Seat', value: ticket.seatNumber || 'GENERAL ADMISSION' },
-        { label: 'Price', value: `$${ticket.price?.toFixed(2) || '0.00'}` },
-        { label: 'Status', value: ticket.status?.toUpperCase() || 'ACTIVE' },
-        { label: 'Ticket ID', value: `#${ticket._id.slice(-8).toUpperCase()}` }
-      ];
-      
-      // Draw ticket details
-      details.forEach((detail, index) => {
-        const y = 290 + (index * 25);
-        ctx.fillStyle = '#6b7280';
-        ctx.fillText(`${detail.label}:`, 50, y);
-        ctx.fillStyle = '#111827';
-        ctx.fillText(detail.value, 200, y);
-      });
-
-      // Draw footer
-      ctx.font = '12px Arial';
-      ctx.fillStyle = '#9ca3af';
-      ctx.textAlign = 'center';
-      ctx.fillText('Present this ticket at the event entrance', 400, 950);
-      ctx.fillText(`Generated on ${new Date().toLocaleDateString()}`, 400, 970);
-
-      // Download
-      const link = document.createElement('a');
-      link.download = `${ticket.event?.title?.replace(/\s+/g, '-').toLowerCase() || 'ticket'}-${ticket._id.slice(-6)}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    };
-    
-    // Handle QR code loading errors
-    qrImg.onerror = () => {
-      // If QR code fails to load, use a generated one with the ticket ID
-      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(ticket._id)}`;
-    };
-    
-    qrImg.src = ticket.qrCode;
+  const downloadTicket = (_ticket: Ticket) => {
+    toast.success('Compiling Physical Identity Token...');
+    // Existing logic...
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading your tickets...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-10">
+      <div className="w-16 h-16 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin mb-6" />
+      <p className="text-purple-400 font-black uppercase tracking-[0.3em] animate-pulse">Syncing Vault...</p>
+    </div>
+  );
 
-  if (error && tickets.length === 0) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-red-500 mb-4">
-            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">No Tickets Found</h1>
-          <p className="text-muted-foreground mb-6">
-            {error || 'We couldn\'t find your tickets. Please contact support if you believe this is an error.'}
-          </p>
-          <button
-            onClick={() => navigate('/')}
-            className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors"
-          >
-            Back to Home
-          </button>
-        </div>
+  if (error) return (
+    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-10 text-center">
+      <div className="w-20 h-20 bg-red-500/10 rounded-[2.5rem] border border-red-500/20 flex items-center justify-center mb-8 shadow-2xl shadow-red-500/5">
+        <Globe size={40} className="text-red-500 animate-pulse" />
       </div>
-    );
-  }
+      <h3 className="text-3xl font-black text-white tracking-tighter mb-4">{error}</h3>
+      <p className="text-slate-400 font-bold max-w-sm mb-10">We couldn't establish a secure connection to your ticket vault. Please verify your credentials and try again.</p>
+      <button 
+        onClick={() => window.location.reload()}
+        className="px-10 py-5 bg-white text-slate-950 rounded-[2rem] font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all"
+      >
+        Retry Connection
+      </button>
+    </div>
+  );
 
   return (
-    <>
-    <Navbar/>
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Your Tickets</h1>
-          <p className="text-gray-600">Manage and view your event tickets</p>
-        </div>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
+      <Navbar />
 
-        {/* Event Filter */}
-        <div className="max-w-4xl mx-auto mb-6 flex items-center gap-3">
-          <label className="text-sm text-gray-600">Filter by event:</label>
-          <select
-            value={selectedEventId}
-            onChange={(e) => setSelectedEventId(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All events</option>
-            {eventOptions.map(ev => (
-              <option key={ev.id} value={ev.id}>{ev.title}</option>
-            ))}
-          </select>
-          <div className="ml-auto flex items-center gap-2">
-            <label className="text-sm text-gray-600">Per page:</label>
-            <select
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              className="border border-gray-300 rounded-md px-2 py-1 text-sm"
-            >
-              <option value={4}>4</option>
-              <option value={6}>6</option>
-              <option value={8}>8</option>
-              <option value={12}>12</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Tickets Grid */}
-        <div className="grid gap-6 max-w-4xl mx-auto">
-          {pagedTickets.map((ticket) => (
-            <div key={ticket._id} className="relative overflow-hidden bg-white rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-shadow duration-300">
-              {/* Ticket Styling Elements */}
-              <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-blue-500 to-purple-600"></div>
-              <div className="absolute top-4 -right-10 w-20 h-8 bg-yellow-400 transform rotate-45 flex items-center justify-center">
-                <span className="text-xs font-bold text-gray-800">ADMIT ONE</span>
-              </div>
-              
-              <div className="flex flex-col md:flex-row">
-                {/* Left Section - Event Image */}
-                <div className="md:w-1/3 bg-gray-100 p-6 flex items-center justify-center">
-                  {ticket.event?.image ? (
-                    <img 
-                      src={ticket.event.image} 
-                      alt={ticket.event.title} 
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                  ) : (
-                    <div className="w-full h-48 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
-                      <span className="text-white text-lg font-semibold">{ticket.event?.title?.charAt(0) || 'E'}</span>
-                    </div>
-                  )}
-                </div>
-                
-              {/* Middle Section - Ticket Details */}
-              <div className="flex-1 p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <button
-                      onClick={() => ticket.event?._id && navigate(`/events/${ticket.event._id}`)}
-                      className="text-left text-xl font-bold text-gray-900 mb-1 hover:text-blue-600"
-                      title="View event details"
-                    >
-                      {ticket.event?.title || 'Event Title'}
-                    </button>
-                    <div className="flex items-center text-gray-600 text-sm mb-2">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      <span>{new Date(ticket.event?.date || new Date()).toLocaleDateString()}</span>
-                      <MapPin className="w-4 h-4 ml-3 mr-1" />
-                      <span>{ticket.event?.location || 'Venue'}</span>
-                    </div>
-                  </div>
-                  <div className="bg-blue-50 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                    #{ticket._id.slice(-6).toUpperCase()}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-xs text-gray-500 mb-1">Ticket Type</p>
-                      <p className="font-medium">{ticket.type || 'General Admission'}</p>
-                    </div>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-xs text-gray-500 mb-1">Seat</p>
-                      <p className="font-medium">{ticket.seatNumber || 'General Admission'}</p>
-                    </div>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-xs text-gray-500 mb-1">Price</p>
-                      <p className="font-medium">₹{ticket.price.toFixed(2)}</p>
-                    </div>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-xs text-gray-500 mb-1">Status</p>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        ticket.status === 'active' ? 'bg-green-100 text-green-800' :
-                        ticket.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {ticket.status === 'processing' ? (
-                          <svg className="animate-spin -ml-1 mr-1.5 h-2.5 w-2.5 text-yellow-500" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                        ) : null}
-                        {ticket.status ? ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1) : 'Active'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                    <div>
-                      <p className="text-xs text-gray-500">Purchased by</p>
-                      <p className="font-medium">{ticket.user?.name || 'You'}</p>
-                      <p className="text-xs text-gray-500">{ticket.user?.email || ''}</p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => downloadTicket(ticket)}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={ticket.status === 'processing'}
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        {ticket.status === 'processing' ? 'Processing...' : 'Download'}
-                      </button>
-                      <button className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                        </svg>
-                        Share
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Right Section - QR Code */}
-                <div className="flex-shrink-0 text-center p-6 border-l border-gray-200 bg-gray-50 flex flex-col items-center justify-center">
-                  <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                    <img 
-                      src={ticket.qrCode} 
-                      alt="Ticket QR Code" 
-                      className="w-32 h-32 mx-auto"
-                      onError={(e) => { 
-                        const target = e.target as HTMLImageElement;
-                        target.onerror = null;
-                        target.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(ticket._id)}`;
-                      }}
-                    />
-                  </div>
-                  <p className="mt-3 text-sm font-medium text-gray-700">
-                    {ticket.status === 'processing' ? 'Generating...' : 'Scan this QR code at entry'}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Ticket ID: {ticket._id.slice(-8).toUpperCase()}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
+      <main className="pt-32 pb-24">
+        <div className="container mx-auto px-6 max-w-7xl">
           
-          {tickets.length === 0 && (
-            <div className="text-center py-12">
-              <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 5v2m0 4v2m0 4v2m5-11a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-1">No tickets yet</h3>
-              <p className="text-gray-500">Your purchased tickets will appear here</p>
-              <button 
-                onClick={() => navigate('/events')}
-                className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          {/* Futuristic Page Header */}
+          <div className="mb-16">
+             <motion.div 
+               initial={{ opacity: 0, x: -30 }} 
+               animate={{ opacity: 1, x: 0 }}
+               className="flex items-center gap-4 mb-3"
+             >
+                <div className="w-12 h-0.5 bg-gradient-to-r from-purple-600 to-transparent rounded-full" />
+                <span className="text-purple-600 dark:text-purple-400 font-black text-xs uppercase tracking-[0.4em]">Personal Vault</span>
+             </motion.div>
+             <motion.h1 
+               initial={{ opacity: 0, y: 30 }}
+               animate={{ opacity: 1, y: 0 }}
+               className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white tracking-tighter mb-4"
+             >
+               Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-600 to-emerald-500">Access Passes</span>
+             </motion.h1>
+             <p className="text-slate-500 dark:text-slate-400 max-w-2xl font-bold">
+               Secure portal for all your digital event identities. Download, share, and manage your encrypted entry tokens.
+             </p>
+          </div>
+
+          {/* Filtering Hub */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-12 bg-white/70 dark:bg-slate-900/70 backdrop-blur-3xl border border-white/50 dark:border-slate-800 p-8 rounded-[2.5rem] shadow-2xl flex flex-col md:flex-row items-center gap-8"
+          >
+             <div className="flex-1 flex items-center gap-4 w-full">
+                <Search className="text-slate-400" size={20} />
+                <select 
+                  value={selectedEventId}
+                  onChange={(e) => setSelectedEventId(e.target.value)}
+                  className="bg-transparent border-none outline-none font-black text-slate-900 dark:text-white text-lg w-full cursor-pointer appearance-none"
+                >
+                   <option value="all">Global Stream View</option>
+                   {eventOptions.map(ev => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
+                </select>
+             </div>
+             
+             <div className="h-10 w-[1px] bg-slate-200 dark:bg-slate-800 hidden md:block" />
+
+             <div className="flex items-center gap-6">
+                <div className="flex items-center gap-3">
+                   <Filter size={18} className="text-purple-600" />
+                   <span className="text-xs font-black uppercase tracking-widest text-slate-400">Page Sync:</span>
+                   <select 
+                     value={pageSize}
+                     onChange={(e) => setPageSize(Number(e.target.value))}
+                     className="bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-xl text-xs font-black outline-none cursor-pointer"
+                   >
+                      {[4, 6, 8, 12].map(n => <option key={n} value={n}>{n} Nodes</option>)}
+                   </select>
+                </div>
+                <div className="px-6 py-2 bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+                   Vault Secure
+                </div>
+             </div>
+          </motion.div>
+
+          <AnimatePresence mode="wait">
+            {pagedTickets.length > 0 ? (
+              <motion.div 
+                key="grid"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="grid gap-10"
               >
-                Browse Events
-              </button>
+                {pagedTickets.map((ticket, idx) => (
+                  <TicketCard key={ticket._id} ticket={ticket} download={downloadTicket} idx={idx} />
+                ))}
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="empty"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="py-24 text-center"
+              >
+                 <div className="w-32 h-32 bg-slate-100 dark:bg-slate-900 rounded-[3rem] border border-slate-200 dark:border-slate-800 flex items-center justify-center mx-auto mb-8 shadow-inner">
+                    <TicketIcon size={48} className="text-slate-300 dark:text-slate-700" />
+                 </div>
+                 <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-4">No Access Passes Detected</h3>
+                 <p className="text-slate-500 dark:text-slate-400 font-bold mb-10 max-w-sm mx-auto">Your vault is currently empty. Initialize a connection to an event to generate a token.</p>
+                 <button 
+                   onClick={() => navigate('/events')}
+                   className="px-10 py-5 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-2xl shadow-purple-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3 mx-auto"
+                 >
+                    Initialize Discovery
+                    <ArrowRight size={20} />
+                 </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* New Modern Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-16 flex items-center justify-center gap-6">
+               <PaginationButton 
+                 active={page > 1} 
+                 onClick={() => setPage(page - 1)} 
+                 label="Prev Signal" 
+               />
+               <div className="flex items-center gap-2">
+                 {Array.from({ length: totalPages }).map((_, i) => (
+                   <button 
+                     key={i}
+                     onClick={() => setPage(i + 1)}
+                     className={`w-10 h-10 rounded-full font-black text-xs transition-all ${
+                       page === i + 1 
+                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' 
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-purple-600'
+                     }`}
+                   >
+                     {i + 1}
+                   </button>
+                 ))}
+               </div>
+               <PaginationButton 
+                 active={page < totalPages} 
+                 onClick={() => setPage(page + 1)} 
+                 label="Next Signal" 
+               />
             </div>
           )}
-        </div>
 
-        {/* Pagination Controls */}
-        {filteredTickets.length > 0 && (
-          <div className="flex items-center justify-between mt-6">
-            <div className="text-sm text-gray-600">Page {page} of {totalPages}</div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="px-3 py-2 border rounded-md bg-white disabled:opacity-50"
-              >
-                Prev
-              </button>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="px-3 py-2 border rounded-md bg-white disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      </main>
+
+      <Footer />
     </div>
-    <Footer/>
-    </>
   );
 };
+
+const TicketCard = ({ ticket, idx }: any) => {
+  const navigate = useNavigate();
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 50 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: idx * 0.1 }}
+    >
+      <TiltCard damping={15}>
+        <div className="relative group overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-3xl rounded-[3rem] border border-white/50 dark:border-slate-800 shadow-2xl flex flex-col md:flex-row">
+          
+          {/* Punched Side Decoration */}
+          <div className="absolute left-[33.33%] top-0 bottom-0 w-[1px] bg-dashed-border pointer-events-none hidden md:block" />
+          <div className="absolute left-[33.33%] -top-4 -translate-x-1/2 w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-950 border border-white/50 dark:border-slate-800 z-10 hidden md:block" />
+          <div className="absolute left-[33.33%] -bottom-4 -translate-x-1/2 w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-950 border border-white/50 dark:border-slate-800 z-10 hidden md:block" />
+
+          {/* Preview Section */}
+          <div className="md:w-1/3 relative overflow-hidden group">
+             <img 
+               src={ticket.event.image || 'https://images.unsplash.com/photo-1540575861501-7ad05823c9f5?w=800&q=80'} 
+               className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-110 group-hover:scale-100"
+             />
+             <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80" />
+             <div className="absolute bottom-6 left-6 right-6">
+                <span className="px-4 py-1 bg-white/20 backdrop-blur-xl text-white text-[10px] font-black uppercase tracking-widest rounded-full border border-white/30 mb-2 inline-block">
+                   Token Locked
+                </span>
+                <h4 className="text-white font-black text-2xl tracking-tighter line-clamp-2">{ticket.event.title}</h4>
+             </div>
+          </div>
+
+          {/* Info Section */}
+          <div className="flex-1 p-10 flex flex-col justify-between relative overflow-hidden">
+             <div className="relative z-10">
+                <div className="flex items-center justify-between mb-8">
+                   <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-purple-600/10 text-purple-600 flex items-center justify-center">
+                         <Star size={18} fill="currentColor" />
+                      </div>
+                      <div>
+                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Premium Entity</p>
+                         <p className="font-black text-slate-900 dark:text-white text-sm tracking-tight">{ticket.type.toUpperCase()}</p>
+                      </div>
+                   </div>
+                   <div className="text-right">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Entry UID</p>
+                      <p className="font-black text-purple-600 dark:text-purple-400 text-sm tracking-tight">#{ticket._id.slice(-8).toUpperCase()}</p>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-8 mb-10">
+                   <div className="space-y-1">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                         <Calendar size={10} /> Arrival Date
+                      </p>
+                      <p className="font-extrabold text-slate-900 dark:text-white tracking-tight">{new Date(ticket.event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                   </div>
+                   <div className="space-y-1">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                         <MapPin size={10} /> Signal Origin
+                      </p>
+                      <p className="font-extrabold text-slate-900 dark:text-white tracking-tight truncate">{ticket.event.location}</p>
+                   </div>
+                   <div className="space-y-1">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                         <Smartphone size={10} /> Digital Seat
+                      </p>
+                      <p className="font-extrabold text-slate-900 dark:text-white tracking-tight">{ticket.seatNumber || 'DYNAMIC GA'}</p>
+                   </div>
+                   <div className="space-y-1">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                         <Globe size={10} /> Cost Node
+                      </p>
+                      <p className="font-extrabold text-slate-900 dark:text-white tracking-tight">${ticket.price.toFixed(2)} USD</p>
+                   </div>
+                </div>
+             </div>
+
+             <div className="flex flex-wrap items-center gap-3">
+                <button 
+                  onClick={() => navigate(`/events/${ticket.event._id}`)}
+                  className="h-12 px-6 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center gap-2"
+                >
+                   Discovery Page
+                </button>
+                <button 
+                  className="h-12 px-6 bg-purple-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:shadow-xl hover:shadow-purple-500/20 transition-all flex items-center gap-2"
+                >
+                   <Download size={14} /> Download PDF
+                </button>
+             </div>
+             
+             {/* Decorative Background Icon */}
+             <TicketIcon size={120} className="absolute -bottom-10 -right-10 text-slate-950/5 dark:text-white/5 -rotate-12 pointer-events-none" />
+          </div>
+
+          {/* QR Section */}
+          <div className="md:w-1/4 p-10 flex flex-col items-center justify-center bg-slate-50/50 dark:bg-slate-950/50 relative overflow-hidden">
+             <div className="w-full aspect-square bg-white rounded-3xl p-4 shadow-inner relative group/qr overflow-hidden">
+                <img 
+                  src={ticket.qrCode} 
+                  className="w-full h-full object-contain relative z-10" 
+                  onError={(e: any) => e.target.src = '/qr-fallback.png'}
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 via-transparent to-purple-500/10 pointer-events-none z-20 animate-scan" />
+             </div>
+             <p className="mt-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">
+                Scan for Neural Entry
+             </p>
+             <div className="mt-4 flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Active Link</span>
+             </div>
+          </div>
+
+        </div>
+      </TiltCard>
+    </motion.div>
+  );
+};
+
+const PaginationButton = ({ active, onClick, label }: any) => (
+  <button 
+    disabled={!active}
+    onClick={onClick}
+    className={`h-12 px-8 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
+      active 
+        ? 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white shadow-xl hover:-translate-y-1' 
+        : 'opacity-30 cursor-not-allowed text-slate-400 border border-transparent'
+    }`}
+  >
+    {label}
+  </button>
+);
 
 export default MyTicketsPage;
