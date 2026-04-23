@@ -16,6 +16,11 @@ import {
   X, Sparkles, Globe, Ticket
 } from "lucide-react";
 
+interface Category {
+  _id: string;
+  name: string;
+}
+
 interface EventsData {
   events: Event[];
   pagination: {
@@ -160,7 +165,11 @@ const EventPage = () => {
                   className="w-full h-16 pl-16 pr-8 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl outline-none focus:ring-4 focus:ring-emerald-500/10 text-slate-900 dark:text-white font-black transition-all appearance-none cursor-pointer"
                 >
                    <option value="">All Architectures</option>
-                   {categories.map(cat => <option key={cat._id} value={cat._id}>{cat.name}</option>)}
+                   {categories.map((cat: Category) => (
+                     <option key={cat._id} value={cat._id}>
+                       {cat.name}
+                     </option>
+                   ))}
                 </select>
              </div>
              <div className="lg:col-span-2">

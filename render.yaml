@@ -7,5 +7,5 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 18.17.0
-    buildCommand: npm ci && npm run build
-    startCommand: npm start
+    buildCommand: npm install
+    startCommand: node utils/server.js
