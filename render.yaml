@@ -26,4 +26,4 @@ services:
       - key: NODE_VERSION
         value: 18.17.0
       - key: VITE_API_URL
-        value: https://eventifyx-backend.onrender.com
+        value: https://eventifyx-6wpw.onrender.com
