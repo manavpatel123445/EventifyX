@@ -1,11 +1,29 @@
 services:
   - type: web
     name: eventifyx-backend
-    env: node
+    runtime: node
     plan: free
     rootDir: backend
+    buildCommand: npm install
+    startCommand: node utils/server.js
     envVars:
       - key: NODE_VERSION
         value: 18.17.0
-    buildCommand: npm install
-    startCommand: node utils/server.js
+      - key: MONGODB_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+
+  - type: static
+    name: eventifyx-frontend
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishDir: dist
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
+      - key: VITE_API_URL
+        value: https://eventifyx-backend.onrender.com

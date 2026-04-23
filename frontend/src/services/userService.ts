@@ -38,16 +38,18 @@ export interface ChangePasswordData {
  * Fetches the current user profile.
  * Shared instance handles 401s and token refresh automatically.
  */
-export const getProfile = async (): Promise<{ success: boolean; user: UserProfile } | null> => {
+export const getProfile = async (): Promise<{ success: boolean; user: UserProfile }> => {
   const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
-  if (!token) return null;
+  if (!token) {
+    throw new Error("No authentication token found");
+  }
 
   try {
     const { data } = await API.get("/users/me");
     return data;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Profile fetch error:", error);
-    return null;
+    throw new Error(error?.response?.data?.message || "Failed to fetch profile");
   }
 };
 
