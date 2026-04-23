@@ -1,42 +1,22 @@
-import axios from "axios";
-import { resolveApiRoot } from "./apiRoot";
+import axiosInstance from "./axiosInstance";
 
-const API_ROOT = resolveApiRoot();
+// Use shared instance for all category requests
+const API = axiosInstance;
 
-// Public categories API (no auth required) - for Home page, filters, etc.
-const publicCategoryAPI = axios.create({
-  baseURL: `${API_ROOT}/categories`,
-});
-
-// Admin categories API (auth required) - for admin category management
-const categoryAPI = axios.create({
-  baseURL: `${API_ROOT}/admin/categories`,
-});
-
-categoryAPI.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-/** Fetch all categories for public display (Home, filters) - no auth needed */
+/** Fetch all categories for public display (Home, filters) */
 export const getAllCategories = async () => {
-  const { data } = await publicCategoryAPI.get("/");
+  const { data } = await API.get("/categories");
   return data;
 };
 
-/** Fetch categories for forms (Create Event, etc.) - uses public endpoint, no auth needed */
+/** Fetch categories for forms */
 export const fetchCategories = async () => {
-  const { data } = await publicCategoryAPI.get("/");
+  const { data } = await API.get("/categories");
   return data;
 };
 
+/** Create a new category (Requires Admin) */
 export const createCategory = async (category: { name: string; description?: string; status?: string; location?: string; icon?: string }) => {
-  const { data } = await categoryAPI.post("/", category);
+  const { data } = await API.post("/admin/categories", category);
   return data;
 };

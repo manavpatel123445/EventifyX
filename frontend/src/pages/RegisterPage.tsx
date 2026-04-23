@@ -94,7 +94,7 @@ const RegisterPage: React.FC = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500 overflow-hidden">
       <Navbar />
       
-      <div className="relative flex items-center justify-center p-6 min-h-screen overflow-hidden pt-20">
+      <div className="relative flex items-center justify-center p-6 min-h-screen overflow-hidden pt-32">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[150px] animate-pulse pointer-events-none" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[150px] animate-pulse delay-1000 pointer-events-none" />
 

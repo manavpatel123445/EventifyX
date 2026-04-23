@@ -12,7 +12,7 @@ import { Calendar, MapPin, DollarSign, Tag, FileText, Send, Sparkles, Rocket } f
 import { motion } from "framer-motion";
 import TiltCard from "../components/TiltCard";
 
-// CategorySelect component
+// CategorySelect component moved outside to prevent re-creation on every render
 interface CategorySelectProps {
   value: string;
   onChange: (value: string) => void;
@@ -53,6 +53,57 @@ const CategorySelect: React.FC<CategorySelectProps> = ({ value, onChange, error 
     </div>
   );
 };
+
+const Section = ({ title, children, Icon }: any) => (
+  <div className="space-y-6">
+    <div className="flex items-center gap-4 mb-2">
+      <div className="w-10 h-10 rounded-xl bg-purple-600/10 text-purple-600 flex items-center justify-center">
+        <Icon size={20} />
+      </div>
+      <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{title}</h2>
+    </div>
+    <div className="space-y-6">
+      {children}
+    </div>
+  </div>
+);
+
+const InputField = ({ label, type = "text", value, onChange, placeholder, error }: any) => (
+  <div className="space-y-2 group">
+    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-4 group-focus-within:text-purple-600 transition-colors">
+      {label}
+    </label>
+    <div className="relative">
+      <input
+        type={type}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={`w-full h-14 px-6 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-white/40 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-purple-500/20 text-slate-900 dark:text-white font-bold transition-all ${
+          error ? 'border-red-500/50 ring-2 ring-red-500/10' : ''
+        }`}
+      />
+      {error && <p className="text-red-500 text-[10px] uppercase font-black tracking-widest mt-2 ml-4">{error}</p>}
+    </div>
+  </div>
+);
+
+const SlidersHorizontal = ({ size, className }: any) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M21 4h-7M10 4H3M21 12H12M8 12H3M21 20H16M12 20H3M14 2v4M8 10v4M16 18v4"/>
+  </svg>
+);
 
 const CreateEventPage: React.FC = () => {
   const navigate = useNavigate();
@@ -107,6 +158,8 @@ const CreateEventPage: React.FC = () => {
     if (!formData.category) newErrors.category = "Classification needed";
     if (!formData.startDate) newErrors.startDate = "Timeline unknown";
     if (!formData.venueName.trim()) newErrors.venueName = "Target location unknown";
+    if (!formData.venueAddress.trim()) newErrors.venueAddress = "Coordinates (Address) missing";
+    if (!formData.state.trim()) newErrors.state = "Sector (State) required";
     if (!formData.ticketPrice) newErrors.ticketPrice = "Credits not set";
     if (!formData.ticketQuantity) newErrors.ticketQuantity = "Capacity unknown";
     
@@ -132,7 +185,7 @@ const CreateEventPage: React.FC = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
       <Navbar />
       
-      <main className="pt-24 pb-20">
+      <main className="pt-32 pb-20">
         <div className="container mx-auto px-6 max-w-5xl">
           <div className="grid lg:grid-cols-12 gap-12">
             
@@ -226,8 +279,12 @@ const CreateEventPage: React.FC = () => {
                     <InputField label="Stand-down" type="time" value={formData.endTime} onChange={(v: string) => setFormData({...formData, endTime: v})} />
                   </div>
                   <div className="grid md:grid-cols-2 gap-6 pt-4">
-                    <InputField label="Operational Base (Venue)" value={formData.venueName} onChange={(v: string) => setFormData({...formData, venueName: v})} placeholder="Venue Name" />
+                    <InputField label="Operational Base (Venue)" value={formData.venueName} onChange={(v: string) => setFormData({...formData, venueName: v})} placeholder="Venue Name" error={errors.venueName} />
                     <InputField label="City Protocol" value={formData.city} onChange={(v: string) => setFormData({...formData, city: v})} placeholder="Global City" />
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-6 pt-4">
+                    <InputField label="Coordinates (Address)" value={formData.venueAddress} onChange={(v: string) => setFormData({...formData, venueAddress: v})} placeholder="123 Neon Street" error={errors.venueAddress} />
+                    <InputField label="Sector (State)" value={formData.state} onChange={(v: string) => setFormData({...formData, state: v})} placeholder="State/Region" error={errors.state} />
                   </div>
                 </Section>
 
@@ -289,55 +346,5 @@ const CreateEventPage: React.FC = () => {
   );
 };
 
-const Section = ({ title, children, Icon }: any) => (
-  <div className="space-y-6">
-    <div className="flex items-center gap-4 mb-2">
-      <div className="w-10 h-10 rounded-xl bg-purple-600/10 text-purple-600 flex items-center justify-center">
-        <Icon size={20} />
-      </div>
-      <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{title}</h2>
-    </div>
-    <div className="space-y-6">
-      {children}
-    </div>
-  </div>
-);
-
-const InputField = ({ label, type = "text", value, onChange, placeholder, error }: any) => (
-  <div className="space-y-2 group">
-    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-4 group-focus-within:text-purple-600 transition-colors">
-      {label}
-    </label>
-    <div className="relative">
-      <input
-        type={type}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        className={`w-full h-14 px-6 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-white/40 dark:border-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-purple-500/20 text-slate-900 dark:text-white font-bold transition-all ${
-          error ? 'border-red-500/50 ring-2 ring-red-500/10' : ''
-        }`}
-      />
-      {error && <p className="text-red-500 text-[10px] uppercase font-black tracking-widest mt-2 ml-4">{error}</p>}
-    </div>
-  </div>
-);
-
-const SlidersHorizontal = ({ size, className }: any) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <path d="M21 4h-7M10 4H3M21 12H12M8 12H3M21 20H16M12 20H3M14 2v4M8 10v4M16 18v4"/>
-  </svg>
-);
 
 export default CreateEventPage;

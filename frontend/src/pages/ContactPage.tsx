@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Mail, Phone, MapPin, Send, MessageCircle, HelpCircle, Sparkles, Globe, Zap } from "lucide-react";
+import { Mail, Phone, MapPin, Send, Sparkles, Zap } from "lucide-react";
 import { getProfile } from "../services/userService";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -7,14 +7,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import TiltCard from "../components/TiltCard";
 import toast from "react-hot-toast";
 
-const ContactUs: React.FC = () => {
+const ContactPage: React.FC = () => {
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
-  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [, setLoadingProfile] = useState(false);
 
   useEffect(() => {
     const fill = async () => {
+      const accessToken = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+      if (!accessToken) {
+        setLoadingProfile(false);
+        return;
+      }
+
       try {
         setLoadingProfile(true);
         const res = await getProfile();
@@ -249,4 +255,4 @@ const InputField = ({ label, placeholder, value, onChange, error }: any) => (
   </div>
 );
 
-export default ContactUs;
+export default ContactPage;

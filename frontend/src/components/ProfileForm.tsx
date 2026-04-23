@@ -18,19 +18,19 @@ interface ProfileFormProps {
   onAvatarUpdate?: (imageUrl: string) => void;
 }
 
-const ProfileForm = ({ showTitle = true, className = "", isEditing }: ProfileFormProps) => {
+const ProfileForm = ({ showTitle = true, className = "", user, isEditing }: ProfileFormProps) => {
   const dispatch = useDispatch();
   
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<UserProfile | null>(user);
+  const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    profileImage: ""
+    name: user?.name || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+    profileImage: user?.profileImage || ""
   });
   
   const [passwordData, setPasswordData] = useState({
@@ -42,13 +42,27 @@ const ProfileForm = ({ showTitle = true, className = "", isEditing }: ProfileFor
   const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   useEffect(() => {
-    loadProfile();
-  }, []);
+    if (user) {
+      setProfile(user);
+      setFormData({
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        profileImage: user.profileImage || ""
+      });
+    }
+  }, [user]);
 
   const loadProfile = async (): Promise<void> => {
+    if (user) return; // Skip if user is already provided via props
+    
+    const accessToken = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+    if (!accessToken) return;
+
     try {
-      const response: { success: boolean; user: UserProfile } = await getProfile();
-      if (response.success) {
+      setLoading(true);
+      const response = await getProfile();
+      if (response && response.success) {
         setProfile(response.user);
         setFormData({
           name: response.user.name || "",

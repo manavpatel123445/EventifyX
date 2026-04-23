@@ -26,9 +26,14 @@ const eventRequestSchema = new mongoose.Schema(
       required: [true, "Event start date is required"],
       validate: {
         validator: function(v) {
-          return v > new Date();
+          if (this.isNew) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return v >= today;
+          }
+          return true;
         },
-        message: "Start date must be in the future"
+        message: "Start date cannot be in the past"
       }
     },
     endDate: {
@@ -36,9 +41,14 @@ const eventRequestSchema = new mongoose.Schema(
       required: [true, "Event end date is required"],
       validate: {
         validator: function(v) {
-          return v > new Date();
+          if (this.isNew) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return v >= today;
+          }
+          return true;
         },
-        message: "End date must be in the future"
+        message: "End date cannot be in the past"
       }
     },
     startTime: {
@@ -68,6 +78,11 @@ const eventRequestSchema = new mongoose.Schema(
         type: String,
         required: [true, "State is required"],
         trim: true
+      },
+      capacity: {
+        type: Number,
+        required: [true, "Venue capacity is required"],
+        min: [1, "Capacity must be at least 1"]
       }
     },
     ticketPricing: [{
@@ -95,6 +110,11 @@ const eventRequestSchema = new mongoose.Schema(
         },
         message: "Please provide a valid image URL"
       }
+    }],
+    tags: [{
+      type: String,
+      trim: true,
+      lowercase: true
     }],
     
     // Request specific fields

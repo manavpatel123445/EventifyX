@@ -9,11 +9,20 @@ export function bootstrapAuth(): void {
 
     if (accessToken && refreshToken) {
       store.dispatch(setTokens({ accessToken, refreshToken }));
-    }
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      store.dispatch(setUser(user));
-      if (user?.role) store.dispatch(updateRole(user.role));
+      
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        store.dispatch(setUser(user));
+        if (user?.role) store.dispatch(updateRole(user.role));
+      }
+    } else {
+      // Clear inconsistent state
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("accessToken");
+      sessionStorage.removeItem("refreshToken");
+      sessionStorage.removeItem("user");
     }
   } catch {
     // no-op

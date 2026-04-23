@@ -1,12 +1,14 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { getAllEvents } from "../services/eventService";
 import { getAllCategories } from "../services/categoryService";
 import type { Event } from "../services/eventService";
 import TiltCard from "../components/TiltCard";
+import Skeleton from "../components/Skeleton";
 import { motion } from "framer-motion";
 import { 
   Search, MapPin, 
@@ -24,19 +26,37 @@ interface EventsData {
 }
 
 const EventPage = () => {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [categories, setCategories] = useState<Array<{ _id: string; name: string; status?: string }>>([]);
   const location = useLocation();
 
-  const fetchEvents = async () => {
-    try {
-      setLoading(true);
+  // Sync state with URL params
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setSearchTerm(params.get('search') || "");
+    setSelectedCity(params.get('city') || "");
+    setSelectedCategory(params.get('category') || "");
+    setCurrentPage(parseInt(params.get('page') || "1", 10) || 1);
+  }, [location.search]);
+
+  // Categories Query
+  const { data: categoriesResponse } = useQuery({
+    queryKey: ['categories', 'active'],
+    queryFn: async () => {
+      const res = await getAllCategories();
+      const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      return list.filter((c: any) => !c.status || c.status === 'active');
+    },
+  });
+
+  const categories = categoriesResponse || [];
+
+  // Events Query
+  const { data: eventsResponse, isLoading: loading } = useQuery({
+    queryKey: ['events', { searchTerm, selectedCategory, selectedCity, currentPage }],
+    queryFn: async () => {
       const params = {
         search: searchTerm || undefined,
         category: selectedCategory || undefined,
@@ -44,7 +64,6 @@ const EventPage = () => {
         page: currentPage,
         limit: 9
       };
-
       const response = await getAllEvents(params);
       if (response.success) {
         const data: EventsData = response.data;
@@ -54,42 +73,15 @@ const EventPage = () => {
           if (!end) return true;
           return end >= now && event.status !== 'cancelled';
         });
-        setEvents(activeEvents);
-        setTotalPages(data.pagination.pages);
+        return { events: activeEvents, totalPages: data.pagination.pages };
       }
-    } catch (error) {
-      console.error("Error fetching events:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return { events: [], totalPages: 1 };
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutes for event list
+  });
 
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const res = await getAllCategories();
-        const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
-        const active = list.filter((c: any) => !c.status || c.status === 'active');
-        setCategories(active);
-      } catch (e) {
-        setCategories([]);
-      }
-    };
-    loadCategories();
-  }, []);
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    setSearchTerm(params.get('search') || "");
-    setSelectedCity(params.get('city') || "");
-    setSelectedCategory(params.get('category') || "");
-    setCurrentPage(parseInt(params.get('page') || "1", 10) || 1);
-  }, [location.search]);
-
-  useEffect(() => {
-    fetchEvents();
-  }, [currentPage, searchTerm, selectedCategory, selectedCity]);
-
+  const events = eventsResponse?.events || [];
+  const totalPages = eventsResponse?.totalPages || 1;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500 overflow-hidden">
@@ -100,7 +92,7 @@ const EventPage = () => {
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-fixed bg-center opacity-30 dark:opacity-20 scale-105" />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-50/0 via-slate-50/50 to-slate-50 dark:from-slate-950/0 dark:via-slate-950/50 dark:to-slate-950" />
         
-        <div className="relative z-10 text-center container mx-auto px-6 pt-20">
+        <div className="relative z-10 text-center container mx-auto px-6 pt-32">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -187,7 +179,7 @@ const EventPage = () => {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
              {[1,2,3,4,5,6].map(i => (
-               <div key={i} className="h-[500px] rounded-[4rem] bg-slate-100 dark:bg-white/5 animate-pulse" />
+               <Skeleton key={i} className="h-[500px] rounded-[4rem]" />
              ))}
           </div>
         ) : events.length > 0 ? (
@@ -254,7 +246,13 @@ const ExperienceCard = ({ event, idx }: { event: Event; idx: number }) => (
            <motion.img 
              whileHover={{ scale: 1.1 }}
              transition={{ duration: 1 }}
-             src={event.images?.[0] || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87'} 
+             loading="lazy"
+             src={event.images?.[0]?.replace('.jpg', '') || `https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=800`} 
+             onError={(e) => {
+               const target = e.target as HTMLImageElement;
+               target.onerror = null;
+               target.src = 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=800';
+             }}
              className="w-full h-full object-cover"
            />
            <div className="absolute top-8 left-8">

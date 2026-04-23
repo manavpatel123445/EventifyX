@@ -54,19 +54,42 @@ const CheckoutSuccessPage: React.FC = () => {
         const response = await fetch(`${API_ROOT}/payments/tickets/session/${sessionId}`);
         if (response.ok) {
           const data = await response.json();
-          setTickets(Array.isArray(data) ? data : []);
+          // Normalize backend data to match frontend interface
+          const normalizedData = (Array.isArray(data) ? data : []).map((t: any) => ({
+            ...t,
+            event: t.event ? {
+              ...t.event,
+              date: t.event.startDate ? new Date(t.event.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', weekday: 'short', month: 'short', day: 'numeric' }) : 'Date TBD',
+              location: t.event.venue?.name || t.event.venue || 'Venue TBD',
+              image: t.event.images?.[0] || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30'
+            } : null
+          }));
+          setTickets(normalizedData);
+          setLoading(false);
         } else {
            // Poll if not immediately ready
            const poll = setInterval(async () => {
              const r = await fetch(`${API_ROOT}/payments/tickets/session/${sessionId}`);
              if (r.ok) {
                const d = await r.json();
-               setTickets(d);
+               const n = (Array.isArray(d) ? d : []).map((t: any) => ({
+                 ...t,
+                 event: t.event ? {
+                   ...t.event,
+                   date: t.event.startDate ? new Date(t.event.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', weekday: 'short', month: 'short', day: 'numeric' }) : 'Date TBD',
+                   location: t.event.venue?.name || t.event.venue || 'Venue TBD',
+                   image: t.event.images?.[0] || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30'
+                 } : null
+               }));
+               setTickets(n);
                setLoading(false);
                clearInterval(poll);
              }
            }, 3000);
-           setTimeout(() => clearInterval(poll), 30000); // 30s timeout
+           setTimeout(() => {
+             clearInterval(poll);
+             setLoading(false);
+           }, 30000); // 30s timeout
         }
       } catch (err) {
         console.error('Error fetching tickets:', err);
@@ -258,7 +281,7 @@ const CheckoutSuccessPage: React.FC = () => {
                                 <div className="flex justify-between items-start mb-8">
                                    <div>
                                       <p className="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-[0.3em] mb-2">{ticket.type} Access</p>
-                                      <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">{ticket.event.title}</h3>
+                                      <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">{ticket.event?.title || 'Event Access'}</h3>
                                    </div>
                                    <div className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
                                       <span className="text-[10px] font-mono font-black text-slate-400">#{ticket._id.slice(-6).toUpperCase()}</span>

@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import TiltCard from "../components/TiltCard";
+import Skeleton from "../components/Skeleton";
 
 const Eventdetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -44,8 +45,8 @@ const Eventdetail: React.FC = () => {
   const event = eventData as Event | undefined;
 
   const banner = useMemo(() => {
-    if (event && Array.isArray(event.images) && event.images.length > 0) return event.images[0];
-    return "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=1200&auto=format&fit=crop&q=60";
+    if (event && Array.isArray(event.images) && event.images.length > 0) return event.images[0].replace('.jpg', '');
+    return "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=1200";
   }, [event]);
 
   const galleryImages = useMemo(() => {
@@ -62,10 +63,26 @@ const Eventdetail: React.FC = () => {
     return (
       <>
         <Navbar />
-        <div className="bg-white dark:bg-[#1B1D2A] min-h-screen font-poppins flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-red-500 dark:border-red-400 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">Loading event details...</p>
+        <div className="bg-gray-50/50 dark:bg-slate-950 min-h-screen font-poppins">
+          <div className="max-w-7xl mx-auto px-6 py-10 grid lg:grid-cols-3 gap-10">
+            <div className="lg:col-span-2 space-y-8">
+              <Skeleton className="w-full h-[500px] rounded-3xl" />
+              <div className="bg-white/80 dark:bg-slate-900/80 rounded-3xl p-8 space-y-4">
+                <Skeleton className="h-10 w-3/4" />
+                <Skeleton className="h-4 w-1/4" />
+                <div className="flex gap-3">
+                  <Skeleton className="h-8 w-20 rounded-full" />
+                  <Skeleton className="h-8 w-24 rounded-full" />
+                </div>
+              </div>
+              <div className="bg-white/80 dark:bg-slate-900/80 rounded-3xl p-8 space-y-4">
+                <Skeleton className="h-8 w-40" />
+                <Skeleton className="h-20 w-full" />
+              </div>
+            </div>
+            <div className="space-y-6">
+              <Skeleton className="h-[600px] w-full rounded-3xl" />
+            </div>
           </div>
         </div>
         <Footer />

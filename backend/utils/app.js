@@ -14,7 +14,6 @@ import uploadRouter from "../routers/uploadRoutes.js";
 import { stripeWebhook } from "../controllers/paymentController.js";
 // Load environment variables
 dotenv.config();
-db();
 
 const app = express();
 

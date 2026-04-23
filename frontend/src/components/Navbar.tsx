@@ -18,7 +18,9 @@ const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const checkAuthStatus = () => {
-    return Boolean(localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken"));
+    const hasAccess = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+    const hasRefresh = localStorage.getItem("refreshToken") || sessionStorage.getItem("refreshToken");
+    return Boolean(hasAccess && hasRefresh);
   };
   
   const [isLoggedIn, setIsLoggedIn] = useState(checkAuthStatus());

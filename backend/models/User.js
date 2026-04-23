@@ -48,6 +48,9 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Event"
     }],
+    becameManagerAt: {
+      type: Date
+    },
     // Events this user manages (if they are event_manager)
     status: {
       type: String,

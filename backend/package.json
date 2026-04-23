@@ -18,7 +18,8 @@
     "test": "echo \"No tests configured\" && exit 0",
     "lint": "echo \"No linting configured\" && exit 0",
     "validate-env": "node scripts/validate-env.js",
-    "preflight-check": "node scripts/preflight-check.js"
+    "preflight-check": "node scripts/preflight-check.js",
+    "create-admin": "node scripts/createAdmin.js"
   },
   "dependencies": {
     "axios": "^1.11.0",

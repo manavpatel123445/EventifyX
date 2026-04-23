@@ -23,31 +23,11 @@ const eventSchema = new mongoose.Schema(
     },
     startDate: {
       type: Date,
-      required: [true, "Event start date is required"],
-      validate: {
-        validator: function(v) {
-          // Only validate future dates for new events, not when updating existing ones
-          if (this.isNew) {
-            return v > new Date();
-          }
-          return true;
-        },
-        message: "Event date must be in the future"
-      }
+      required: [true, "Event start date is required"]
     },
      endDate: {
       type: Date,
-      required: [true, "Event End date is required"],
-      validate: {
-        validator: function(v) {
-          // Only validate future dates for new events, not when updating existing ones
-          if (this.isNew) {
-            return v > new Date();
-          }
-          return true;
-        },
-        message: "Event date must be in the future"
-      }
+      required: [true, "Event End date is required"]
     },
     startTime: {
       type: String,
@@ -75,13 +55,18 @@ const eventSchema = new mongoose.Schema(
       state: {
         type: String,
         required: [true, "State is required"]
+      },
+      capacity: {
+        type: Number,
+        required: [true, "Venue capacity is required"],
+        min: [1, "Capacity must be at least 1"]
+      }
     },
-  },
     ticketPricing: [{
       type: {
         type: String,
         required: true,
-        enum: ["regular", "vip", "premium"]
+        enum: ["early_bird", "regular", "vip", "premium"]
       },
       price: {
         type: Number,
@@ -103,7 +88,8 @@ const eventSchema = new mongoose.Schema(
       type: String,
       validate: {
         validator: function(v) {
-          return /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(v);
+          // Allow URLs that start with http/https and contain common image keywords or query params
+          return /^https?:\/\/.+/.test(v);
         },
         message: "Please provide a valid image URL"
       }

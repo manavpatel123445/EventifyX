@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
 import { uploadImage } from "../services/eventService";
 import toast from "react-hot-toast";
@@ -18,6 +18,25 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   const [uploading, setUploading] = useState<string[]>([]);
   const [previews, setPreviews] = useState<{ [key: string]: string }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync internal state with props if they change from outside
+  useEffect(() => {
+    if (JSON.stringify(existingImages) !== JSON.stringify(images)) {
+      setImages(existingImages);
+    }
+  }, [existingImages]);
+
+  // Notify parent safely when local images change
+  // We use a ref to track the last notified state to prevent loops
+  const lastNotified = useRef(JSON.stringify(existingImages));
+  
+  useEffect(() => {
+    const currentImagesStr = JSON.stringify(images);
+    if (currentImagesStr !== lastNotified.current) {
+      lastNotified.current = currentImagesStr;
+      onImagesChange(images);
+    }
+  }, [images, onImagesChange]);
 
   const handleFileSelect = async (files: FileList) => {
     if (images.length + files.length > maxImages) {
@@ -54,11 +73,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       try {
         const imageUrl = await uploadImage(file);
         setImages(prev => {
-          // Prevent duplicate images
           if (prev.includes(imageUrl)) return prev;
-          const newImages = [...prev, imageUrl];
-          setTimeout(() => onImagesChange(newImages), 0);
-          return newImages;
+          return [...prev, imageUrl];
         });
         toast.success(`${file.name} uploaded successfully`);
       } catch (error) {
@@ -92,11 +108,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   };
 
   const removeImage = (imageUrl: string) => {
-    setImages(prev => {
-      const newImages = prev.filter(img => img !== imageUrl);
-      onImagesChange(newImages);
-      return newImages;
-    });
+    setImages(prev => prev.filter(img => img !== imageUrl));
   };
 
   const openFileDialog = () => {

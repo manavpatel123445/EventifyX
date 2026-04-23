@@ -6,15 +6,9 @@ import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import ProfileForm from "../components/ProfileForm";
 import { 
-  Calendar, 
-  Clock, 
   User,
-  Heart,
   Ticket,
-  Star,
   Shield,
-  BarChart3,
-  Upload,
   Camera,
   Activity,
   Zap,
@@ -22,25 +16,17 @@ import {
   Settings
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { ROLES, getRoleDisplayName, getRoleStyles, hasRole, capitalizeFirstLetter } from "../utils/roleUtils";
-import { NavLink } from "react-router-dom";
+import { getRoleDisplayName, capitalizeFirstLetter } from "../utils/roleUtils";
 import { uploadAvatar } from "../services/eventService";
-import { type UserProfile, getProfile, updateProfile, type UpdateProfileData } from "../services/userService";
+import { type UserProfile, getProfile, updateProfile } from "../services/userService";
 import TiltCard from "../components/TiltCard";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface UserStats {
-  eventsCreated: number;
-  eventsAttended: number;
-  upcomingEvents: number;
-  totalSpent: number;
-  favoriteEvents: number;
-}
 
 const ProfilePage = () => {
   const { user: authUser } = useSelector((state: RootState) => state.auth);
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'profile' | 'activity' | 'security'>('profile');
@@ -54,9 +40,15 @@ const ProfilePage = () => {
   }, [user]);
 
   const loadUserData = async () => {
+    const accessToken = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+    if (!accessToken) {
+      setLoading(false);
+      return;
+    }
+    
     try {
-      const { success, user: userData } = await getProfile();
-      if (success && userData) setUser(userData);
+      const response = await getProfile();
+      if (response && response.success && response.user) setUser(response.user);
     } catch (error) {
       toast.error('Failed to sync profile data');
     } finally {
@@ -86,7 +78,7 @@ const ProfilePage = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
       <Navbar />
       
-      <main className="pt-24 pb-20">
+      <main className="pt-32 pb-20">
         <div className="container mx-auto px-6 max-w-7xl">
           
           {/* Panoramic Hero Header */}
@@ -203,10 +195,12 @@ const ProfilePage = () => {
                             loadUserData();
                             setIsEditing(false);
                             toast.success('Nexus Updated');
-                          }}
+                          } }
                           isEditing={isEditing}
-                          onEditToggle={() => setIsEditing(!isEditing)}
-                          onChangePassword={async () => toast.error('Security Protocol Active: Manual Bypass Denied')}
+                          onChangePassword={async (_current, _new) => {
+                            toast.error('Security Protocol Active: Manual Bypass Denied');
+                          } } 
+                          onEditToggle={() => setIsEditing(!isEditing)}               
                         />
                       </div>
 

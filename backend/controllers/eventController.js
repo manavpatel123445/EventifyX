@@ -60,6 +60,15 @@ export const createEventRequest = async (req, res) => {
 
   } catch (error) {
     console.error("Create event request error:", error);
+    
+    // Check if it's a Mongoose validation error
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: Object.values(error.errors).map(val => val.message).join(", ")
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: error.message || "Failed to submit event request"
@@ -130,6 +139,12 @@ export const approveEventRequest = async (req, res) => {
       });
     }
 
+    // Calculate total capacity from ticket pricing if venue capacity is missing
+    const venue = { ...eventRequest.venue };
+    if (!venue.capacity || venue.capacity <= 0) {
+      venue.capacity = eventRequest.ticketPricing.reduce((sum, ticket) => sum + (ticket.quantity || 0), 0) || 1;
+    }
+
     // Create the approved event
     const approvedEvent = new Event({
       title: eventRequest.title,
@@ -139,19 +154,25 @@ export const approveEventRequest = async (req, res) => {
       endDate: eventRequest.endDate,
       startTime: eventRequest.startTime,
       endTime: eventRequest.endTime,
-      venue: eventRequest.venue,
+      venue: venue,
       ticketPricing: eventRequest.ticketPricing,
       images: eventRequest.images,
       eventManager: eventRequest.requestedBy,
       originalRequest: eventRequest._id,
       approvedBy: req.user._id,
-      tags: eventRequest.tags
+      tags: eventRequest.tags || []
     });
 
     await approvedEvent.save();
 
     // Update the user role to event_manager and add managed event
     const user = await User.findById(eventRequest.requestedBy);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User who made the request not found"
+      });
+    }
     
     // If user is not already an event manager, update their role
     if (user.role === "user") {
@@ -160,7 +181,7 @@ export const approveEventRequest = async (req, res) => {
     }
     
     // Add this event to their managed events
-    if (!user.managedEvents.includes(approvedEvent._id)) {
+    if (!user.managedEvents.some(id => id.toString() === approvedEvent._id.toString())) {
       user.managedEvents.push(approvedEvent._id);
     }
     
@@ -173,6 +194,11 @@ export const approveEventRequest = async (req, res) => {
     eventRequest.reviewedAt = new Date();
     eventRequest.approvedEvent = approvedEvent._id;
     
+    // Backfill capacity if missing so that it passes validation when saved
+    if (!eventRequest.venue.capacity) {
+      eventRequest.venue.capacity = venue.capacity;
+    }
+
     await eventRequest.save();
 
     // Populate response data
@@ -199,6 +225,21 @@ export const approveEventRequest = async (req, res) => {
 
   } catch (error) {
     console.error("Approve event request error:", error);
+    
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: Object.values(error.errors).map(val => val.message).join(", ")
+      });
+    }
+
+    if (error.name === "CastError") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid ID format"
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: error.message || "Failed to approve event request"

@@ -13,6 +13,7 @@ import {
   Search, MapPin, Calendar, ArrowRight, Zap, 
   ShieldCheck, Star, Users, Play, Globe, Sparkles 
 } from "lucide-react";
+import Skeleton from "../components/Skeleton";
 
 interface Category {
   _id: string;
@@ -63,7 +64,7 @@ const Home = () => {
       <Navbar />
       
       {/* 🎭 Cinematic Hero Section */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden pt-32">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-32 pb-48">
         <div className="absolute inset-0 z-0">
           <img
             src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1920&q=80"
@@ -183,7 +184,7 @@ const Home = () => {
       </section>
 
       {/* 🔍 Premium Search Hub */}
-      <section className="relative z-20 mt-[-100px] container mx-auto px-6">
+      <section className="relative z-20 mt-[-60px] container mx-auto px-6">
         <motion.div
            initial={{ y: 50, opacity: 0 }}
            whileInView={{ y: 0, opacity: 1 }}
@@ -241,7 +242,9 @@ const Home = () => {
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
            {categoriesLoading ? (
-             [1,2,3,4,5].map(i => <div key={i} className="h-64 rounded-[2.5rem] bg-slate-200 dark:bg-slate-800 animate-pulse" />)
+             [1,2,3,4,5].map(i => (
+               <Skeleton key={i} className="h-64 rounded-[2.5rem]" />
+             ))
            ) : activeCategories.slice(0, 10).map((cat, idx) => (
              <motion.div
                key={cat._id}
@@ -291,7 +294,9 @@ const Home = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {eventsLoading ? (
-              [1,2,3,4].map(i => <div key={i} className="h-96 rounded-[3rem] bg-slate-200 dark:bg-slate-800 animate-pulse" />)
+              [1,2,3,4].map(i => (
+                <Skeleton key={i} className="h-96 rounded-[3rem]" />
+              ))
             ) : events.slice(0, 8).map((event, idx) => (
               <motion.div
                 key={event._id}
@@ -303,7 +308,17 @@ const Home = () => {
                 <TiltCard damping={25} stiffness={200} className="h-full">
                   <Link to={`/events/${event._id}`} className="group block h-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-white/50 dark:border-slate-800 rounded-[2.5rem] overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500">
                     <div className="relative aspect-video overflow-hidden">
-                       <img src={event.images?.[0] || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={event.title} />
+                       <img 
+                         src={event.images?.[0]?.replace('.jpg', '') || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=800'} 
+                         onError={(e) => {
+                           const target = e.target as HTMLImageElement;
+                           target.onerror = null;
+                           target.src = 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=800';
+                         }}
+                         loading="lazy"
+                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                         alt={event.title} 
+                       />
                        <div className="absolute top-6 left-6 px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black text-white uppercase tracking-widest border border-white/30">
                          {event.category?.name || 'Experience'}
                        </div>

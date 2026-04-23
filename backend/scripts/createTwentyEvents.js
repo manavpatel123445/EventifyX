@@ -4,15 +4,61 @@ import Event from "../models/Event.js";
 import Category from "../models/Category.js";
 import User from "../models/User.js";
 
-dotenv.config();
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const EVENT_COUNT = 20;
 
 const categorySeeds = [
-  { name: "Technology", description: "Tech talks and innovation events", icon: "💻", color: "#2563EB" },
-  { name: "Music", description: "Live gigs and musical experiences", icon: "🎵", color: "#7C3AED" },
-  { name: "Business", description: "Startup, leadership, and networking events", icon: "💼", color: "#0F766E" },
-  { name: "Arts", description: "Creative arts and cultural showcases", icon: "🎨", color: "#DB2777" },
+  { 
+    name: "Technology", 
+    description: "Tech talks and innovation events", 
+    icon: "💻", 
+    color: "#2563EB",
+    images: [
+      "https://images.unsplash.com/photo-1518770660439-4636190af475",
+      "https://images.unsplash.com/photo-1550751827-4bd374c3f58b",
+      "https://images.unsplash.com/photo-1519389950473-47ba0277781c"
+    ]
+  },
+  { 
+    name: "Music", 
+    description: "Live gigs and musical experiences", 
+    icon: "🎵", 
+    color: "#7C3AED",
+    images: [
+      "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3",
+      "https://images.unsplash.com/photo-1470225620780-dba8ba36b745",
+      "https://images.unsplash.com/photo-1459749411177-042180ce673c"
+    ]
+  },
+  { 
+    name: "Business", 
+    description: "Startup, leadership, and networking events", 
+    icon: "💼", 
+    color: "#0F766E",
+    images: [
+      "https://images.unsplash.com/photo-1542744173-8e7e53415bb0",
+      "https://images.unsplash.com/photo-1515187029135-18ee286d815b",
+      "https://images.unsplash.com/photo-1552664730-d307ca884978"
+    ]
+  },
+  { 
+    name: "Arts", 
+    description: "Creative arts and cultural showcases", 
+    icon: "🎨", 
+    color: "#DB2777",
+    images: [
+      "https://images.unsplash.com/photo-1460666819251-ebf94a577162",
+      "https://images.unsplash.com/photo-1513364776144-60967b0f800f",
+      "https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8"
+    ]
+  },
 ];
 
 const cities = [
@@ -63,10 +109,10 @@ async function ensureCategories() {
   for (const seed of categorySeeds) {
     const category = await Category.findOneAndUpdate(
       { name: seed.name },
-      { $setOnInsert: seed, $set: { status: "active" } },
+      { $setOnInsert: { name: seed.name, description: seed.description, icon: seed.icon, color: seed.color }, $set: { status: "active" } },
       { new: true, upsert: true }
     );
-    categories.push(category);
+    categories.push({ ...category.toObject(), seedImages: seed.images });
   }
 
   return categories;
@@ -119,15 +165,19 @@ async function createTwentyEvents() {
     const title = getEventTitle(i);
     const existing = await Event.findOne({ title });
 
-    if (existing) {
-      skipped += 1;
-      continue;
-    }
-
     const { startDate, endDate } = getStartAndEndDate(i);
     const location = cities[i % cities.length];
     const category = categories[i % categories.length];
     const regularPrice = 499 + i * 40;
+
+    if (existing) {
+      existing.images = [
+        category.seedImages[i % category.seedImages.length] + "?auto=format&fit=crop&q=80&w=1200"
+      ];
+      await existing.save();
+      skipped += 1;
+      continue;
+    }
 
     await Event.create({
       title,
@@ -147,7 +197,9 @@ async function createTwentyEvents() {
         { type: "regular", price: regularPrice, quantity: 300 },
         { type: "vip", price: regularPrice + 700, quantity: 120 },
       ],
-      images: ["https://images.unsplash.com/photo-1540575467063-178a50c2df87.jpg"],
+      images: [
+        category.seedImages[i % category.seedImages.length] + "?auto=format&fit=crop&q=80&w=1200"
+      ],
       eventManager: manager._id,
       status: "upcoming",
       isPublic: true,

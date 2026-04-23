@@ -110,3 +110,9 @@
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
+
+/* Premium Image Mask */
+.mask-bottom-fade {
+  -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+}

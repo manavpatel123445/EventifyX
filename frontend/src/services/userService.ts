@@ -1,57 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import axios from "axios";
+import axiosInstance from "./axiosInstance";
 import type { UserRole } from "../types/user";
-import { resolveApiRoot } from "./apiRoot";
 
-const API_ROOT = resolveApiRoot();
-const API = axios.create({ 
-  baseURL: `${API_ROOT}/users`,
-});
-
-// Add authorization header to all requests
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Handle 401 globally
-API.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      try {
-        const refreshToken = localStorage.getItem("refreshToken") || sessionStorage.getItem("refreshToken");
-        if (!refreshToken) throw new Error("No refresh token");
-        const { data } = await axios.post(`${API_ROOT}/auth/refresh`, { refreshToken });
-        const newAccess = data?.accessToken;
-        if (!newAccess) throw new Error("No access token in refresh response");
-        // Persist and retry
-        if (localStorage.getItem("refreshToken")) {
-          localStorage.setItem("accessToken", newAccess);
-        } else {
-          sessionStorage.setItem("accessToken", newAccess);
-        }
-        originalRequest.headers = originalRequest.headers || {};
-        originalRequest.headers.Authorization = `Bearer ${newAccess}`;
-        return API(originalRequest);
-      } catch (_err) {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("user");
-        sessionStorage.removeItem("accessToken");
-        sessionStorage.removeItem("refreshToken");
-        sessionStorage.removeItem("user");
-        window.location.href = "/login";
-      }
-    }
-    return Promise.reject(error);
-  }
-);
+// Use shared axios instance configured in axiosInstance.ts
+const API = axiosInstance;
 
 export interface UserProfile {
   _id: string;
@@ -82,22 +34,34 @@ export interface ChangePasswordData {
   newPassword: string;
 }
 
-export const getProfile = async (): Promise<{ success: boolean; user: UserProfile }> => {
-  const { data } = await API.get("/me");
-  return data;
+/**
+ * Fetches the current user profile.
+ * Shared instance handles 401s and token refresh automatically.
+ */
+export const getProfile = async (): Promise<{ success: boolean; user: UserProfile } | null> => {
+  const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+  if (!token) return null;
+
+  try {
+    const { data } = await API.get("/users/me");
+    return data;
+  } catch (error) {
+    console.error("Profile fetch error:", error);
+    return null;
+  }
 };
 
 export const updateProfile = async (profileData: UpdateProfileData): Promise<{ success: boolean; user: UserProfile }> => {
-  const { data } = await API.put("/me", profileData);
+  const { data } = await API.put("/users/me", profileData);
   return data;
 };
 
 export const changePassword = async (passwordData: ChangePasswordData): Promise<{ success: boolean; message: string }> => {
-  const { data } = await API.patch("/me/change-password", passwordData);
+  const { data } = await API.patch("/users/me/change-password", passwordData);
   return data;
 };
 
 export const deleteAccount = async (): Promise<{ success: boolean; message: string }> => {
-  const { data } = await API.delete("/me");
+  const { data } = await API.delete("/users/me");
   return data;
 };

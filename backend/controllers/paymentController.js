@@ -41,6 +41,59 @@ export const createCheckoutSession = async (req, res) => {
       }
     }
 
+    // Check ticket availability before creating session (date-aware)
+    // We already have the 'event' object, but let's ensure it's fresh if needed 
+    // (though for a single request, the initial fetch is usually fine)
+    for (const ticket of tickets) {
+      const ticketType = (ticket.type || "regular").toLowerCase();
+
+      // If a specific date is provided and event has per-date availability, validate against that
+      let availableQuantity;
+      let pricingForType = null;
+
+      if (effectiveDate && Array.isArray(event.eventDates) && event.eventDates.length > 0) {
+        const targetED = event.eventDates.find(
+          (ed) => new Date(ed.date).toDateString() === effectiveDate.toDateString()
+        );
+        if (targetED && Array.isArray(targetED.ticketAvailability) && targetED.ticketAvailability.length > 0) {
+          const datePricing = targetED.ticketAvailability.find(
+            (t) => (t.type || "").toLowerCase() === ticketType
+          );
+          if (!datePricing) {
+            return res
+              .status(400)
+              .json({ message: `Invalid ticket type for selected date: ${ticketType}` });
+          }
+          pricingForType = datePricing;
+          availableQuantity = (datePricing.quantity || 0) - (datePricing.sold || 0);
+        }
+      }
+
+      // Fallback to global pricing
+      if (availableQuantity === undefined) {
+        const globalPricing = Array.isArray(event.ticketPricing)
+          ? event.ticketPricing.find(
+              (t) => (t.type || "").toLowerCase() === ticketType
+            )
+          : null;
+        if (!globalPricing) {
+          return res.status(400).json({ message: `Invalid ticket type: ${ticketType}` });
+        }
+        pricingForType = globalPricing;
+        availableQuantity = (globalPricing.quantity || 0) - (globalPricing.sold || 0);
+      }
+
+      const requestedQuantity = Number(ticket.quantity) || 1;
+      if (requestedQuantity > availableQuantity) {
+        return res
+          .status(400)
+          .json({ message: `Only ${availableQuantity} ${ticketType} tickets available` });
+      }
+
+      // Update the ticket price from the database to ensure accuracy
+      ticket.price = pricingForType.price;
+    }
+
     // Build line items
     const line_items = tickets.map((ticket) => ({
       price_data: {
@@ -83,55 +136,6 @@ export const createCheckoutSession = async (req, res) => {
       0
     );
 
-    // Check ticket availability before creating session (date-aware)
-    for (const ticket of tickets) {
-      const freshEvent = await Event.findById(eventId);
-      const ticketType = (ticket.type || "regular").toLowerCase();
-
-      // If a specific date is provided and event has per-date availability, validate against that
-      let availableQuantity;
-      let pricingForType = null;
-
-      if (effectiveDate && Array.isArray(freshEvent.eventDates) && freshEvent.eventDates.length > 0) {
-        const targetED = freshEvent.eventDates.find(
-          (ed) => new Date(ed.date).toDateString() === effectiveDate.toDateString()
-        );
-        if (targetED && Array.isArray(targetED.ticketAvailability) && targetED.ticketAvailability.length > 0) {
-          const datePricing = targetED.ticketAvailability.find(
-            (t) => (t.type || "").toLowerCase() === ticketType
-          );
-          if (!datePricing) {
-            return res
-              .status(400)
-              .json({ message: `Invalid ticket type for selected date: ${ticketType}` });
-          }
-          pricingForType = datePricing;
-          availableQuantity = (datePricing.quantity || 0) - (datePricing.sold || 0);
-        }
-      }
-
-      // Fallback to global pricing
-      if (availableQuantity === undefined) {
-        const globalPricing = Array.isArray(freshEvent.ticketPricing)
-          ? freshEvent.ticketPricing.find(
-              (t) => (t.type || "").toLowerCase() === ticketType
-            )
-          : null;
-        if (!globalPricing) {
-          return res.status(400).json({ message: `Invalid ticket type: ${ticketType}` });
-        }
-        pricingForType = globalPricing;
-        availableQuantity = (globalPricing.quantity || 0) - (globalPricing.sold || 0);
-      }
-
-      const requestedQuantity = Number(ticket.quantity) || 1;
-      if (requestedQuantity > availableQuantity) {
-        return res
-          .status(400)
-          .json({ message: `Only ${availableQuantity} ${ticketType} tickets available` });
-      }
-    }
-
     // Create payment record with reserved status
     const payment = await Payment.create({
       user: req.user?._id,
@@ -139,7 +143,7 @@ export const createCheckoutSession = async (req, res) => {
       tickets: [],
       stripeSessionId: session.id,
       amount: amountTotal,
-      currency: "ind",
+      currency: "inr",
       status: "reserved",
       reservedAt: new Date(),
       metadata: {
@@ -153,8 +157,12 @@ export const createCheckoutSession = async (req, res) => {
 
     return res.json({ id: session.id, url: session.url });
   } catch (error) {
+    if (error.name === "ValidationError") {
+      console.error("Mongoose Validation Error:", error.message);
+      return res.status(400).json({ message: "Data validation failed", details: error.message });
+    }
     console.error("Stripe session error:", error?.message || error, error?.stack);
-    return res.status(500).json({ message: "Payment session failed" });
+    return res.status(500).json({ message: error.message || "Payment session failed" });
   }
 };
 
@@ -470,32 +478,67 @@ export const getTicketsBySession = async (req, res) => {
         const session = await stripe.checkout.sessions.retrieve(sessionId);
         if (session?.payment_status === 'paid') {
           const ticketsMeta = JSON.parse(session.metadata?.tickets || "[]");
-          const createdTickets = [];
+          const createdTicketIds = [];
+          
           for (const t of ticketsMeta) {
             for (let i = 0; i < (Number(t.quantity) || 1); i++) {
               const ticketId = `${payment._id}_${t.type || "regular"}_${i + 1}`;
-              const qrData = { ticketId, eventId: payment.event?.toString(), userId: payment.user?.toString(), type: t.type || 'regular', price: Number(t.price) || 0, timestamp: new Date().toISOString() };
-              const qrCodeDataURL = await QRCode.toDataURL(JSON.stringify(qrData), { width: 200, margin: 2, color: { dark: '#000000', light: '#FFFFFF' } });
-              const ticketDoc = await Ticket.create({ user: payment.user, event: payment.event, payment: payment._id, type: t.type || 'regular', price: Number(t.price) || 0, status: 'active', qrCode: qrCodeDataURL, seatNumber: `${t.type || 'regular'}-${i + 1}`, metadata: { ticketId, qrData } });
-              createdTickets.push(ticketDoc._id);
+              const qrData = { 
+                ticketId, 
+                eventId: payment.event?.toString(), 
+                userId: payment.user?.toString(), 
+                type: t.type || 'regular', 
+                price: Number(t.price) || 0, 
+                timestamp: new Date().toISOString() 
+              };
+              
+              const qrCodeDataURL = await QRCode.toDataURL(JSON.stringify(qrData), { 
+                width: 200, 
+                margin: 2, 
+                color: { dark: '#000000', light: '#FFFFFF' } 
+              });
+
+              const ticketDoc = await Ticket.create({ 
+                user: payment.user, 
+                event: payment.event, 
+                payment: payment._id, 
+                type: (t.type || 'regular').toLowerCase(), 
+                price: Number(t.price) || 0, 
+                status: 'active', 
+                qrCode: qrCodeDataURL, 
+                seatNumber: `${(t.type || 'regular').toLowerCase()}-${i + 1}`, 
+                metadata: { ticketId, qrData } 
+              });
+              
+              createdTicketIds.push(ticketDoc._id);
             }
+
             // Update Event sold counters and revenue
             await Event.updateOne(
               { _id: payment.event, "ticketPricing.type": t.type || "regular" },
               { $inc: { "ticketPricing.$.sold": Number(t.quantity) || 1, totalBookings: Number(t.quantity) || 1, totalRevenue: (Number(t.price) || 0) * (Number(t.quantity) || 1) } }
             );
           }
+
           // Mark payment succeeded if not already
           if (payment.status !== 'succeeded') {
             payment.status = 'succeeded';
           }
-          payment.tickets = createdTickets.map(t => t._id);
+          payment.tickets = createdTicketIds;
           await payment.save();
-          return res.json(createdTickets);
+
+          // Fetch fully populated tickets to return to the frontend
+          const populatedTickets = await Ticket.find({ _id: { $in: createdTicketIds } })
+            .populate('event', 'title startDate endDate venue images')
+            .populate('payment', 'amount currency status')
+            .populate('user', 'name email');
+
+          return res.json(populatedTickets);
         }
         // Not paid yet
         return res.status(404).json({ message: "No tickets found" });
       } catch (e) {
+        console.error("Error in fallback ticket generation:", e);
         return res.status(404).json({ message: "No tickets found" });
       }
     }
