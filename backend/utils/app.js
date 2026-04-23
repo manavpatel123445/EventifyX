@@ -39,18 +39,20 @@ app.use(
         return callback(null, true);
       }
 
+      const isVercelOrigin = /\.vercel\.app$/.test(origin);
+      const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
       const isExplicitlyAllowed = allowedOrigins.includes(origin);
-      const isVercelPreview = origin.endsWith(".vercel.app");
 
-      if (isExplicitlyAllowed || isVercelPreview) {
+      if (isExplicitlyAllowed || isVercelOrigin || isLocalhost) {
         return callback(null, true);
       }
 
-      return callback(new Error(`CORS blocked for origin: ${origin}`));
+      console.warn(`CORS blocked for origin: ${origin}`);
+      return callback(null, false); // Return false instead of an error to avoid crashing, but still block CORS
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
   })
 );
 

@@ -8,21 +8,10 @@ const ensureApiSuffix = (value: string) => {
 
 export const resolveApiRoot = (): string => {
   const env = (import.meta as any).env || {};
-  const rawBase = (env.VITE_API_BASE_URL as string | undefined) || (env.VITE_API_URL as string | undefined);
-
-  if (env.DEV) {
-    return "/api";
-  }
-
-  if (!rawBase) {
-    return "/api";
-  }
-
-  if (/^https?:\/\//i.test(rawBase)) {
-    return ensureApiSuffix(rawBase);
-  }
-
-  const normalized = rawBase.startsWith("/") ? rawBase : `/${rawBase}`;
-  return ensureApiSuffix(normalized);
+  
+  // In both development and production on Vercel, we should prefer relative /api path
+  // to leverage Vite proxy (dev) or Vercel rewrites (prod).
+  // This avoids CORS issues completely.
+  return "/api";
 };
 
