@@ -17,25 +17,23 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 // Initialize database and start server
 const startServer = async () => {
-  try {
-    await connectDB();
+  // Start listening immediately to satisfy Render's health checks and prevent 502s
+  const server = app.listen(PORT, () => {
+    console.log(`🚀 EventifyX Backend Server running on port ${PORT}`);
+    console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`📊 Health check available at /health`);
     
-    const server = app.listen(PORT, () => {
-      console.log(`🚀 EventifyX Backend Server running on port ${PORT}`);
-      console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`📊 Health check available at http://localhost:${PORT}`);
+    // Start the event scheduler
+    startEventScheduler();
+  });
 
-      // Start the event scheduler for automatic status updates and cleanup
-      startEventScheduler();
-    });
-    
-    return server;
-  } catch (error) {
-    console.error("❌ Critical Failure: Could not connect to database.");
-    console.error("The server will not start until the database is available.");
-    // We don't call process.exit(1) here if we want to allow nodemon to retry on file changes,
-    // but in a production environment, this would typically cause the container to restart.
-  }
+  // Connect to database in the background
+  connectDB().catch(error => {
+    console.error("❌ MongoDB Connection Error during startup:", error.message);
+    console.warn("⚠️ The server is running but database-dependent features will fail.");
+  });
+  
+  return server;
 };
 
 const server = startServer();
