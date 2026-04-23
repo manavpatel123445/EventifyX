@@ -1,17 +1,9 @@
-const ensureApiSuffix = (value: string) => {
-  let base = value.trim().replace(/\/+$/, "");
-  if (!/\/api(?:\/|$)/i.test(base)) {
-    base = `${base}/api`;
-  }
-  return base;
-};
-
+/**
+ * Resolves the API root URL.
+ * In both development and production on Vercel, we prefer the relative /api path
+ * to leverage the Vite proxy (dev) or Vercel rewrites (prod).
+ * This eliminates CORS issues by ensuring all requests appear to be same-origin.
+ */
 export const resolveApiRoot = (): string => {
-  const env = (import.meta as any).env || {};
-  
-  // In both development and production on Vercel, we should prefer relative /api path
-  // to leverage Vite proxy (dev) or Vercel rewrites (prod).
-  // This avoids CORS issues completely.
   return "/api";
 };
-
