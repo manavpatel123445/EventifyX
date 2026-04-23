@@ -7,9 +7,9 @@ const MONGODB_URL = process.env.MONGODB_URL || process.env.MONGODB_URI;
 
 export const connectDB = async () => {
   if (!MONGODB_URL) {
-    console.error("❌ MONGODB_URL environment variable is not defined!");
-    console.error("Please set the MONGODB_URL environment variable in your .env file.");
-    process.exit(1);
+    console.error("❌ CRITICAL: MONGODB_URL environment variable is NOT defined!");
+    console.error("The server will start but all database operations will fail.");
+    return null;
   }
   
   try {
