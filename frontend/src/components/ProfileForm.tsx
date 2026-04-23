@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { setUser } from "../app/slices/authslice";
-import { getProfile, updateProfile, changePassword, type UserProfile, type UpdateProfileData } from "../services/userService";
+import { updateProfile, changePassword, type UserProfile, type UpdateProfileData } from "../services/userService";
 import toast from "react-hot-toast";
 import { User, Mail, Shield, Lock, Save, RefreshCw, Smartphone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,7 +22,6 @@ const ProfileForm = ({ showTitle = true, className = "", user, isEditing }: Prof
   const dispatch = useDispatch();
   
   const [profile, setProfile] = useState<UserProfile | null>(user);
-  const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   
@@ -53,30 +52,7 @@ const ProfileForm = ({ showTitle = true, className = "", user, isEditing }: Prof
     }
   }, [user]);
 
-  const loadProfile = async (): Promise<void> => {
-    if (user) return; // Skip if user is already provided via props
-    
-    const accessToken = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
-    if (!accessToken) return;
 
-    try {
-      setLoading(true);
-      const response = await getProfile();
-      if (response && response.success) {
-        setProfile(response.user);
-        setFormData({
-          name: response.user.name || "",
-          email: response.user.email || "",
-          phone: response.user.phone || "",
-          profileImage: response.user.profileImage || ""
-        });
-      }
-    } catch (error: any) {
-      toast.error("Decryption Failed: Profile Locked");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,11 +95,7 @@ const ProfileForm = ({ showTitle = true, className = "", user, isEditing }: Prof
     }
   };
 
-  if (loading) return (
-    <div className="flex justify-center py-20">
-      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600" />
-    </div>
-  );
+
 
   return (
     <div className={`space-y-10 ${className}`}>
