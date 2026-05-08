@@ -10,17 +10,18 @@ import {
   deleteUser,
   getUserDetails,
   
-  // Category Management
-  getAllCategories,
-  createCategory,
-  updateCategory,
-  deleteCategory,
-  
   // Analytics
   getAdvancedAnalytics,
   getRevenueAnalytics,
   getManagerRevenue
 } from "../controllers/adminController.js";
+
+import {
+  getCategories as getAllCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+} from "../controllers/categoryController.js";
 
 import { protect, authorize } from "../middlewares/authMiddleware.js";
 

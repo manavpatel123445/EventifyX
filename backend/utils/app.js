@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import dotenv from "dotenv";
 import db from "../db.js";
 
@@ -16,6 +17,7 @@ import { stripeWebhook } from "../controllers/paymentController.js";
 dotenv.config();
 
 const app = express();
+app.use(helmet());
 
 // CORS with credentials support
 const configuredOrigins = [
@@ -39,16 +41,25 @@ app.use(
         return callback(null, true);
       }
 
+      const isProduction = process.env.NODE_ENV === "production";
       const isVercelOrigin = /\.vercel\.app$/.test(origin);
       const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
       const isExplicitlyAllowed = allowedOrigins.includes(origin);
 
-      if (isExplicitlyAllowed || isVercelOrigin || isLocalhost) {
-        return callback(null, true);
+      // In production, be more strict
+      if (isProduction) {
+        if (isExplicitlyAllowed || isVercelOrigin) {
+          return callback(null, true);
+        }
+      } else {
+        // In development, allow localhost and explicitly allowed
+        if (isExplicitlyAllowed || isLocalhost) {
+          return callback(null, true);
+        }
       }
 
       console.warn(`CORS blocked for origin: ${origin}`);
-      return callback(null, false); // Return false instead of an error to avoid crashing, but still block CORS
+      return callback(new Error(`Not allowed by CORS: ${origin}`));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -60,24 +71,6 @@ app.use(
 app.post("/api/payments/webhook", express.raw({ type: "application/json" }), stripeWebhook);
 
 app.use(express.json());
-
-// Middleware to remove Permissions-Policy header from response
-app.use((req, res, next) => {
-  // Create a reference to the original send function
-  const originalSend = res.send;
-  
-  // Override the send function
-  res.send = function(body) {
-    // Remove the headers right before sending the response
-    res.removeHeader('Permissions-Policy');
-    res.removeHeader('permissions-policy');
-    
-    // Call the original send function
-    return originalSend.call(this, body);
-  };
-  
-  next();
-});
 
 // Auth routes
 app.use("/api/auth", authRouter);

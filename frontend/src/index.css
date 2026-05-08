@@ -119,3 +119,23 @@
   -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
   mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
 }
+
+/* Dashboard Background Blobs */
+.bg-blob {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, var(--tw-gradient-from) 0%, transparent 70%);
+  filter: blur(100px);
+  z-index: -1;
+  opacity: 0.15;
+}
+
+/* Premium Card Shadows */
+.premium-shadow {
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.1);
+}
+
+.premium-shadow-hover:hover {
+  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.2);
+}

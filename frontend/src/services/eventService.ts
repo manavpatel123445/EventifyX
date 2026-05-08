@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import axios from "axios";
 import axiosInstance from "./axiosInstance";
 import type { ReactNode } from "react";
 
@@ -14,15 +13,15 @@ const eventAPI = axiosInstance;
 export const uploadImage = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("upload_preset", "eventifyx_preset");
-  formData.append("folder", "eventifyx/events");
 
   try {
-    const response = await axios.post(
-      `https://api.cloudinary.com/v1_1/dy7swor3r/image/upload`,
-      formData
-    );
-    return response.data.secure_url;
+    const response = await eventAPI.post("/uploads/image", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    // The backend returns { success: true, url: "..." } or similar
+    return response.data.url || response.data.data?.url || response.data.secure_url;
   } catch (error) {
     console.error("Image upload error:", error);
     throw new Error("Failed to upload image");

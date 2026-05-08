@@ -17,7 +17,27 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 // Initialize database and start server
 const startServer = async () => {
-  // Start listening immediately to satisfy Render's health checks and prevent 502s
+  // 🛡️ Validate critical environment variables
+  const requiredEnvVars = [
+    "JWT_SECRET",
+    "JWT_REFRESH_SECRET",
+    "MONGODB_URL",
+    "STRIPE_SECRET_KEY",
+    "CLOUDINARY_CLOUD_NAME",
+    "CLOUDINARY_API_KEY",
+    "CLOUDINARY_API_SECRET"
+  ];
+  
+  const missingEnvVars = requiredEnvVars.filter(key => !process.env[key]);
+  
+  if (missingEnvVars.length > 0) {
+    console.error("❌ CRITICAL ERROR: Missing required environment variables:");
+    missingEnvVars.forEach(key => console.error(`   - ${key}`));
+    console.error("The server will not start without these variables.");
+    process.exit(1);
+  }
+
+  // Start listening immediately
   const server = app.listen(PORT, () => {
     console.log(`🚀 EventifyX Backend Server running on port ${PORT}`);
     console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);

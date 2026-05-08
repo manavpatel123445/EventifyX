@@ -1,29 +1,48 @@
 import Category from "../models/Category.js";
+import Event from "../models/Event.js";
+import EventRequest from "../models/EventRequest.js";
 
 // ➕ Create Category
 export const createCategory = async (req, res) => {
   try {
     const { name, description } = req.body;
-    const categoryExists = await Category.findOne({ name });
-
-    if (categoryExists) {
-      return res.status(400).json({ message: "Category already exists" });
+    
+    const existingCategory = await Category.findOne({ 
+      name: new RegExp(name, 'i') 
+    });
+    
+    if (existingCategory) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category with this name already exists'
+      });
     }
-
-    const category = await Category.create({ name, description });
-    res.status(201).json({ message: "Category created", category });
+    
+    const category = new Category({ name, description });
+    await category.save();
+    
+    res.status(201).json({
+      success: true,
+      message: 'Category created successfully',
+      data: category
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 // 📖 Get All Categories
 export const getCategories = async (req, res) => {
   try {
-    const categories = await Category.find({ status: "active" });
-    res.json(categories);
+    const { status } = req.query;
+    const filter = {};
+    if (status) filter.status = status;
+    else if (req.user?.role !== 'admin') filter.status = "active";
+
+    const categories = await Category.find(filter).sort({ name: 1 });
+    res.json({ success: true, data: categories });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -33,33 +52,51 @@ export const updateCategory = async (req, res) => {
     const { id } = req.params;
     const { name, description, status } = req.body;
 
-    const category = await Category.findByIdAndUpdate(
-      id,
-      { name, description, status },
-      { new: true }
-    );
+    const category = await Category.findById(id);
+    if (!category) return res.status(404).json({ success: false, message: "Category not found" });
 
-    if (!category) return res.status(404).json({ message: "Category not found" });
+    if (name && name !== category.name) {
+      const existingCategory = await Category.findOne({ 
+        name: new RegExp(name, 'i'),
+        _id: { $ne: id }
+      });
+      if (existingCategory) {
+        return res.status(400).json({ success: false, message: 'Category with this name already exists' });
+      }
+      category.name = name;
+    }
+    
+    if (description !== undefined) category.description = description;
+    if (status !== undefined) category.status = status;
 
-    res.json({ message: "Category updated", category });
+    await category.save();
+    res.json({ success: true, message: "Category updated", data: category });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
-// Soft Delete Category
+
+// 🗑️ Delete Category (Checks for dependencies)
 export const deleteCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const category = await Category.findByIdAndUpdate(
-      id,
-      { status: "inactive" },
-      { new: true }
-    );
+    
+    // Check if category has events or requests
+    const eventCount = await Event.countDocuments({ category: id });
+    const requestCount = await EventRequest.countDocuments({ category: id });
+    
+    if (eventCount > 0 || requestCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot delete category. It has ${eventCount} events and ${requestCount} event requests.`
+      });
+    }
 
-    if (!category) return res.status(404).json({ message: "Category not found" });
+    const category = await Category.findByIdAndDelete(id);
+    if (!category) return res.status(404).json({ success: false, message: "Category not found" });
 
-    res.json({ message: "Category soft deleted", category });
+    res.json({ success: true, message: "Category deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };

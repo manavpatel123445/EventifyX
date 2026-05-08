@@ -160,11 +160,12 @@ export const getAllUsers = async (req, res) => {
     if (role && role !== 'all') filter.role = role;
     if (status && status !== 'all') filter.status = status;
     
-    // Search functionality
+    // Search functionality with regex escaping (prevents ReDoS)
     if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.$or = [
-        { name: new RegExp(search, 'i') },
-        { email: new RegExp(search, 'i') }
+        { name: new RegExp(escapedSearch, 'i') },
+        { email: new RegExp(escapedSearch, 'i') }
       ];
     }
 
@@ -292,6 +293,12 @@ export const updateUserRole = async (req, res) => {
     
     // If demoting from event_manager, clear managed events and timestamp
     if (oldRole === 'event_manager' && role === 'user') {
+      // Orphan managed events - remove the eventManager reference
+      await Event.updateMany(
+        { _id: { $in: user.managedEvents } },
+        { $unset: { eventManager: "" } }
+      );
+      
       user.managedEvents = [];
       user.becameManagerAt = undefined;
     }
@@ -356,7 +363,7 @@ export const deleteUser = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'User account has been deactivated',
+      message: 'User account has been deactivated and blocked from login',
       data: user
     });
 
@@ -415,145 +422,6 @@ export const getUserDetails = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch user details'
-    });
-  }
-};
-
-// 🏷️ Category Management
-export const getAllCategories = async (req, res) => {
-  try {
-    const categories = await Category.find().sort({ name: 1 });
-    
-    res.status(200).json({
-      success: true,
-      data: categories
-    });
-
-  } catch (error) {
-    console.error('Get categories error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch categories'
-    });
-  }
-};
-
-export const createCategory = async (req, res) => {
-  try {
-    const { name, description } = req.body;
-    
-    const existingCategory = await Category.findOne({ 
-      name: new RegExp(name, 'i') 
-    });
-    
-    if (existingCategory) {
-      return res.status(400).json({
-        success: false,
-        message: 'Category with this name already exists'
-      });
-    }
-    
-    const category = new Category({ name, description });
-    await category.save();
-    
-    res.status(201).json({
-      success: true,
-      message: 'Category created successfully',
-      data: category
-    });
-
-  } catch (error) {
-    console.error('Create category error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create category'
-    });
-  }
-};
-
-export const updateCategory = async (req, res) => {
-  try {
-    const { categoryId } = req.params;
-    const { name, description } = req.body;
-    
-    const category = await Category.findById(categoryId);
-    
-    if (!category) {
-      return res.status(404).json({
-        success: false,
-        message: 'Category not found'
-      });
-    }
-    
-    // Check if new name conflicts with existing category
-    if (name && name !== category.name) {
-      const existingCategory = await Category.findOne({ 
-        name: new RegExp(name, 'i'),
-        _id: { $ne: categoryId }
-      });
-      
-      if (existingCategory) {
-        return res.status(400).json({
-          success: false,
-          message: 'Category with this name already exists'
-        });
-      }
-    }
-    
-    if (name) category.name = name;
-    if (description) category.description = description;
-    
-    await category.save();
-    
-    res.status(200).json({
-      success: true,
-      message: 'Category updated successfully',
-      data: category
-    });
-
-  } catch (error) {
-    console.error('Update category error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update category'
-    });
-  }
-};
-
-export const deleteCategory = async (req, res) => {
-  try {
-    const { categoryId } = req.params;
-    
-    // Check if category has events
-    const eventCount = await Event.countDocuments({ category: categoryId });
-    const requestCount = await EventRequest.countDocuments({ category: categoryId });
-    
-    if (eventCount > 0 || requestCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Cannot delete category. It has ${eventCount} events and ${requestCount} event requests.`
-      });
-    }
-    
-    const category = await Category.findByIdAndDelete(categoryId);
-    
-    if (!category) {
-      return res.status(404).json({
-        success: false,
-        message: 'Category not found'
-      });
-    }
-    
-    res.status(200).json({
-      success: true,
-      message: 'Category deleted successfully'
-    });
-
-  } catch (error) {
-    console.error('Delete category error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete category'
     });
   }
 };

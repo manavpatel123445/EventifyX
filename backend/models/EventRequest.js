@@ -106,7 +106,7 @@ const eventRequestSchema = new mongoose.Schema(
       type: String,
       validate: {
         validator: function(v) {
-          return /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(v);
+          return /^https?:\/\/.+/.test(v);
         },
         message: "Please provide a valid image URL"
       }

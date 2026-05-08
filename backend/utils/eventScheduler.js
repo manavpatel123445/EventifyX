@@ -29,16 +29,16 @@ export const updateEventStatuses = async () => {
     // Update events to 'completed' if they have ended
     const eventsToMarkCompleted = await Event.find({
       status: { $in: ['upcoming', 'ongoing'] },
-      endDate: { $lt: now },
+      endDate: { $lte: now }, // Using $lte because endDate is midnight
       isDeleted: false
     });
     
     for (const event of eventsToMarkCompleted) {
-      // Check if current time is after end time for events ending today
       const eventEndDate = new Date(event.endDate);
       const isToday = eventEndDate.toDateString() === now.toDateString();
       
-      if (!isToday || currentTime >= event.endTime) {
+      // If end date was before today, or it's today and current time is past end time
+      if (!isToday || currentTime >= (event.endTime || "23:59")) {
         event.status = 'completed';
         await event.save();
         console.log(`Event "${event.title}" marked as completed`);

@@ -51,4 +51,9 @@ const paymentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Performance Indexes
+paymentSchema.index({ user: 1, createdAt: -1 });
+paymentSchema.index({ event: 1 });
+paymentSchema.index({ status: 1 });
+
 export default mongoose.model("Payment", paymentSchema);

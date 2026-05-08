@@ -59,6 +59,10 @@ router.put("/:eventId", protect, authorize("event_manager", "admin"), updateEven
 // PATCH /api/events/:eventId/cancel
 router.patch("/:eventId/cancel", protect, authorize("event_manager", "admin"), cancelEvent);
 
+// Request event cancellation (Frontend alias)
+// POST /api/events/:eventId/request-cancellation
+router.post("/:eventId/request-cancellation", protect, authorize("event_manager", "admin"), cancelEvent);
+
 // Get event statistics (only event manager of that event)
 // GET /api/events/:eventId/stats
 router.get("/:eventId/stats", protect, authorize("event_manager", "admin"), getEventStats);

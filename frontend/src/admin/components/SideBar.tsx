@@ -6,14 +6,15 @@ import {
   Users,
   LogOut,
   User,
-  ChevronRight,
   Shield,
   Moon,
   Sun,
   DollarSign,
+  Activity
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { useTheme } from "../../context/ThemeContext";
+import { motion } from "framer-motion";
 
 const SideBar: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
@@ -38,107 +39,118 @@ const SideBar: React.FC = () => {
       path: "/admin/payments", 
       icon: <DollarSign className="w-5 h-5" /> 
     },
-    
+    { 
+      name: "System Logs", 
+      path: "/admin/logs", 
+      icon: <Activity className="w-5 h-5" /> 
+    },
     { 
       name: "Profile", 
       path: "/admin/profile", 
       icon: <User className="w-5 h-5" /> 
     },
-   
   ];
 
   const handleLogout = () => {
-    // Clear authentication tokens
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     sessionStorage.removeItem('accessToken');
-    
-    // Show success message
     toast.success('Successfully logged out');
-    
-    // Redirect to login page
     window.location.href = '/login';
   };
 
   return (
-    <div className="flex flex-col h-screen sticky top-0 bg-gradient-to-b from-white to-gray-50 dark:from-[#1B1D2A] dark:to-[#16182A] w-64 border-r border-gray-200 dark:border-gray-700/50 shadow-sm">
+    <div className="flex flex-col h-screen sticky top-0 bg-white dark:bg-slate-900 w-72 border-r border-slate-200 dark:border-slate-800 transition-all duration-500 z-50">
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Logo */}
-        <div className="px-6 py-5 flex-shrink-0">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-red-500 dark:bg-red-600 rounded-md flex items-center justify-center">
-              <Shield className="w-5 h-5 text-white" />
+        <div className="px-8 py-8 flex-shrink-0">
+          <div className="flex items-center space-x-3 group cursor-pointer">
+            <div className="w-10 h-10 bg-gradient-to-tr from-purple-600 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30 group-hover:rotate-12 transition-transform duration-300">
+              <Shield className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-red-500 to-orange-500 dark:from-red-400 dark:to-orange-400 bg-clip-text text-transparent">
-              Admin Panel
+            <span className="text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
+              Nexus<span className="text-purple-600">.</span>
             </span>
           </div>
         </div>
 
-        {/* Scrollable Navigation */}
-        <div className="flex-1 overflow-y-auto">
-          <nav className="px-3 py-4 space-y-1">
-            <div className="px-3 mb-4">
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Main Menu
-              </p>
-            </div>
-            
+        {/* Navigation */}
+        <div className="flex-1 overflow-y-auto px-4 custom-scrollbar">
+          <div className="mb-4 px-4">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Management</p>
+          </div>
+          
+          <nav className="space-y-1.5">
             {menuItems.map((item) => (
               <NavLink
                 key={item.name}
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-lg mx-2 transition-all duration-200 ${
+                  `group flex items-center justify-between px-4 py-3.5 text-sm font-bold rounded-2xl transition-all duration-300 ${
                     isActive
-                      ? "bg-red-50 dark:bg-red-500/20 text-red-600 dark:text-red-400"
-                      : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white"
+                      ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl shadow-slate-900/10 dark:shadow-white/5"
+                      : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
                   }`
                 }
                 end
               >
-                <div className="flex items-center space-x-3">
-                  <span className="opacity-70 group-hover:opacity-100">
-                    {item.icon}
-                  </span>
-                  <span>{item.name}</span>
-                </div>
-                <ChevronRight className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-300" />
+                {({ isActive }) => (
+                  <>
+                    <div className="flex items-center space-x-4">
+                      <span className={`${isActive ? "text-white dark:text-slate-900" : "text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white"}`}>
+                        {item.icon}
+                      </span>
+                      <span className="tracking-tight">{item.name}</span>
+                    </div>
+                    {isActive && (
+                      <motion.div 
+                        layoutId="activeIndicator"
+                        className="w-1.5 h-1.5 rounded-full bg-purple-500" 
+                      />
+                    )}
+                  </>
+                )}
               </NavLink>
             ))}
           </nav>
         </div>
 
-        {/* Theme Toggle */}
-        <div className="px-4 py-2 flex-shrink-0">
+        {/* Footer Area */}
+        <div className="p-6 mt-auto space-y-4">
           <button
             onClick={toggleTheme}
-            className="flex items-center justify-center w-full py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition"
-            aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+            className="flex items-center justify-center w-full py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700/50"
           >
-            {theme === "light" ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            {theme === "light" ? (
+              <div className="flex items-center gap-3 font-bold text-xs">
+                <Moon className="w-4 h-4" /> Dark Mode
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 font-bold text-xs">
+                <Sun className="w-4 h-4" /> Light Mode
+              </div>
+            )}
           </button>
-        </div>
 
-        {/* Sticky Profile Section */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700/50 bg-white dark:bg-[#212530] flex-shrink-0">
-          <div className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                <User className="w-4 h-4 text-gray-500 dark:text-gray-300" />
+          <div className="p-4 rounded-3xl bg-slate-900 dark:bg-slate-800 border border-white/5 shadow-2xl shadow-black/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-slate-700 to-slate-800 flex items-center justify-center border border-white/10">
+                  <User className="w-5 h-5 text-slate-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-black text-white">Administrator</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Root Access</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">Admin</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">View Profile</p>
-              </div>
+              <button 
+                onClick={handleLogout}
+                className="p-2 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-500 transition-all group"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4 group-hover:scale-110" />
+              </button>
             </div>
-            <button 
-              onClick={handleLogout}
-              className="p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
-              title="Logout"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
           </div>
         </div>
       </div>

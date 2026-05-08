@@ -1,24 +1,34 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit from "express-rate-limit";
 
-// Rate limit configuration
-const getRateLimitConfig = (windowMs = 15 * 60 * 1000, max = 100) => {
-  return rateLimit({
-    windowMs, // 15 minutes by default
-    max,      // limit each IP to 100 requests per windowMs by default
-    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false,  // Disable the `X-RateLimit-*` headers
-    message: {
-      success: false,
-      error: 'Too many requests, please try again later.',
-      code: 'RATE_LIMIT_EXCEEDED'
-    }
-  });
-};
+export const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many requests from this IP, please try again after 15 minutes",
+  },
+});
 
-// Different rate limits for different types of routes
-export const authLimiter = getRateLimitConfig(15 * 60 * 1000, 20); // 5 requests per 15 minutes for auth
-export const apiLimiter = getRateLimitConfig(15 * 60 * 1000, 100); // 100 requests per 15 minutes for API
-export const publicLimiter = getRateLimitConfig(60 * 60 * 1000, 1000); // 1000 requests per hour for public routes
-export const strictLimiter = getRateLimitConfig(60 * 60 * 1000, 10); // 10 requests per hour for sensitive operations
+export const authLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // Limit each IP to 10 login/register attempts per hour
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many authentication attempts, please try again after an hour",
+  },
+});
 
-export default getRateLimitConfig;
+export const paymentLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20, // Limit checkout session creation
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many checkout attempts, please try again later",
+  },
+});

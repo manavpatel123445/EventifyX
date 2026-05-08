@@ -2,7 +2,13 @@
   "name": "eventifyx-backend",
   "version": "1.0.0",
   "description": "EventifyX Backend API Server",
-  "keywords": ["nodejs", "express", "mongodb", "api", "events"],
+  "keywords": [
+    "nodejs",
+    "express",
+    "mongodb",
+    "api",
+    "events"
+  ],
   "license": "ISC",
   "author": "",
   "type": "module",
@@ -15,7 +21,7 @@
     "start": "node utils/server.js",
     "dev": "nodemon utils/server.js",
     "build": "echo \"✅ Build completed successfully - EventifyX backend ready for deployment\" && npm install",
-    "test": "echo \"No tests configured\" && exit 0",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --detectOpenHandles",
     "lint": "echo \"No linting configured\" && exit 0",
     "validate-env": "node scripts/validate-env.js",
     "preflight-check": "node scripts/preflight-check.js",
@@ -29,14 +35,19 @@
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.17.2",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
     "node-cron": "^3.0.3",
-    "nodemon": "^3.1.10",
     "qrcode": "^1.5.4",
     "rate-limit-redis": "^4.2.2",
     "stripe": "^18.5.0"
+  },
+  "devDependencies": {
+    "jest": "^30.4.1",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.2.2"
   }
 }

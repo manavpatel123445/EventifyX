@@ -238,4 +238,8 @@ eventSchema.virtual('duration').get(function() {
 eventSchema.set('toJSON', { virtuals: true });
 eventSchema.set('toObject', { virtuals: true });
 
+// 🔍 Index for search
+eventSchema.index({ title: "text", description: "text", tags: "text" });
+
+// Export model
 export default mongoose.model("Event", eventSchema);

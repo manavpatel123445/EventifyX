@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 
 
@@ -8,18 +9,18 @@ import bcrypt from "bcryptjs";
 const generateAccessToken = (user) => {
 	return jwt.sign(
 		{ id: user._id, role: user.role },
-		process.env.ACCESS_TOKEN_SECRET,
-		{ expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "1d" }
+		process.env.JWT_SECRET,
+		{ expiresIn: process.env.JWT_EXPIRY || "1d" }
 	);
 };
 
 const generateRefreshToken = (user) => {
-	const secret = process.env.REFRESH_TOKEN_SECRET;
-	if (!secret) throw new Error("REFRESH_TOKEN_SECRET must be set");
+	const secret = process.env.JWT_REFRESH_SECRET;
+	if (!secret) throw new Error("JWT_REFRESH_SECRET must be set");
 	return jwt.sign(
 		{ id: user._id, role: user.role },
 		secret,
-		{ expiresIn: process.env.REFRESH_TOKEN_EXPIRY || "10d" }
+		{ expiresIn: process.env.JWT_REFRESH_EXPIRY || "10d" }
 	);
 };
 
@@ -106,7 +107,7 @@ export const refresh = async (req, res) => {
     const { refreshToken } = req.body;
     if (!refreshToken) return res.status(400).json({ success: false, message: "Refresh token required" });
 
-    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, decoded) => {
+    jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, async (err, decoded) => {
       if (err) return res.status(401).json({ success: false, message: "Invalid refresh token" });
 
       const user = await User.findById(decoded.id);
@@ -138,15 +139,13 @@ export const getMe = async (req, res) => {
 	}
 };
 
-// @route   POST /api/auth/create-admin
-// @desc    Create admin user (TEMPORARY - REMOVE IN PRODUCTION)
-// @access  Public (should be protected in production)
+// ⚠️ DEPRECATED: Use the standalone script 'npm run create-admin' instead for better security
 export const createAdmin = async (req, res) => {
 	try {
 		const { name, email, password, adminSecret } = req.body;
 		
-		// Simple secret check (replace with proper authentication)
-		if (adminSecret !== process.env.ADMIN_SECRET || !process.env.ADMIN_SECRET) {
+		// 🛡️ Enhanced security check
+		if (!process.env.ADMIN_SECRET || adminSecret !== process.env.ADMIN_SECRET) {
 			return res.status(403).json({ 
 				success: false, 
 				message: "Invalid admin secret" 
@@ -160,13 +159,8 @@ export const createAdmin = async (req, res) => {
 			});
 		}
 		
-		// Check if admin already exists
-		const existingAdmin = await User.findOne({ 
-			$or: [
-				{ email },
-				{ role: 'admin' }
-			]
-		});
+		// Check if user already exists with this email
+		const existingAdmin = await User.findOne({ email });
 		
 		if (existingAdmin) {
 			return res.status(400).json({ 
@@ -237,13 +231,10 @@ export const forgotPassword = async (req, res) => {
 		
 		await user.save({ validateBeforeSave: false });
 		
-		// For development purposes, we'll return the reset token in response
 		// In production, you would send this via email
 		res.json({
 			success: true,
-			message: "Password reset link sent to email",
-			// TODO: Remove this in production - only for development
-			resetToken: resetToken
+			message: "Password reset link sent to email"
 		});
 		
 	} catch (error) {
@@ -274,18 +265,16 @@ export const resetPassword = async (req, res) => {
 			});
 		}
 		
-		// Find all users and check which one has the matching reset token
-		const users = await User.find({
+		// Hash token to compare with database
+		const hashedToken = crypto
+			.createHash("sha256")
+			.update(resettoken)
+			.digest("hex");
+		
+		const user = await User.findOne({
+			resetPasswordToken: hashedToken,
 			resetPasswordExpire: { $gt: Date.now() }
 		});
-		
-		let user = null;
-		for (let u of users) {
-			if (u.resetPasswordToken && bcrypt.compareSync(resettoken, u.resetPasswordToken)) {
-				user = u;
-				break;
-			}
-		}
 		
 		if (!user) {
 			return res.status(400).json({ 

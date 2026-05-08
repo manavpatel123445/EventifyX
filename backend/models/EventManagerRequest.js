@@ -6,7 +6,6 @@ const eventManagerRequestSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true, // One request per user at a time
     },
     reason: {
       type: String,

@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 // Define schema
 const userSchema = new mongoose.Schema(
@@ -9,7 +10,6 @@ const userSchema = new mongoose.Schema(
       required: [true, "Name is required"],
       trim: true,
       minlength: [3, "Name must be at least 3 characters long"],
-      unique: true, 
     },
     email: {
       type: String,
@@ -85,15 +85,18 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 
 // 🔑 Generate password reset token
 userSchema.methods.getResetPasswordToken = function () {
-  // Generate random bytes
-  const resetToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  
+  // Generate token
+  const resetToken = crypto.randomBytes(20).toString("hex");
+
   // Hash token and set to resetPasswordToken field
-  this.resetPasswordToken = bcrypt.hashSync(resetToken, 10);
-  
+  this.resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
   // Set expire (10 minutes)
   this.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
-  
+
   return resetToken;
 };
 

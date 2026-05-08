@@ -140,7 +140,7 @@ export const approveEventRequest = async (req, res) => {
     }
 
     // Calculate total capacity from ticket pricing if venue capacity is missing
-    const venue = { ...eventRequest.venue };
+    const venue = eventRequest.venue.toObject();
     if (!venue.capacity || venue.capacity <= 0) {
       venue.capacity = eventRequest.ticketPricing.reduce((sum, ticket) => sum + (ticket.quantity || 0), 0) || 1;
     }
@@ -374,13 +374,9 @@ export const getAllEvents = async (req, res) => {
       filter.startDate = { $gte: searchDate, $lt: nextDay };
     }
     
-    // Search functionality
+    // 🔎 Search Functionality (Optimized with Text Index)
     if (search) {
-      filter.$or = [
-        { title: new RegExp(search, "i") },
-        { description: new RegExp(search, "i") },
-        { tags: { $in: [new RegExp(search, "i")] } }
-      ];
+      filter.$text = { $search: search };
     }
 
     // Sorting - use valid field names

@@ -182,177 +182,138 @@ export const stripeWebhook = async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
+  if (event.type !== "checkout.session.completed") {
+    return res.json({ received: true });
+  }
+
+  const session = event.data.object;
+  const dbSession = await mongoose.startSession();
+  dbSession.startTransaction();
+
   try {
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object;
-      console.log("🎉 Webhook received checkout.session.completed for session:", session.id);
+    console.log("🎉 Webhook received checkout.session.completed for session:", session.id);
 
-      // Mark payment succeeded and create tickets
-      const payment = await Payment.findOne({ stripeSessionId: session.id });
-      if (payment) {
-        console.log("Found payment:", payment._id, "status:", payment.status);
-        if (payment.status === "reserved" || payment.status === "pending") {
-          console.log("Processing payment for tickets...");
-          payment.status = "succeeded";
-          payment.stripePaymentIntentId = session.payment_intent;
-          payment.completedAt = new Date();
+    // Mark payment succeeded and create tickets
+    const payment = await Payment.findOne({ stripeSessionId: session.id }).session(dbSession);
+    if (!payment) {
+      console.log("⚠️ Payment not found for session:", session.id);
+      await dbSession.abortTransaction();
+      return res.status(404).send("Payment not found");
+    }
 
-          // Update event inventory (permanently remove sold tickets)
-          const event = await Event.findById(payment.event);
-          const reservedTickets = payment.metadata?.reservedTickets || [];
-          const selectedDateISO = payment.metadata?.selectedDate || null;
-          const updatedTypes = new Set();
+    if (payment.status !== "reserved" && payment.status !== "pending") {
+      console.log("⚠️ Payment not in processable state:", payment.status);
+      await dbSession.abortTransaction();
+      return res.json({ received: true });
+    }
 
-          for (const reservedTicket of reservedTickets) {
-            const ticketType = reservedTicket.type || "regular";
-            const qty = Number(reservedTicket.quantity) || 1;
-            const price = Number(reservedTicket.price) || 0;
+    console.log("Processing payment for tickets...");
+    payment.status = "succeeded";
+    payment.stripePaymentIntentId = session.payment_intent;
+    payment.completedAt = new Date();
 
-            let updated = false;
-            if (
-              selectedDateISO &&
-              Array.isArray(event.eventDates) &&
-              event.eventDates.length > 0
-            ) {
-              const selectedDate = new Date(selectedDateISO);
-              const targetED = event.eventDates.find(
-                (ed) => new Date(ed.date).toDateString() === selectedDate.toDateString()
-              );
-              if (
-                targetED &&
-                Array.isArray(targetED.ticketAvailability) &&
-                targetED.ticketAvailability.length > 0
-              ) {
-                const datePricing = targetED.ticketAvailability.find(
-                  (t) => (t.type || "").toLowerCase() === ticketType
-                );
-                if (datePricing) {
-                  datePricing.sold = (datePricing.sold || 0) + qty;
-                  updated = true;
-                  console.log(
-                    `🎫 Sold ${qty} ${ticketType} tickets for date ${selectedDate.toDateString()}`
-                  );
-                }
-              }
-            }
+    // Fetch receipts in background if possible, or just use Stripe session data
+    try {
+      const pi = await stripe.paymentIntents.retrieve(session.payment_intent, {
+        expand: ["charges"],
+      });
+      payment.receiptUrl = pi?.charges?.data?.[0]?.receipt_url || payment.receiptUrl;
+    } catch (piErr) {
+      console.warn("Could not retrieve PaymentIntent charges:", piErr.message);
+    }
 
-            if (!updated) {
-              const ticketPricing = Array.isArray(event.ticketPricing)
-                ? event.ticketPricing.find(
-                    (t) => (t.type || "").toLowerCase() === ticketType
-                  )
-                : null;
-              if (ticketPricing) {
-                ticketPricing.sold = (ticketPricing.sold || 0) + qty;
-                console.log(`🎫 Sold ${qty} ${ticketType} tickets (global inventory)`);
-              }
-            }
+    // Update event inventory
+    const eventDoc = await Event.findById(payment.event).session(dbSession);
+    const reservedTickets = payment.metadata?.reservedTickets || [];
+    const selectedDateISO = payment.metadata?.selectedDate || null;
 
-            if (updated) {
-              updatedTypes.add((ticketType || "regular").toLowerCase());
-            }
+    for (const reservedTicket of reservedTickets) {
+      const ticketType = reservedTicket.type || "regular";
+      const qty = Number(reservedTicket.quantity) || 1;
+      const price = Number(reservedTicket.price) || 0;
 
-            event.totalBookings = (event.totalBookings || 0) + qty;
-            event.totalRevenue =
-              (event.totalRevenue || 0) + price * qty;
-            console.log(
-              `💰 Updated event ${event._id}: bookings +${qty}, revenue +₹${price * qty}`
-            );
-          }
-
-          try {
-            await event.save();
-            console.log(
-              `📦 Event ${event._id} inventory updated after successful payment`
-            );
-          } catch (saveErr) {
-            console.error(`❌ Failed to save event ${event._id}:`, saveErr);
-          }
-
-          const createdTickets = [];
-          try {
-            const pi = await stripe.paymentIntents.retrieve(session.payment_intent, {
-              expand: ["charges"],
-            });
-            payment.receiptUrl =
-              pi?.charges?.data?.[0]?.receipt_url || payment.receiptUrl;
-          } catch (piErr) {
-            console.warn(
-              "Could not retrieve PaymentIntent charges:",
-              piErr?.message || piErr
-            );
-          }
-
-          const ticketsMeta = JSON.parse(session.metadata?.tickets || "[]");
-          for (const t of ticketsMeta) {
-            for (let i = 0; i < (Number(t.quantity) || 1); i++) {
-              const ticketId = `${payment._id}_${t.type || "regular"}_${i + 1}`;
-              const qrData = {
-                ticketId,
-                eventId: payment.event.toString(),
-                userId: payment.user?.toString(),
-                type: t.type || "regular",
-                price: Number(t.price) || 0,
-                timestamp: new Date().toISOString(),
-              };
-
-              const qrCodeDataURL = await QRCode.toDataURL(JSON.stringify(qrData), {
-                width: 200,
-                margin: 2,
-                color: {
-                  dark: "#000000",
-                  light: "#FFFFFF",
-                },
-              });
-
-              const ticketData = {
-                user: payment.user,
-                event: payment.event,
-                payment: payment._id,
-                type: (t.type || "regular").toLowerCase(),
-                price: Number(t.price) || 0,
-                status: "active",
-                qrCode: qrCodeDataURL,
-                seatNumber: `${(t.type || "regular").toLowerCase()}-${i + 1}`,
-                metadata: {
-                  ticketId,
-                  qrData,
-                  eventId: payment.event.toString(),
-                  userId: payment.user?.toString(),
-                  paymentId: payment._id.toString(),
-                  purchaseDate: new Date().toISOString(),
-                },
-              };
-
-              const selectedDateISO2 = payment.metadata?.selectedDate || null;
-              if (selectedDateISO2) {
-                ticketData.eventDate = new Date(selectedDateISO2);
-              }
-
-              const ticketDoc = await Ticket.create(ticketData);
-              createdTickets.push(ticketDoc._id);
-            }
-          }
-
-          payment.tickets = createdTickets;
-          payment.updatedAt = new Date();
-          await payment.save();
-          await payment.populate("tickets");
-          console.log(
-            "✅ Webhook processing completed successfully for payment:",
-            payment._id
+      let updated = false;
+      if (selectedDateISO && Array.isArray(eventDoc.eventDates) && eventDoc.eventDates.length > 0) {
+        const selectedDate = new Date(selectedDateISO);
+        const targetED = eventDoc.eventDates.find(
+          (ed) => new Date(ed.date).toDateString() === selectedDate.toDateString()
+        );
+        if (targetED && Array.isArray(targetED.ticketAvailability) && targetED.ticketAvailability.length > 0) {
+          const datePricing = targetED.ticketAvailability.find(
+            (t) => (t.type || "").toLowerCase() === ticketType
           );
-        } else {
-          console.log("⚠️ Payment not in processable state:", payment?.status);
+          if (datePricing) {
+            datePricing.sold = (datePricing.sold || 0) + qty;
+            updated = true;
+          }
         }
-      } else {
-        console.log("⚠️ Payment not found for session:", session.id);
+      }
+
+      if (!updated) {
+        const ticketPricing = Array.isArray(eventDoc.ticketPricing)
+          ? eventDoc.ticketPricing.find((t) => (t.type || "").toLowerCase() === ticketType)
+          : null;
+        if (ticketPricing) {
+          ticketPricing.sold = (ticketPricing.sold || 0) + qty;
+        }
+      }
+
+      eventDoc.totalBookings = (eventDoc.totalBookings || 0) + qty;
+      eventDoc.totalRevenue = (eventDoc.totalRevenue || 0) + price * qty;
+    }
+
+    await eventDoc.save({ session: dbSession });
+
+    const createdTicketIds = [];
+    const ticketsMeta = JSON.parse(session.metadata?.tickets || "[]");
+    
+    for (const t of ticketsMeta) {
+      for (let i = 0; i < (Number(t.quantity) || 1); i++) {
+        const ticketId = `${payment._id}_${t.type || "regular"}_${i + 1}`;
+        const qrData = {
+          ticketId,
+          eventId: payment.event.toString(),
+          userId: payment.user?.toString(),
+          type: t.type || "regular",
+          price: Number(t.price) || 0,
+          timestamp: new Date().toISOString(),
+        };
+
+        const qrCodeDataURL = await QRCode.toDataURL(JSON.stringify(qrData), {
+          width: 200,
+          margin: 2,
+          color: { dark: "#000000", light: "#FFFFFF" },
+        });
+
+        const ticketDoc = await Ticket.create([{
+          user: payment.user,
+          event: payment.event,
+          payment: payment._id,
+          type: (t.type || "regular").toLowerCase(),
+          price: Number(t.price) || 0,
+          status: "active",
+          qrCode: qrCodeDataURL,
+          seatNumber: `${(t.type || "regular").toLowerCase()}-${i + 1}`,
+          metadata: { ticketId, qrData, purchaseDate: new Date().toISOString() },
+          eventDate: payment.metadata?.selectedDate ? new Date(payment.metadata.selectedDate) : undefined,
+        }], { session: dbSession });
+        
+        createdTicketIds.push(ticketDoc[0]._id);
       }
     }
+
+    payment.tickets = createdTicketIds;
+    await payment.save({ session: dbSession });
+
+    await dbSession.commitTransaction();
+    console.log("✅ Webhook transaction committed for payment:", payment._id);
     res.json({ received: true });
   } catch (err) {
-    console.error("Webhook handling error:", err);
+    await dbSession.abortTransaction();
+    console.error("❌ Webhook transaction aborted:", err);
     res.status(500).send("Webhook handler failed");
+  } finally {
+    dbSession.endSession();
   }
 };
 
@@ -550,7 +511,7 @@ export const getTicketsBySession = async (req, res) => {
   }
 };
 
-// Admin/Manager: Get payment logs with real Stripe data
+// Admin/Manager: Get payment logs (Optimized: uses database data only)
 export const getPaymentLogs = async (req, res, next) => {
   try {
     const {
@@ -564,162 +525,81 @@ export const getPaymentLogs = async (req, res, next) => {
       status,
       sortBy = "createdAt",
       sortOrder = "desc",
-      managerOnly,
     } = req.query;
-
-    console.log("Search parameters received:", {
-      page,
-      limit,
-      eventId,
-      userId,
-      transactionId,
-      userName,
-      eventName,
-      status,
-      sortBy,
-      sortOrder,
-      managerOnly,
-    });
 
     const filters = {};
     if (eventId) filters.event = eventId;
     if (userId) filters.user = userId;
-    if (transactionId) filters.transactionId = transactionId;
     if (status) filters.status = status;
-
-    if (managerOnly === "true" && req.user?.role === "event_manager") {
-      console.log(
-        "Manager accessing payment logs - showing all payments for manager view"
-      );
+    if (transactionId) {
+      filters.$or = [
+        { stripePaymentIntentId: new RegExp(transactionId, "i") },
+        { stripeSessionId: new RegExp(transactionId, "i") },
+      ];
     }
 
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.max(
-      1,
-      Math.min(100, parseInt(limit, 10) || 10)
-    );
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
     const skip = (pageNum - 1) * limitNum;
 
-    let query = Payment.find(filters);
-    let totalItemsQuery = Payment.find(filters).select("_id");
+    // Search by User Name or Event Name using aggregation for efficiency
+    let matchStage = { ...filters };
+    
+    const pipeline = [
+      { $match: matchStage },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      { $unwind: { path: "$userDetails", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "events",
+          localField: "event",
+          foreignField: "_id",
+          as: "eventDetails",
+        },
+      },
+      { $unwind: { path: "$eventDetails", preserveNullAndEmptyArrays: true } },
+    ];
 
-    if (userName || eventName) {
-      const searchConditions = [];
-
-      if (userName) {
-        const userSearchQuery = await Payment.find(filters)
-          .populate("user", "name")
-          .then((payments) =>
-            payments.filter(
-              (p) =>
-                p.user?.name &&
-                p.user.name.toLowerCase().includes(userName.toLowerCase())
-            )
-          );
-        if (userSearchQuery.length > 0) {
-          searchConditions.push({ _id: { $in: userSearchQuery.map((p) => p._id) } });
-        }
-      }
-
-      if (eventName) {
-        const eventSearchQuery = await Payment.find(filters)
-          .populate("event", "title")
-          .then((payments) =>
-            payments.filter(
-              (p) =>
-                p.event?.title &&
-                p.event.title.toLowerCase().includes(eventName.toLowerCase())
-            )
-          );
-        if (eventSearchQuery.length > 0) {
-          searchConditions.push({ _id: { $in: eventSearchQuery.map((p) => p._id) } });
-        }
-      }
-
-      if (searchConditions.length > 0) {
-        query = query.find({ $or: searchConditions });
-        totalItemsQuery = totalItemsQuery.find({ $or: searchConditions });
-      }
+    if (userName) {
+      const escapedUserName = userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      pipeline.push({
+        $match: { "userDetails.name": new RegExp(escapedUserName, "i") },
+      });
     }
 
-    const totalItems = await totalItemsQuery.countDocuments();
-    const totalPages = Math.max(1, Math.ceil(totalItems / limitNum));
-
-    const payments = await query
-      .sort({ [sortBy]: sortOrder === "asc" ? 1 : -1 })
-      .skip(skip)
-      .limit(limitNum)
-      .populate("user", "name email")
-      .populate("event", "title")
-      .lean();
-
-    console.log("Found payments:", payments.length);
-    console.log(
-      "Sample transaction IDs:",
-      payments.slice(0, 3).map((p) => p.transactionId)
-    );
-    console.log("Search filters applied:", filters);
-
-    if (transactionId) {
-      console.log("Searching for transactionId:", transactionId);
-      const matchingPayments = payments.filter(
-        (p) =>
-          p.transactionId &&
-          p.transactionId.toLowerCase().includes(transactionId.toLowerCase())
-      );
-      console.log("Matching payments found:", matchingPayments.length);
+    if (eventName) {
+      const escapedEventName = eventName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      pipeline.push({
+        $match: { "eventDetails.title": new RegExp(escapedEventName, "i") },
+      });
     }
 
-    const enrichedPayments = await Promise.all(
-      payments.map(async (payment) => {
-        try {
-          if (payment.stripeSessionId) {
-            const session = await stripe.checkout.sessions.retrieve(
-              payment.stripeSessionId
-            );
+    const totalPipeline = [...pipeline, { $count: "total" }];
+    const totalResult = await Payment.aggregate(totalPipeline);
+    const totalItems = totalResult[0]?.total || 0;
 
-            payment.transactionId = session.payment_intent || payment.stripeSessionId;
-            payment.status = session.payment_status || payment.status;
-            payment.amount = (session.amount_total || 0) / 100;
-            payment.currency = session.currency || payment.currency;
+    pipeline.push({ $sort: { [sortBy]: sortOrder === "asc" ? 1 : -1 } });
+    pipeline.push({ $skip: skip });
+    pipeline.push({ $limit: limitNum });
 
-            if (session.payment_intent && session.payment_status === "paid") {
-              try {
-                const paymentIntent = await stripe.paymentIntents.retrieve(
-                  session.payment_intent
-                );
-                payment.transactionId = paymentIntent.id;
-                payment.status = paymentIntent.status;
-
-                if (paymentIntent.charges && paymentIntent.charges.data.length > 0) {
-                  payment.receiptUrl =
-                    paymentIntent.charges.data[0].receipt_url;
-                }
-              } catch (piError) {
-                console.warn(
-                  "Could not fetch payment intent details:",
-                  piError?.message || piError
-                );
-              }
-            }
-          }
-
-          return payment;
-        } catch (stripeError) {
-          console.warn(
-            "Could not fetch Stripe data for payment:",
-            payment._id,
-            stripeError?.message || stripeError
-          );
-          return payment;
-        }
-      })
-    );
+    const payments = await Payment.aggregate(pipeline);
 
     res.json({
-      data: enrichedPayments,
+      data: payments.map(p => ({
+        ...p,
+        user: p.userDetails ? { _id: p.userDetails._id, name: p.userDetails.name, email: p.userDetails.email } : null,
+        event: p.eventDetails ? { _id: p.eventDetails._id, title: p.eventDetails.title } : null,
+        transactionId: p.stripePaymentIntentId || p.stripeSessionId
+      })),
       pagination: {
-        totalPages,
+        totalPages: Math.ceil(totalItems / limitNum),
         currentPage: pageNum,
         totalItems,
         pageSize: limitNum,

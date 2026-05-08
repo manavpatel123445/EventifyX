@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Provider } from 'react-redux';
@@ -38,13 +38,16 @@ const ManagerDashbord = lazy(() => import('./EventManager/Page/ManagerDashbord')
 const ManagerProfile = lazy(() => import('./EventManager/Page/ManagerProfile'));
 const EventList = lazy(() => import('./EventManager/Page/ManagerEventList'));
 const ManagerPaymentLogsPage = lazy(() => import('./manager/Pages/PaymentLogsPage'));
-const SaleRevanue = lazy(() => import('./EventManager/Page/SaleRevanue'));
+const SaleRevenue = lazy(() => import('./EventManager/Page/SaleRevenue'));
 
 // Demo components
 const EventViewDemo = lazy(() => import('./components/EventViewDemo'));
 
 // Helper components
 const RoleProtectedRoute = lazy(() => import('./components/RoleProtectedRoute'));
+
+import ScrollToTop from './components/ScrollToTop';
+import AnimatedRoutes from './components/AnimatedRoutes';
 
 // Premium Page Loader
 const PageLoader = () => (
@@ -78,8 +81,9 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <Router>
+            <ScrollToTop />
             <Suspense fallback={<PageLoader />}>
-              <Routes>
+              <AnimatedRoutes>
                 <Route path="/" element={<Home />} />
                 <Route path="/events" element={<EventPage />} />
                 <Route path="/events/:id" element={<Eventdetail />} />
@@ -161,7 +165,7 @@ function App() {
                 } />
                 <Route path="/manager/sale-revenue" element={
                   <RoleProtectedRoute allowedRoles={['event_manager']}>
-                    <SaleRevanue/>
+                    <SaleRevenue/>
                   </RoleProtectedRoute>
                 } />
                 <Route path="/manager/payments" element={
@@ -177,7 +181,7 @@ function App() {
                 } />
 
                 <Route path="*" element={<PageNotFound />} />
-              </Routes>
+              </AnimatedRoutes>
             </Suspense>
           </Router>
           

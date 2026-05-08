@@ -25,13 +25,8 @@ const createAdmin = async () => {
       status: 'active'
     };
 
-    // Check if admin already exists
-    const existingAdmin = await User.findOne({ 
-      $or: [
-        { email: adminData.email },
-        { role: 'admin' }
-      ]
-    });
+    // Check if user already exists
+    const existingAdmin = await User.findOne({ email: adminData.email });
 
     if (existingAdmin) {
       console.log('Admin user already exists:', existingAdmin.email);

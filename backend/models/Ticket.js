@@ -20,7 +20,7 @@ const ticketSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: ["regular", "vip", "premium"],
+      enum: ["early_bird", "regular", "vip", "premium"],
     },
     price: {
       type: Number,
@@ -44,5 +44,11 @@ const ticketSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Performance Indexes
+ticketSchema.index({ user: 1 });
+ticketSchema.index({ event: 1 });
+ticketSchema.index({ payment: 1 });
+ticketSchema.index({ status: 1 });
 
 export default mongoose.model("Ticket", ticketSchema);

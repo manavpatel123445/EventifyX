@@ -32,11 +32,13 @@ function unwrapEventResponse(payload: unknown): Event {
 }
 
 function unwrapEventsResponse(payload: unknown): Event[] {
-  // Supports API shapes like: { success: true, data: Event[] } or direct Event[].
+  // Supports shapes: { success: true, data: Event[] }, { success: true, data: { events: Event[] } }, or direct Event[]
   if (payload && typeof payload === "object" && "data" in payload) {
-    return (payload as { data: Event[] }).data;
+    const data = (payload as { data: any }).data;
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === "object" && Array.isArray(data.events)) return data.events;
   }
-  return payload as Event[];
+  return Array.isArray(payload) ? payload : [];
 }
 
 export const fetchEventById = createAsyncThunk<Event, string>(

@@ -8,17 +8,18 @@ import {
   cleanupExpiredReservations,
 } from "../controllers/paymentController.js";
 import { optionalAuth, protect, authorize } from "../middlewares/authMiddleware.js";
+import { paymentLimiter } from "../middlewares/rateLimiter.js";
 
 const router = express.Router();
 
 // Create Stripe Checkout Session
-router.post("/create-checkout-session", optionalAuth, createCheckoutSession);
+router.post("/create-checkout-session", optionalAuth, paymentLimiter, createCheckoutSession);
 
 // Get user's tickets (requires authentication)
 router.get("/tickets", protect, getUserTickets);
 
 // Get tickets by payment ID (for success page)
-router.get("/tickets/payment/:paymentId", getTicketsByPayment);
+router.get("/tickets/payment/:paymentId", protect, getTicketsByPayment);
 
 // Get tickets by session ID (for success page)
 router.get("/tickets/session/:sessionId", optionalAuth, getTicketsBySession);

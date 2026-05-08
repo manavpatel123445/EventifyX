@@ -1,9 +1,17 @@
 import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, Ticket, TrendingUp, ChevronLeft, ChevronRight, IndianRupee } from "lucide-react";
+import { 
+  Calendar, 
+  Ticket, 
+  TrendingUp, 
+  ChevronLeft, 
+  ChevronRight, 
+  IndianRupee,
+  LayoutDashboard,
+  ArrowUpRight,
+  Plus
+} from "lucide-react";
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -11,10 +19,35 @@ import {
   BarChart,
   Bar,
   ResponsiveContainer,
+  AreaChart,
+  Area
 } from "recharts";
+import { motion, type Variants } from "framer-motion";
 import ManagerSideBar from "../components/ManagerSidebar";
 import { getMyManagedEvents, type Event } from "../../services/eventService";
 import { capitalizeFirstLetter } from "../../utils/roles";
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants: Variants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: "spring",
+      stiffness: 100
+    } as any
+  }
+};
 
 const ManagerDashboard: React.FC = () => {
   const [page, setPage] = useState(1);
@@ -24,7 +57,7 @@ const ManagerDashboard: React.FC = () => {
     queryKey: ["manager-managed-events", { page, limit }],
     queryFn: async () => {
       const res = await getMyManagedEvents({ limit, page });
-      const payload = res?.data ?? res; // support either axios {data} or raw
+      const payload = res?.data ?? res;
       return {
         events: Array.isArray(payload?.events) ? payload.events : Array.isArray(payload) ? payload : [],
         stats: payload?.stats ?? null,
@@ -54,262 +87,247 @@ const ManagerDashboard: React.FC = () => {
     let upcoming = 0;
 
     events.forEach((ev) => {
-      if (typeof ev.totalBookings === "number") {
-        sold += ev.totalBookings;
-      } else if (Array.isArray(ev.ticketPricing)) {
-        sold += ev.ticketPricing.reduce((acc, t) => acc + (t.sold ?? 0), 0);
-      }
-
-      if (typeof ev.totalRevenue === "number") {
-        rev += ev.totalRevenue;
-      } else if (Array.isArray(ev.ticketPricing)) {
-        rev += ev.ticketPricing.reduce((acc, t) => acc + (t.price * (t.sold ?? 0)), 0);
-      }
-
+      if (typeof ev.totalBookings === "number") sold += ev.totalBookings;
+      if (typeof ev.totalRevenue === "number") rev += ev.totalRevenue;
       const start = new Date(ev.startDate);
-      if (start > now && ev.status !== "cancelled") {
-        upcoming += 1;
-      }
+      if (start > now && ev.status !== "cancelled") upcoming += 1;
     });
 
     return { totalEvents: total, ticketsSold: sold, revenue: rev, upcomingEvents: upcoming };
   }, [events, statsFromApi]);
 
-  // Basic charts built from events data
   const ticketsSoldData = useMemo(() => {
     const byMonth: Record<string, number> = {};
     events.forEach((ev) => {
       const d = new Date(ev.startDate);
       const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
-      const sold = typeof ev.totalBookings === "number"
-        ? ev.totalBookings
-        : ev.ticketPricing?.reduce((a, t) => a + (t.sold ?? 0), 0) ?? 0;
+      const sold = typeof ev.totalBookings === "number" ? ev.totalBookings : 0;
       byMonth[key] = (byMonth[key] ?? 0) + sold;
     });
-    const ordered = Object.entries(byMonth)
+    return Object.entries(byMonth)
       .sort(([a], [b]) => (a > b ? 1 : -1))
-      .map(([key, value]) => ({ week: key, tickets: value }));
-    return ordered.slice(-6);
+      .map(([key, value]) => ({ week: key, tickets: value }))
+      .slice(-6);
   }, [events]);
 
   const revenueBreakdownData = useMemo(() => {
-    return events.slice(0, 6).map((ev) => {
-      const rev = typeof ev.totalRevenue == "number"
-        ? ev.totalRevenue
-        : ev.ticketPricing?.reduce((a, t) => a + t.price * (t.sold ?? 0), 0) ?? 0;
-      return { event: ev.title, revenue: rev };
-    });
+    return events.slice(0, 6).map((ev) => ({
+      event: ev.title.substring(0, 10) + '...',
+      revenue: typeof ev.totalRevenue == "number" ? ev.totalRevenue : 0
+    }));
   }, [events]);
 
   return (
-    <div className="flex bg-gray-50 dark:bg-[#1B1D2A] min-h-screen">
-      {/* Sidebar */}
+    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500 relative overflow-hidden">
+      {/* Decorative Background Blobs */}
+      <div className="bg-blob from-red-500/10 top-[-100px] left-[-100px]" />
+      <div className="bg-blob from-orange-500/10 bottom-[-100px] right-[-100px]" />
+
       <ManagerSideBar />
 
-      {/* Main Dashboard */}
-      <div className="flex-1 p-8 space-y-8">
+      <main className="flex-1 p-8 space-y-8 overflow-x-auto relative z-10">
         {/* Header */}
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Manager Dashboard</h1>
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col md:flex-row md:items-center justify-between gap-4"
+        >
+          <div>
+            <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+              Manager <span className="bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">Hub</span>
+              <LayoutDashboard className="w-8 h-8 text-red-600" />
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">Event Orchestration & Analytics</p>
+          </div>
+          <button className="flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold shadow-lg shadow-red-600/20 transition-all hover:scale-105 active:scale-95">
+            <Plus className="w-5 h-5" />
+            <span>Create New Event</span>
+          </button>
+        </motion.div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        >
           {[
-            {
-              label: "Total Events",
-              value: isLoading ? "…" : totalEvents,
-              icon: <Calendar className="w-8 h-8 text-red-500 dark:text-red-400" />,
-            },
-            {
-              label: "Tickets Sold",
-              value: isLoading ? "…" : ticketsSold,
-              icon: <Ticket className="w-8 h-8 text-blue-500 dark:text-blue-400" />,
-            },
-            {
-              label: "Total Revenue",
-              value: isLoading ? "…" : `₹${revenue.toLocaleString()}`,
-              icon: <IndianRupee className="w-8 h-8 text-green-500 dark:text-green-400" />,
-            },
-            {
-              label: "Upcoming Events",
-              value: isLoading ? "…" : upcomingEvents,
-              icon: <TrendingUp className="w-8 h-8 text-purple-500 dark:text-purple-400" />,
-            },
-          ].map((item, i) => (
-            <div
+            { label: "Managed Events", value: totalEvents, icon: <Calendar />, color: "text-red-500", bg: "bg-red-500/10" },
+            { label: "Tickets Sold", value: ticketsSold, icon: <Ticket />, color: "text-blue-500", bg: "bg-blue-500/10" },
+            { label: "Total Revenue", value: `₹${revenue.toLocaleString()}`, icon: <IndianRupee />, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+            { label: "Upcoming", value: upcomingEvents, icon: <TrendingUp />, color: "text-purple-500", bg: "bg-purple-500/10" }
+          ].map((stat, i) => (
+            <motion.div 
               key={i}
-              className="bg-white dark:bg-[#212530] shadow-md rounded-2xl p-6 flex items-center space-x-4"
+              variants={itemVariants}
+              whileHover={{ y: -5 }}
+              className="glass dark:bg-slate-900/50 p-6 rounded-3xl premium-shadow premium-shadow-hover transition-all duration-300"
             >
-              {item.icon}
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">{item.label}</p>
-                <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
-                  {item.value}
-                </h3>
+              <div className="flex items-center gap-4">
+                <div className={`p-4 rounded-2xl ${stat.bg} ${stat.color} border border-white/20 dark:border-white/5`}>
+                  {React.cloneElement(stat.icon as React.ReactElement<any>, { className: "w-6 h-6" })}
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                  <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+                    {isLoading ? "..." : stat.value}
+                  </h3>
+                </div>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
-        {/* Content: My Events on top, Charts below */}
-        <div className="space-y-6">
-          {/* Events Table */}
-          <div className="bg-white dark:bg-[#212530] shadow-md rounded-2xl p-6">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-              My Events
-            </h2>
+        {/* Charts & Tables Row */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          {/* Table Container */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="xl:col-span-2 glass dark:bg-slate-900/50 rounded-[2.5rem] premium-shadow overflow-hidden flex flex-col"
+          >
+            <div className="p-8 border-b border-slate-200 dark:border-slate-800">
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Active Portfolio</h2>
+              <p className="text-sm font-medium text-slate-500">Live and upcoming event performance</p>
+            </div>
+            
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700/50">
-                <thead className="bg-gray-50 dark:bg-gray-800/50">
+              <table className="w-full">
+                <thead className="bg-slate-50/50 dark:bg-slate-950/30 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Title</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Category</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date & Time</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Location</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tickets Sold</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Revenue</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                    <th className="px-8 py-4">Event</th>
+                    <th className="px-8 py-4">Performance</th>
+                    <th className="px-8 py-4">Status</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-[#212530] divide-y divide-gray-200 dark:divide-gray-700/50">
-                  {events.map((event, _i) => {
-                    const sold = typeof event.totalBookings === "number"
-                      ? event.totalBookings
-                      : event.ticketPricing?.reduce((a, t) => a + (t.sold ?? 0), 0) ?? 0;
-                    const rev = typeof event.totalRevenue === "number"
-                      ? event.totalRevenue
-                      : event.ticketPricing?.reduce((a, t) => a + t.price * (t.sold ?? 0), 0) ?? 0;
-                    return (
-                      <tr key={event._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">{capitalizeFirstLetter(event.title)}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">{event.category?.name ? capitalizeFirstLetter(event.category.name) : "-"}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {event.startDate ? (
-                            <div className="flex flex-col space-y-1">
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {new Date(event.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {new Date(`2000-01-01T${event.startTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(`2000-01-01T${event.endTime || '00:00'}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
-                              </div>
-                            </div>
-                          ) : '-'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">{event.venue?.city ?? ""}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">{sold.toLocaleString()}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">₹{rev.toLocaleString()}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-3 py-1 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
-                            {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {events.length === 0 && (
-                    <tr>
-                      <td className="px-6 py-4 text-center text-gray-500 dark:text-gray-400" colSpan={7}>
-                        {isLoading ? "Loading events..." : "No events yet"}
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                  {events.map((event) => (
+                    <tr key={event._id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-950/50 transition-colors">
+                      <td className="px-8 py-6">
+                        <div className="font-bold text-slate-900 dark:text-white group-hover:text-red-600 transition-colors">
+                          {capitalizeFirstLetter(event.title)}
+                        </div>
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-tight mt-1">
+                          {event.category?.name || 'Uncategorized'} • {event.venue?.city}
+                        </div>
                       </td>
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-4">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-black text-slate-900 dark:text-white">₹{event.totalRevenue?.toLocaleString() || 0}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">Revenue</span>
+                          </div>
+                          <div className="w-px h-8 bg-slate-200 dark:bg-slate-800" />
+                          <div className="flex flex-col">
+                            <span className="text-xs font-black text-slate-900 dark:text-white">{event.totalBookings || 0}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">Sales</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-8 py-6">
+                        <span className="px-3 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-widest">
+                          {event.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {events.length === 0 && !isLoading && (
+                    <tr>
+                      <td colSpan={3} className="px-8 py-20 text-center text-slate-400 font-bold">No managed events found</td>
                     </tr>
                   )}
                 </tbody>
               </table>
-              
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4 px-2">
-                  <button
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="flex items-center px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    <ChevronLeft className="w-4 h-4 mr-1" /> Previous
-                  </button>
-                  
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Page {page} of {totalPages}
-                  </div>
-                  
-                  <button
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                    disabled={page >= totalPages}
-                    className="flex items-center px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    Next <ChevronRight className="w-4 h-4 ml-1" />
-                  </button>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 flex items-center justify-between mt-auto">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 disabled:opacity-30 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <div className="text-xs font-black text-slate-500 uppercase tracking-widest">
+                  {page} / {totalPages}
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Charts Row (below table) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Tickets Sold Chart */}
-            <div className="bg-white dark:bg-[#212530] shadow-md rounded-2xl p-6">
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
-                  Tickets Sold Over Time
-                </h2>
-                <span className="text-green-600 text-sm font-semibold">
-                  {ticketsSoldData.length > 1 ? "+" : ""}
-                </span>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 disabled:opacity-30 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
               </div>
-              <p className="text-gray-500 dark:text-gray-400 text-xs mb-4">
-                Last periods
-              </p>
-              <ResponsiveContainer width="100%" height={180}>
-                <LineChart data={ticketsSoldData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="week" stroke="#6B7280" />
-                  <YAxis stroke="#6B7280" />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="tickets"
-                    stroke="#8B5CF6"
-                    strokeWidth={2}
-                    dot={{ r: 4, fill: "#8B5CF6" }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+            )}
+          </motion.div>
+
+          {/* Charts Container */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5 }}
+            className="space-y-8"
+          >
+            {/* Sales Chart */}
+            <div className="glass dark:bg-slate-900/50 rounded-[2.5rem] p-8 premium-shadow">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Sales Pulse</h3>
+                <ArrowUpRight className="w-5 h-5 text-red-500" />
+              </div>
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={ticketsSoldData}>
+                    <defs>
+                      <linearGradient id="colorTickets" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" opacity={0.1} />
+                    <XAxis dataKey="week" hide />
+                    <YAxis hide />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', color: '#fff' }}
+                      itemStyle={{ color: '#ef4444', fontWeight: 'bold' }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="tickets" 
+                      stroke="#ef4444" 
+                      strokeWidth={3}
+                      fillOpacity={1} 
+                      fill="url(#colorTickets)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </div>
 
-            {/* Revenue Chart */}
-            <div className="bg-white dark:bg-[#212530] shadow-md rounded-2xl p-6">
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
-                  Revenue Breakdown
-                </h2>
-                <span className="text-green-600 text-sm font-semibold">
-                  {revenueBreakdownData.length} events
-                </span>
+            {/* Revenue Breakdown */}
+            <div className="glass dark:bg-slate-900/50 rounded-[2.5rem] p-8 premium-shadow">
+              <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight mb-6">Revenue Mix</h3>
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={revenueBreakdownData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" opacity={0.1} />
+                    <XAxis dataKey="event" hide />
+                    <YAxis hide />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', color: '#fff' }}
+                    />
+                    <Bar dataKey="revenue" fill="#f97316" radius={[10, 10, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-              <p className="text-gray-500 dark:text-gray-400 text-xs mb-4">
-                Recent events
-              </p>
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={revenueBreakdownData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="event" stroke="#6B7280" />
-                  <YAxis stroke="#6B7280" />
-                  <Tooltip />
-                  <Bar dataKey="revenue" fill="#F43F5E" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
             </div>
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

@@ -1,11 +1,12 @@
 import cloudinary from '../config/cloudinary.js';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
+import { Readable } from 'stream';
 
 export const uploadToCloudinary = async (file, folder = 'eventifyx') => {
   try {
     const result = await cloudinary.uploader.upload(file.path, {
       folder: folder,
-      public_id: `${folder}_${uuidv4()}`,
+      public_id: `${folder}_${randomUUID()}`,
       resource_type: 'auto',
     });
     return result.secure_url;
@@ -20,7 +21,7 @@ export const uploadBufferToCloudinary = async (buffer, folder = 'eventifyx') => 
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder: folder,
-        public_id: `${folder}_${uuidv4()}`,
+        public_id: `${folder}_${randomUUID()}`,
         resource_type: 'auto',
       },
       (error, result) => {
@@ -32,7 +33,7 @@ export const uploadBufferToCloudinary = async (buffer, folder = 'eventifyx') => 
       }
     );
 
-    const bufferStream = require('stream').Readable.from(buffer);
+    const bufferStream = Readable.from(buffer);
     bufferStream.pipe(uploadStream);
   });
 };

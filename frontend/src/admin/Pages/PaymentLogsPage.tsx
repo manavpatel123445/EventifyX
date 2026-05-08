@@ -66,6 +66,31 @@ const AdminPaymentLogsPage = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
+  // Debounced search logic
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchType === 'transactionId') {
+        setTransactionId(search);
+        setUserName('');
+        setEventName('');
+      } else if (searchType === 'userName') {
+        setTransactionId('');
+        setUserName(search);
+        setEventName('');
+      } else if (searchType === 'eventName') {
+        setTransactionId('');
+        setUserName('');
+        setEventName(search);
+      }
+      
+      if (search !== "") {
+        handleSearch();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search, searchType]);
+
   // Handle search
   const handleSearch = () => {
     console.log('Search triggered with:', {
@@ -270,26 +295,8 @@ const AdminPaymentLogsPage = () => {
                 placeholder={`Search by ${searchType === 'transactionId' ? 'Transaction ID' : searchType === 'userName' ? 'User Name' : 'Event Name'}`}
                 value={search}
                 onChange={(e) => {
-                  const searchValue = e.target.value;
-                  setSearch(searchValue);
+                  setSearch(e.target.value);
                   setPaymentLogsPage(1);
-
-                  // Update the appropriate search field based on search type
-                  if (searchType === 'transactionId') {
-                    setTransactionId(searchValue);
-                    setUserName('');
-                    setEventName('');
-                  } else if (searchType === 'userName') {
-                    setTransactionId('');
-                    setUserName(searchValue);
-                    setEventName('');
-                  } else if (searchType === 'eventName') {
-                    setTransactionId('');
-                    setUserName('');
-                    setEventName(searchValue);
-                  }
-
-                  handleSearch();
                 }}
               />
             </div>
