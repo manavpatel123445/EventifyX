@@ -32,3 +32,15 @@ export const paymentLimiter = rateLimit({
     message: "Too many checkout attempts, please try again later",
   },
 });
+
+export const strictLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many requests, please try again after 15 minutes",
+  },
+});
+
