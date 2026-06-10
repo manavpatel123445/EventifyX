@@ -174,6 +174,9 @@ async function createTwentyEvents() {
       existing.images = [
         category.seedImages[i % category.seedImages.length] + "?auto=format&fit=crop&q=80&w=1200"
       ];
+      if (existing.venue && !existing.venue.capacity) {
+        existing.venue.capacity = 500;
+      }
       await existing.save();
       skipped += 1;
       continue;
@@ -192,6 +195,7 @@ async function createTwentyEvents() {
         address: `${100 + i} Event Plaza`,
         city: location.city,
         state: location.state,
+        capacity: 500,
       },
       ticketPricing: [
         { type: "regular", price: regularPrice, quantity: 300 },
