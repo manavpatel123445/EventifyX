@@ -371,11 +371,17 @@ export const getTicketsByPayment = async (req, res) => {
     
     const tickets = await Ticket.find({ payment: paymentId })
       .populate('event', 'title startDate endDate venue images')
-      .populate('payment', 'amount currency status')
+      .populate('payment', 'amount currency status user')
       .populate('user', 'name email');
 
     if (tickets.length === 0) {
       return res.status(404).json({ message: "No tickets found" });
+    }
+
+    // 🛡️ Verify that the logged-in user is either the owner of the ticket or an admin
+    const ticketUserId = tickets[0].user?._id?.toString() || tickets[0].user?.toString();
+    if (ticketUserId !== req.user._id.toString() && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied. You do not own this ticket." });
     }
 
     res.json(tickets);
@@ -425,6 +431,11 @@ export const getTicketsBySession = async (req, res) => {
       }
     } catch (claimErr) {
       console.warn("Could not claim session payment to user:", claimErr?.message || claimErr);
+    }
+
+    // 🛡️ Verify that the logged-in user is the owner of the payment, or that the payment is anonymous
+    if (payment.user && req.user && payment.user.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied. This checkout session belongs to another user." });
     }
 
     // Get tickets for this payment

@@ -139,69 +139,6 @@ export const getMe = async (req, res) => {
 	}
 };
 
-// ⚠️ DEPRECATED: Use the standalone script 'npm run create-admin' instead for better security
-export const createAdmin = async (req, res) => {
-	try {
-		const { name, email, password, adminSecret } = req.body;
-		
-		// 🛡️ Enhanced security check
-		if (!process.env.ADMIN_SECRET || adminSecret !== process.env.ADMIN_SECRET) {
-			return res.status(403).json({ 
-				success: false, 
-				message: "Invalid admin secret" 
-			});
-		}
-		
-		if (!name || !email || !password) {
-			return res.status(400).json({ 
-				success: false, 
-				message: "Name, email, and password are required" 
-			});
-		}
-		
-		// Check if user already exists with this email
-		const existingAdmin = await User.findOne({ email });
-		
-		if (existingAdmin) {
-			return res.status(400).json({ 
-				success: false, 
-				message: "Admin user already exists" 
-			});
-		}
-		
-		// Create admin user
-		const user = await User.create({ 
-			name, 
-			email, 
-			password, 
-			role: 'admin',
-			status: 'active'
-		});
-		
-		const accessToken = generateAccessToken(user);
-		const refreshToken = generateRefreshToken(user);
-		
-		res.status(201).json({
-			success: true,
-			message: "Admin user created successfully",
-			user: {
-				_id: user._id,
-				name: user.name,
-				email: user.email,
-				role: user.role,
-				status: user.status,
-				profileImage: user.profileImage
-			},
-			accessToken,
-			refreshToken
-		});
-		
-	} catch (error) {
-		console.error('Create admin error:', error);
-		res.status(500).json({ success: false, message: "Server error" });
-	}
-};
-
 // @route   POST /api/auth/forgot-password
 // @desc    Send password reset email
 // @access  Public

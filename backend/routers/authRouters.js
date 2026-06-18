@@ -4,7 +4,6 @@ import {
   login, 
   refresh, 
   getMe, 
-  createAdmin, 
   forgotPassword, 
   resetPassword 
 } from "../controllers/authController.js";
@@ -26,6 +25,5 @@ router.put("/reset-password/:resettoken", authLimiter, resetPassword);
 
 // Protected routes
 router.get("/me", protect, apiLimiter, getMe);
-router.post("/create-admin", protect, strictLimiter, createAdmin);
 
 export default router;

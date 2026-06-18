@@ -25,7 +25,10 @@ export const uploadImage = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Image too large (max 10MB)' });
     }
 
-    const folder = (req.body?.folder && String(req.body.folder)) || 'eventifyx/events';
+    // 🛡️ Restrict upload folder to a safe whitelist
+    const allowedFolders = ["eventifyx/events", "eventifyx/profiles", "eventifyx/categories"];
+    const requestedFolder = req.body?.folder && String(req.body.folder);
+    const folder = allowedFolders.includes(requestedFolder) ? requestedFolder : "eventifyx/events";
 
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(

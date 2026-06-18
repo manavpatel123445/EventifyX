@@ -17,6 +17,7 @@ import { stripeWebhook } from "../controllers/paymentController.js";
 dotenv.config();
 
 const app = express();
+app.set("trust proxy", 1); // 🛡️ Trust the reverse proxy to get correct client IPs for rate limiter
 app.use(helmet());
 
 // CORS with credentials support
