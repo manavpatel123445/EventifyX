@@ -2,9 +2,11 @@ import dotenv from "dotenv";
 dotenv.config();
 import Stripe from "stripe";
 import QRCode from "qrcode";
+import crypto from "crypto";
 import Payment from "../models/payment.js";
 import Ticket from "../models/Ticket.js";
 import Event from "../models/Event.js";
+import StripeWebhookEvent from "../models/stripeWebhookEvent.js";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   console.error("Missing STRIPE_SECRET_KEY in environment");
@@ -128,6 +130,8 @@ export const createCheckoutSession = async (req, res) => {
           }))
         ),
       },
+    }, {
+      idempotencyKey: crypto.randomUUID()
     });
 
     // Create a pending Payment record (holds tickets temporarily)
@@ -142,6 +146,7 @@ export const createCheckoutSession = async (req, res) => {
       event: eventId,
       tickets: [],
       stripeSessionId: session.id,
+      idempotencyKey: session.id, // Or map to a specific string
       amount: amountTotal,
       currency: "inr",
       status: "reserved",
@@ -184,6 +189,21 @@ export const stripeWebhook = async (req, res) => {
 
   if (event.type !== "checkout.session.completed") {
     return res.json({ received: true });
+  }
+
+  try {
+    // Exactly-once processing guard using unique index
+    await StripeWebhookEvent.create({
+      stripeEventId: event.id,
+      eventType: event.type
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      console.log("Duplicate webhook received, ignoring:", event.id);
+      return res.json({ received: true });
+    }
+    console.error("Webhook idempotency lock failed", error);
+    return res.status(500).send("Internal Server Error");
   }
 
   const session = event.data.object;
@@ -445,74 +465,9 @@ export const getTicketsBySession = async (req, res) => {
       .populate('user', 'name email');
 
     if (tickets.length === 0) {
-      // If no tickets yet, check Stripe session status and generate if paid
-      try {
-        const session = await stripe.checkout.sessions.retrieve(sessionId);
-        if (session?.payment_status === 'paid') {
-          const ticketsMeta = JSON.parse(session.metadata?.tickets || "[]");
-          const createdTicketIds = [];
-          
-          for (const t of ticketsMeta) {
-            for (let i = 0; i < (Number(t.quantity) || 1); i++) {
-              const ticketId = `${payment._id}_${t.type || "regular"}_${i + 1}`;
-              const qrData = { 
-                ticketId, 
-                eventId: payment.event?.toString(), 
-                userId: payment.user?.toString(), 
-                type: t.type || 'regular', 
-                price: Number(t.price) || 0, 
-                timestamp: new Date().toISOString() 
-              };
-              
-              const qrCodeDataURL = await QRCode.toDataURL(JSON.stringify(qrData), { 
-                width: 200, 
-                margin: 2, 
-                color: { dark: '#000000', light: '#FFFFFF' } 
-              });
-
-              const ticketDoc = await Ticket.create({ 
-                user: payment.user, 
-                event: payment.event, 
-                payment: payment._id, 
-                type: (t.type || 'regular').toLowerCase(), 
-                price: Number(t.price) || 0, 
-                status: 'active', 
-                qrCode: qrCodeDataURL, 
-                seatNumber: `${(t.type || 'regular').toLowerCase()}-${i + 1}`, 
-                metadata: { ticketId, qrData } 
-              });
-              
-              createdTicketIds.push(ticketDoc._id);
-            }
-
-            // Update Event sold counters and revenue
-            await Event.updateOne(
-              { _id: payment.event, "ticketPricing.type": t.type || "regular" },
-              { $inc: { "ticketPricing.$.sold": Number(t.quantity) || 1, totalBookings: Number(t.quantity) || 1, totalRevenue: (Number(t.price) || 0) * (Number(t.quantity) || 1) } }
-            );
-          }
-
-          // Mark payment succeeded if not already
-          if (payment.status !== 'succeeded') {
-            payment.status = 'succeeded';
-          }
-          payment.tickets = createdTicketIds;
-          await payment.save();
-
-          // Fetch fully populated tickets to return to the frontend
-          const populatedTickets = await Ticket.find({ _id: { $in: createdTicketIds } })
-            .populate('event', 'title startDate endDate venue images')
-            .populate('payment', 'amount currency status')
-            .populate('user', 'name email');
-
-          return res.json(populatedTickets);
-        }
-        // Not paid yet
-        return res.status(404).json({ message: "No tickets found" });
-      } catch (e) {
-        console.error("Error in fallback ticket generation:", e);
-        return res.status(404).json({ message: "No tickets found" });
-      }
+      // If no tickets yet, the webhook might still be processing. Do not generate them here.
+      // Doing so creates a massive race condition.
+      return res.status(404).json({ message: "No tickets found yet. Please wait while your payment processes." });
     }
 
     res.json(tickets);

@@ -27,6 +27,11 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       index: true,
     },
+    idempotencyKey: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
     amount: {
       type: Number,
       required: true,

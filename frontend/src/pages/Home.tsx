@@ -88,12 +88,12 @@ const Home = () => {
               <Sparkles className="w-4 h-4 text-purple-400" />
               <span>Transforming your Event Experiences</span>
             </div>
-            <h1 className="text-6xl md:text-8xl font-black text-white leading-[1.1] mb-8 tracking-tighter">
+            <h1 className="text-4xl sm:text-6xl md:text-8xl font-black text-white leading-[1.1] mb-8 tracking-tighter">
               Discover <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-blue-400 to-indigo-400">Extraordinary</span> <br />
               Experiences
             </h1>
-            <p className="text-slate-300 text-xl md:text-2xl max-w-xl mb-12 leading-relaxed">
+            <p className="text-slate-300 text-lg sm:text-xl md:text-2xl max-w-xl mb-12 leading-relaxed">
               Join millions of people discovering events, festivals, and workshops tailored to your soul's calling.
             </p>
 
@@ -232,15 +232,15 @@ const Home = () => {
       <section className="py-32 container mx-auto px-6">
         <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
            <div>
-             <h2 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white mb-4 tracking-tighter">Explore <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">Industries</span></h2>
-             <p className="text-slate-500 dark:text-slate-400 text-xl font-medium max-w-xl">Dive into curated universes of specialized events and global communities.</p>
+             <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-slate-900 dark:text-white mb-4 tracking-tighter">Explore <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">Industries</span></h2>
+             <p className="text-slate-500 dark:text-slate-400 text-lg sm:text-xl font-medium max-w-xl">Dive into curated universes of specialized events and global communities.</p>
            </div>
            <Link to="/events" className="group flex items-center gap-3 text-lg font-black text-purple-600 hover:text-purple-700 transition-colors">
               Browse Everything <ArrowRight className="group-hover:translate-x-2 transition-transform" />
            </Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
            {categoriesLoading ? (
              [1,2,3,4,5].map(i => (
                <Skeleton key={i} className="h-64 rounded-[2.5rem]" />
@@ -287,8 +287,8 @@ const Home = () => {
                viewport={{ once: true }}
              >
                <p className="text-purple-600 font-black uppercase tracking-[0.3em] text-xs mb-4">Curation</p>
-               <h2 className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white mb-8 tracking-tighter">Live & <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">Upcoming</span></h2>
-               <p className="text-slate-500 text-xl font-medium max-w-2xl mx-auto">Hand-picked experiences selected by our neural algorithms for maximum impact.</p>
+               <h2 className="text-4xl sm:text-5xl md:text-7xl font-black text-slate-900 dark:text-white mb-8 tracking-tighter">Live & <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">Upcoming</span></h2>
+               <p className="text-slate-500 text-lg sm:text-xl font-medium max-w-2xl mx-auto">Hand-picked experiences selected by our neural algorithms for maximum impact.</p>
              </motion.div>
           </div>
 
@@ -366,8 +366,8 @@ const Home = () => {
         <div className="container mx-auto px-6 relative z-10">
            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
              <div className="lg:col-span-1">
-               <h2 className="text-6xl font-black mb-8 leading-tight tracking-tighter">Why <br />Eventify<span className="text-purple-500">X</span>?</h2>
-               <p className="text-slate-400 text-xl font-medium leading-relaxed mb-12">Building the future of human connection through secure, immersive, and borderless event management.</p>
+               <h2 className="text-4xl sm:text-5xl md:text-6xl font-black mb-8 leading-tight tracking-tighter">Why <br />Eventify<span className="text-purple-500">X</span>?</h2>
+               <p className="text-slate-400 text-lg sm:text-xl font-medium leading-relaxed mb-12">Building the future of human connection through secure, immersive, and borderless event management.</p>
                <Link to="/register" className="px-10 py-5 bg-white text-slate-950 rounded-[2rem] font-black text-lg hover:shadow-[0_0_50px_rgba(255,255,255,0.3)] transition-all inline-block">Join the Evolution</Link>
              </div>
              

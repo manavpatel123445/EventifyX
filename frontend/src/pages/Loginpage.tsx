@@ -83,7 +83,7 @@ const Loginpage: React.FC = () => {
            className="w-full max-w-6xl relative z-10"
         >
           <TiltCard damping={20} stiffness={120}>
-            <div className="grid grid-cols-1 lg:grid-cols-12 bg-white/70 dark:bg-slate-900/70 backdrop-blur-3xl border border-white/50 dark:border-slate-800 rounded-[4rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] overflow-hidden min-h-[700px]">
+            <div className="grid grid-cols-1 lg:grid-cols-12 bg-white/70 dark:bg-slate-900/70 backdrop-blur-3xl border border-white/50 dark:border-slate-800 rounded-[2rem] md:rounded-[4rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] overflow-hidden min-h-[700px]">
               
               {/* Artistic Tech Panel */}
               <div className="lg:col-span-5 relative hidden lg:flex flex-col justify-between p-16 overflow-hidden bg-slate-900">
@@ -120,7 +120,7 @@ const Loginpage: React.FC = () => {
               </div>
 
               {/* Login Interface */}
-              <div className="lg:col-span-7 p-12 md:p-20 flex flex-col justify-center">
+              <div className="lg:col-span-7 p-6 md:p-20 flex flex-col justify-center">
                 <div className="mb-12">
                    <h3 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter mb-3">Identity Retrieval</h3>
                    <p className="text-slate-500 dark:text-slate-400 font-bold">Initiate secure authentication handshake.</p>
@@ -185,7 +185,7 @@ const Loginpage: React.FC = () => {
                    <button 
                      type="submit" 
                      disabled={mutation.isPending}
-                     className="w-full h-20 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[2rem] font-black text-xl uppercase tracking-[0.2em] shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4 disabled:opacity-50"
+                     className="w-full h-16 md:h-20 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[2rem] font-black text-lg md:text-xl uppercase tracking-[0.2em] shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4 disabled:opacity-50"
                    >
                      {mutation.isPending ? <RefreshCw className="animate-spin" size={24} /> : <Key size={24} />}
                      {mutation.isPending ? "Ciphering..." : "Access Nexus"}

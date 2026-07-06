@@ -135,8 +135,8 @@ const Eventdetail: React.FC = () => {
             />
 
             {/* Title + Tags */}
-            <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-3xl p-8 shadow-xl shadow-purple-900/5 border border-white/50 dark:border-slate-800">
-              <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-400 dark:to-blue-400">{event.title}</h1>
+            <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-3xl p-6 md:p-8 shadow-xl shadow-purple-900/5 border border-white/50 dark:border-slate-800">
+              <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-400 dark:to-blue-400">{event.title}</h1>
               <p className="text-gray-500 dark:text-gray-400 mt-2 font-medium">Produced by {event.eventManager?.name || "EventifyX Manager"}</p>
               <div className="mt-4 flex gap-3 flex-wrap">
                 <span className="px-4 py-1.5 bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-full">
@@ -166,7 +166,7 @@ const Eventdetail: React.FC = () => {
             </div>
 
             {/* About the Event */}
-            <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-3xl p-8 shadow-xl shadow-purple-900/5 border border-white/50 dark:border-slate-800">
+            <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-3xl p-6 md:p-8 shadow-xl shadow-purple-900/5 border border-white/50 dark:border-slate-800">
               <div className="flex items-center space-x-3 mb-6">
                 <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
                   <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -233,7 +233,7 @@ const Eventdetail: React.FC = () => {
             </div>
 
             {/* Gallery */}
-            <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-3xl p-8 shadow-xl shadow-purple-900/5 border border-white/50 dark:border-slate-800">
+            <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-3xl p-6 md:p-8 shadow-xl shadow-purple-900/5 border border-white/50 dark:border-slate-800">
               <div className="flex items-center space-x-3 mb-6">
                 <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
                   <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -242,7 +242,7 @@ const Eventdetail: React.FC = () => {
                 </div>
                 <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Gallery</h2>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {galleryImages.length > 0 ? (
                   galleryImages.map((imgUrl: string, idx: number) => (
                     <TiltCard key={idx} tiltAmount={5}>
@@ -266,7 +266,7 @@ const Eventdetail: React.FC = () => {
             className="space-y-6"
           >
             <TiltCard tiltAmount={4}>
-              <div className="bg-white/90 backdrop-blur-2xl dark:bg-slate-900/90 rounded-3xl p-8 shadow-2xl shadow-purple-900/10 border border-white/50 dark:border-slate-800 sticky top-10 relative overflow-hidden group">
+              <div className="bg-white/90 backdrop-blur-2xl dark:bg-slate-900/90 rounded-3xl p-6 md:p-8 shadow-2xl shadow-purple-900/10 border border-white/50 dark:border-slate-800 sticky top-10 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2 pointer-events-none group-hover:bg-purple-500/20 transition-all duration-500"></div>
                 <div className="flex items-center gap-4 mb-8 p-5 bg-gray-50/50 dark:bg-slate-800/50 rounded-2xl border border-white/40 dark:border-slate-700/50 relative z-10 transition-colors group-hover:bg-gray-50/80 dark:group-hover:bg-slate-800/80">
                 {event.eventManager?.profileImage ? (

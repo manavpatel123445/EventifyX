@@ -117,8 +117,8 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, on
   };
 
   return (
-    <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white w-full max-w-3xl rounded-lg shadow-lg p-8 relative overflow-y-auto max-h-[90vh]">
+    <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white w-full max-w-3xl rounded-lg shadow-lg p-6 md:p-8 relative overflow-y-auto max-h-[90vh]">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -260,7 +260,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, on
 
           {/* Dates & Times Row */}
           <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium">Start Date</label>
                 <input
@@ -284,7 +284,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, on
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium">Start Time</label>
                 <input
@@ -335,7 +335,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose, on
           <button
             type="submit"
             disabled={mutation.isPending || uploading}
-            className="w-60 bg-red-500 text-white  rounded-md hover:bg-red-600 transition disabled:opacity-50"
+            className="w-full md:w-60 bg-red-500 text-white py-2 rounded-md hover:bg-red-600 transition disabled:opacity-50"
           >
             {uploading
               ? "Uploading images..."

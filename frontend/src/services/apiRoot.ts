@@ -1,9 +1,8 @@
 /**
  * Resolves the API root URL.
- * In both development and production on Vercel, we prefer the relative /api path
- * to leverage the Vite proxy (dev) or Vercel rewrites (prod).
- * This eliminates CORS issues by ensuring all requests appear to be same-origin.
  */
 export const resolveApiRoot = (): string => {
-  return "/api";
+  // If explicitly provided in environment, use it (e.g. pointing to Render)
+  // Otherwise fallback to /api for Vite proxy/Vercel rewrites
+  return import.meta.env.VITE_API_URL || "/api";
 };

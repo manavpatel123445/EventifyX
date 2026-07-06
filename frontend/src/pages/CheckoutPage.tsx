@@ -120,7 +120,7 @@ const CheckoutPage: React.FC = () => {
                  <ShieldCheck size={14} />
                  Secure Transaction Node
               </div>
-              <h1 className="text-5xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter mb-4 leading-none">
+              <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter mb-4 leading-none">
                 Experience <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">Verification</span>
               </h1>
@@ -128,7 +128,7 @@ const CheckoutPage: React.FC = () => {
             </motion.div>
 
             {/* Neural Stepper */}
-            <div className="flex items-center gap-10 mb-16">
+            <div className="flex items-center gap-4 md:gap-10 mb-16">
                <Step index={1} label="Configuration" active={step === 1} completed={step > 1} />
                <div className="h-[2px] flex-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                   <motion.div 
@@ -166,7 +166,7 @@ const CheckoutPage: React.FC = () => {
                                 <h3 className="text-2xl font-black text-slate-900 dark:text-white">₹{ticket.price.toLocaleString()}</h3>
                              </div>
                              
-                             <div className="flex items-center gap-6 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800">
+                             <div className="flex items-center gap-3 md:gap-6 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800">
                                 <button
                                   onClick={() => handleQuantityChange(i, ticket.quantity - 1)}
                                   disabled={ticket.quantity <= 1}
@@ -253,7 +253,7 @@ const CheckoutPage: React.FC = () => {
                      </div>
 
                      <div className="pt-10 space-y-6">
-                        <div className="flex items-start gap-4 p-8 rounded-[2.5rem] bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/20">
+                        <div className="flex items-start gap-4 p-6 md:p-8 rounded-[2.5rem] bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/20">
                            <div className="relative mt-1">
                               <input
                                 id="consent"
@@ -337,7 +337,7 @@ const CheckoutPage: React.FC = () => {
               </TiltCard>
 
               {/* Economic Ledger */}
-              <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[4rem] p-12 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.4)] relative overflow-hidden">
+              <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[3rem] md:rounded-[4rem] p-8 md:p-12 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.4)] relative overflow-hidden">
                 <motion.div 
                    animate={{ scale: [1, 1.05, 1], rotate: [0, 5, 0] }}
                    transition={{ duration: 10, repeat: Infinity, ease: "linear" }}

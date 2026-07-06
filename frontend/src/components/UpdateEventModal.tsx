@@ -170,8 +170,8 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
   };
 
   return (
-    <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white w-full max-w-2xl rounded-lg shadow-lg p-6 relative overflow-y-auto max-h-[90vh]">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white w-[95vw] max-w-2xl rounded-lg shadow-lg p-6 relative overflow-y-auto max-h-[90vh]">
         {/* Close */}
         <button
           onClick={onClose}
@@ -227,7 +227,7 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
           </div>
 
           {/* Dates */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium">Start Date</label>
               <input
@@ -251,7 +251,7 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
           </div>
 
           {/* Time */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium">Start Time</label>
               <input
@@ -277,7 +277,7 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
           {/* Venue */}
           <div>
             <label className="block text-sm font-medium">Venue</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input
                 type="text"
                 name="name"
@@ -308,7 +308,7 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
                 value={form.venue.address}
                 onChange={handleVenueChange}
                 placeholder="Address"
-                className="border px-3 py-2 rounded-md col-span-2"
+                className="border px-3 py-2 rounded-md sm:col-span-2"
               />
             </div>
           </div>
@@ -317,7 +317,7 @@ const UpdateEventModal: React.FC<UpdateEventModalProps> = ({ isOpen, onClose, ev
           <div>
             <label className="block text-sm font-medium mb-2">Tickets</label>
             {form.ticketPricing.map((ticket, idx) => (
-              <div key={idx} className="grid grid-cols-3 gap-2 mb-2">
+              <div key={idx} className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
                 <select
                   value={ticket.type}
                   onChange={(e) =>

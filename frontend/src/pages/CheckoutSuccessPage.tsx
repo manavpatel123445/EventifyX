@@ -198,7 +198,7 @@ const CheckoutSuccessPage: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="text-6xl md:text-8xl font-black text-slate-900 dark:text-white tracking-tighter"
+                className="text-4xl md:text-6xl lg:text-8xl font-black text-slate-900 dark:text-white tracking-tighter"
               >
                 Manifested <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-500">Successfully</span>
@@ -218,7 +218,7 @@ const CheckoutSuccessPage: React.FC = () => {
             {/* Ledger Summary */}
             <div className="lg:col-span-4 space-y-6">
               <TiltCard damping={15}>
-                <div className="p-10 bg-white/70 dark:bg-slate-900/70 backdrop-blur-3xl border border-white/50 dark:border-slate-800 rounded-[3rem] shadow-xl relative overflow-hidden">
+                <div className="p-6 md:p-10 bg-white/70 dark:bg-slate-900/70 backdrop-blur-3xl border border-white/50 dark:border-slate-800 rounded-[3rem] shadow-xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-8">
                      <TicketIcon className="text-slate-100 dark:text-slate-800" size={80} />
                   </div>
@@ -251,7 +251,7 @@ const CheckoutSuccessPage: React.FC = () => {
               </TiltCard>
 
               {/* Security Badge */}
-              <div className="p-8 bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2.5rem] shadow-2xl flex items-center gap-6">
+              <div className="p-6 md:p-8 bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2.5rem] shadow-2xl flex items-center gap-6">
                  <div className="w-12 h-12 rounded-2xl bg-purple-600/20 flex items-center justify-center shadow-inner">
                     <Zap className="text-purple-400 w-6 h-6" />
                  </div>
@@ -277,7 +277,7 @@ const CheckoutSuccessPage: React.FC = () => {
                           <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-3xl border border-white/50 dark:border-slate-800 rounded-[3rem] shadow-2xl overflow-hidden group">
                              <div className="h-2 bg-gradient-to-r from-purple-600 to-blue-600" />
                              
-                             <div className="p-10">
+                             <div className="p-6 md:p-10">
                                 <div className="flex justify-between items-start mb-8">
                                    <div>
                                       <p className="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-[0.3em] mb-2">{ticket.type} Access</p>
