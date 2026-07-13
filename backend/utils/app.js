@@ -100,4 +100,15 @@ app.use("/api/manager-requests", eventManagerRequestRouter);
 app.use("/api/payments", paymentRouter);
 app.use("/api/uploads", uploadRouter);
 
+// 🚨 Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("❌ Server Error:", err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+    stack: process.env.NODE_ENV === "production" ? undefined : err.stack,
+  });
+});
+
 export default app;
+
