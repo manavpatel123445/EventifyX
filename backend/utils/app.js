@@ -42,21 +42,13 @@ app.use(
         return callback(null, true);
       }
 
-      const isProduction = process.env.NODE_ENV === "production";
       const isVercelOrigin = /\.vercel\.app$/.test(origin);
       const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
       const isExplicitlyAllowed = allowedOrigins.includes(origin);
 
-      // In production, be more strict
-      if (isProduction) {
-        if (isExplicitlyAllowed || isVercelOrigin) {
-          return callback(null, true);
-        }
-      } else {
-        // In development, allow localhost and explicitly allowed
-        if (isExplicitlyAllowed || isLocalhost) {
-          return callback(null, true);
-        }
+      // Allow if explicitly configured, is a Vercel deployment preview, or localhost
+      if (isExplicitlyAllowed || isVercelOrigin || isLocalhost) {
+        return callback(null, true);
       }
 
       console.warn(`CORS blocked for origin: ${origin}`);
