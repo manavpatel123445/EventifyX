@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import dotenv from "dotenv";
-import db from "../db.js";
+import db from "../db.js";              
 
 import categoryRouter from "../routers/categoryRouters.js";
 import authRouter from "../routers/authRouters.js";
