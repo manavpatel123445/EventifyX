@@ -3,6 +3,8 @@ import EventRequest from "../models/EventRequest.js";
 import User from "../models/User.js"; 
 import Category from "../models/Category.js"; 
 import mongoose from "mongoose";
+import { cacheService } from "../services/cache.service.js";
+import { CACHE_PREFIX } from "../constants/cache.constants.js";
 
 // 📝 Create Event Request (User submits request to admin)
 export const createEventRequest = async (req, res) => {
@@ -207,6 +209,9 @@ export const approveEventRequest = async (req, res) => {
       { path: "category", select: "name" },
       { path: "approvedBy", select: "name" }
     ]);
+    
+    // Invalidate events cache
+    await cacheService.delByPattern(`app:*:v1:${CACHE_PREFIX.EVENTS}:*`);
 
     res.status(200).json({
       success: true,
@@ -566,6 +571,9 @@ export const updateEvent = async (req, res) => {
       { path: "eventManager", select: "name email" },
       { path: "category", select: "name" }
     ]);
+    
+    // Invalidate events cache
+    await cacheService.delByPattern(`app:*:v1:${CACHE_PREFIX.EVENTS}:*`);
 
     res.status(200).json({
       success: true,
@@ -610,6 +618,9 @@ export const cancelEvent = async (req, res) => {
     event.status = "cancelled";
     // You might want to add a cancellation reason field to the schema
     await event.save();
+    
+    // Invalidate events cache
+    await cacheService.delByPattern(`app:*:v1:${CACHE_PREFIX.EVENTS}:*`);
 
     res.status(200).json({
       success: true,
@@ -740,6 +751,10 @@ export const softDeleteEvent = async (req, res) => {
     }
     event.isDeleted = true;
     await event.save();
+    
+    // Invalidate events cache
+    await cacheService.delByPattern(`app:*:v1:${CACHE_PREFIX.EVENTS}:*`);
+    
     res.status(200).json({
       success: true,
       message: 'Event soft deleted successfully',
@@ -772,6 +787,11 @@ export const autoSoftDeleteCompletedEvents = async (req, res) => {
       event.isDeleted = true;
       await event.save();
       deletedCount++;
+    }
+    
+    // Invalidate events cache
+    if (deletedCount > 0) {
+      await cacheService.delByPattern(`app:*:v1:${CACHE_PREFIX.EVENTS}:*`);
     }
     
     res.status(200).json({

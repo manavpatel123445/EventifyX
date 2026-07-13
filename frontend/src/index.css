@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+@theme {
+  --color-admin-background: #09090B;
+  --color-admin-surface: #18181B;
+  --color-admin-card: #27272A;
+  --color-admin-border: #3F3F46;
+  --color-admin-primary: #4F46E5;
+  --color-admin-success: #22C55E;
+  --color-admin-warning: #F59E0B;
+  --color-admin-error: #EF4444;
+  --color-admin-text: #ffffff;
+  --color-admin-text-secondary: #9ca3af;
+}
 @layer base {
   :root {
     --glass-bg: rgba(255, 255, 255, 0.7);
