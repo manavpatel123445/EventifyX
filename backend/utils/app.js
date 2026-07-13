@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import dotenv from "dotenv";
+import compression from "compression";
 import db from "../db.js";              
 
 import categoryRouter from "../routers/categoryRouters.js";
@@ -19,6 +20,7 @@ dotenv.config();
 const app = express();
 app.set("trust proxy", 1); // 🛡️ Trust the reverse proxy to get correct client IPs for rate limiter
 app.use(helmet());
+app.use(compression()); // 📦 Compress all API responses
 
 // CORS with credentials support
 const configuredOrigins = [
