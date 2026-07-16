@@ -133,6 +133,7 @@ const Home = () => {
                  <img
                    src="https://images.unsplash.com/photo-1514525253361-bee8a187499b?auto=format&fit=crop&w=600&q=80"
                    className="w-full h-full object-cover"
+                   loading="lazy"
                    alt="Featured Experience"
                  />
                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />

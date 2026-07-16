@@ -3,19 +3,25 @@ import RedisStore from "rate-limit-redis";
 import Redis from "ioredis";
 import config from "../config/environment.js";
 
-// Initialize Redis Client for Rate Limiter
-let redisClient;
+// Initialize Redis Client for Rate Limiter (only if REDIS_URL is configured)
 let store;
 
-try {
-  redisClient = new Redis(config.redis.url, {
-    maxRetriesPerRequest: null,
-  });
-  store = new RedisStore({
-    sendCommand: (...args) => redisClient.call(...args),
-  });
-} catch (error) {
-  console.warn("⚠️ Rate limiter falling back to in-memory store due to Redis connection issue.");
+if (config.redis.url && !config.redis.url.includes('localhost') && !config.redis.url.includes('127.0.0.1')) {
+  try {
+    const redisClient = new Redis(config.redis.url, {
+      maxRetriesPerRequest: null,
+      retryStrategy: (times) => (times > 1 ? null : 500),
+      enableOfflineQueue: false,
+    });
+    redisClient.on('error', () => {}); // silence errors silently
+    store = new RedisStore({
+      sendCommand: (...args) => redisClient.call(...args),
+    });
+  } catch (error) {
+    console.warn("⚠️ Rate limiter falling back to in-memory store.");
+  }
+} else {
+  console.warn("⚠️ No external REDIS_URL — rate limiter using in-memory store.");
 }
 
 export const apiLimiter = rateLimit({

@@ -8,9 +8,18 @@ import {
 
 
 import { protect, authorize } from "../middlewares/authMiddleware.js";
+import { cacheMiddleware } from "../middlewares/cache.middleware.js";
+import { CACHE_PREFIX, CACHE_TTL } from "../constants/cache.constants.js";
 
 const router = express.Router();
-router.get("/", getCategories);
+
+// Cache categories for 15 minutes (LONG) since they rarely change
+router.get("/", cacheMiddleware({ 
+  module: CACHE_PREFIX.CATEGORIES, 
+  resource: 'list', 
+  ttl: CACHE_TTL.LONG, 
+  scope: 'public' 
+}), getCategories);
 
 
 router.post("/", protect, authorize("admin"), createCategory);

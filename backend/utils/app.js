@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import dotenv from "dotenv";
+import compression from "compression";
 import db from "../db.js";              
 
 import categoryRouter from "../routers/categoryRouters.js";
@@ -19,6 +20,7 @@ dotenv.config();
 const app = express();
 app.set("trust proxy", 1); // 🛡️ Trust the reverse proxy to get correct client IPs for rate limiter
 app.use(helmet());
+app.use(compression()); // 📦 Compress all API responses
 
 // CORS with credentials support
 const configuredOrigins = [
@@ -42,21 +44,13 @@ app.use(
         return callback(null, true);
       }
 
-      const isProduction = process.env.NODE_ENV === "production";
       const isVercelOrigin = /\.vercel\.app$/.test(origin);
       const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
       const isExplicitlyAllowed = allowedOrigins.includes(origin);
 
-      // In production, be more strict
-      if (isProduction) {
-        if (isExplicitlyAllowed || isVercelOrigin) {
-          return callback(null, true);
-        }
-      } else {
-        // In development, allow localhost and explicitly allowed
-        if (isExplicitlyAllowed || isLocalhost) {
-          return callback(null, true);
-        }
+      // Allow if explicitly configured, is a Vercel deployment preview, or localhost
+      if (isExplicitlyAllowed || isVercelOrigin || isLocalhost) {
+        return callback(null, true);
       }
 
       console.warn(`CORS blocked for origin: ${origin}`);
@@ -100,4 +94,15 @@ app.use("/api/manager-requests", eventManagerRequestRouter);
 app.use("/api/payments", paymentRouter);
 app.use("/api/uploads", uploadRouter);
 
+// 🚨 Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("❌ Server Error:", err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+    stack: process.env.NODE_ENV === "production" ? undefined : err.stack,
+  });
+});
+
 export default app;
+

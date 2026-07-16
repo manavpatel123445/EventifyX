@@ -1,6 +1,8 @@
 import Category from "../models/Category.js";
 import Event from "../models/Event.js";
 import EventRequest from "../models/EventRequest.js";
+import { cacheService } from "../services/cache.service.js";
+import { CACHE_PREFIX } from "../constants/cache.constants.js";
 
 // ➕ Create Category
 export const createCategory = async (req, res) => {
@@ -20,6 +22,9 @@ export const createCategory = async (req, res) => {
     
     const category = new Category({ name, description });
     await category.save();
+    
+    // Invalidate categories cache
+    await cacheService.delByPattern(`app:*:v1:${CACHE_PREFIX.CATEGORIES}:*`);
     
     res.status(201).json({
       success: true,
@@ -70,6 +75,10 @@ export const updateCategory = async (req, res) => {
     if (status !== undefined) category.status = status;
 
     await category.save();
+    
+    // Invalidate categories cache
+    await cacheService.delByPattern(`app:*:v1:${CACHE_PREFIX.CATEGORIES}:*`);
+    
     res.json({ success: true, message: "Category updated", data: category });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -94,6 +103,9 @@ export const deleteCategory = async (req, res) => {
 
     const category = await Category.findByIdAndDelete(id);
     if (!category) return res.status(404).json({ success: false, message: "Category not found" });
+
+    // Invalidate categories cache
+    await cacheService.delByPattern(`app:*:v1:${CACHE_PREFIX.CATEGORIES}:*`);
 
     res.json({ success: true, message: "Category deleted successfully" });
   } catch (error) {

@@ -22,11 +22,18 @@ import {
 } from "../controllers/eventController.js";
 
 import { protect, authorize } from "../middlewares/authMiddleware.js";
+import { cacheMiddleware } from "../middlewares/cache.middleware.js";
+import { CACHE_PREFIX, CACHE_TTL } from "../constants/cache.constants.js";
 
 const router = express.Router();
 
 
-router.get("/", getAllEvents);
+router.get("/", cacheMiddleware({
+  module: CACHE_PREFIX.EVENTS,
+  resource: 'list',
+  ttl: CACHE_TTL.MEDIUM, // 5 minutes
+  scope: 'public'
+}), getAllEvents);
 
 // =============================================================================
 // PROTECTED ROUTES (Authentication required)
@@ -95,6 +102,11 @@ router.post("/admin/cleanup-completed", protect, authorize("admin"), autoSoftDel
 // PUBLIC: Get single event by ID or slug (keep LAST so it doesn't shadow others)
 // =============================================================================
 // GET /api/events/6743ab123456789 or GET /api/events/music-concert-2024
-router.get("/:identifier", getEventById);
+router.get("/:identifier", cacheMiddleware({
+  module: CACHE_PREFIX.EVENTS,
+  resource: 'detail',
+  ttl: CACHE_TTL.SHORT, // 1 minute
+  scope: 'public'
+}), getEventById);
 
 export default router;
